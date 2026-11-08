@@ -61,6 +61,10 @@ jobs:
           text=text.replace('</header>','<div style="width:100%;color:#ffd18c;font-size:11px;padding:0 3px 6px">ВІЗУАЛЬНИЙ ПЕРЕГЛЯД · Синтетичні свічки · Без зв’язку з рахунком Bybit · Ордери вимкнені</div></header>',1)
           p.write_text(text)
           PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: trading-assistant-browser-preview
+          path: _site/index.html
       - uses: actions/configure-pages@v5
         with:
           enablement: true
