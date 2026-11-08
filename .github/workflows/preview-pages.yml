@@ -1,4 +1,5 @@
 name: Publish visual preview (GitHub Pages)
+# Re-run preview after Pages was enabled in repository settings
 on:
   push:
     branches: [redesign-approved-trading-ui]
