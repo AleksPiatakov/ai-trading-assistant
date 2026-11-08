@@ -1,5 +1,5 @@
 name: Publish visual preview (GitHub Pages)
-# Rerun after making repository public
+# Rerun after allowing redesign branch in github-pages environment
 # Re-run preview after Pages was enabled in repository settings
 on:
   push:
