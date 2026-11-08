@@ -2,7 +2,7 @@ name: Verify approved trading redesign
 on:
   push:
     branches: [redesign-approved-trading-ui]
-    paths: ['.github/workflows/verify-redesign.yml']
+    paths: ['.github/workflows/verify-redesign.yml', 'public/dashboard.html', 'app/api/market-data/route.ts', 'db/schema.ts']
 permissions:
   contents: read
 jobs:
