@@ -43,6 +43,98 @@ body{background:radial-gradient(ellipse at 52% -15%,#192e60 0%,#09162e 47%,#0710
 .foot{border-top:1px solid #233b65;margin-top:7px}
 @media(max-width:1130px){.layout{grid-template-columns:1fr}.chart-card{min-height:unset}.chart-wrap,.chart-wrap canvas{height:510px;min-height:510px}.right{display:flex}.fields{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:680px){.chart-wrap,.chart-wrap canvas{height:390px;min-height:390px}.fields{grid-template-columns:repeat(2,minmax(0,1fr))}.metrics{grid-template-columns:repeat(2,minmax(0,1fr))!important}.top h1{font-size:15px}}
+
+/* Pixel-focused visual alignment to approved 1640 × 896 master reference */
+:root{--reference-nav:70px}
+.app{grid-template-columns:70px minmax(0,1fr)}
+.workspace{padding:0 10px 8px}
+.nav{padding:10px 9px;gap:10px}
+.nav button{min-height:44px;justify-content:center;padding:7px}
+.nav button .ico{font-size:23px;font-weight:400;line-height:1}
+.nav button .nav-label{display:none}
+.app.expanded .nav button{justify-content:flex-start}
+.top{height:61px;min-height:61px;flex-wrap:nowrap;padding:0 6px;gap:12px}
+.top h1{font-size:clamp(16px,1.43vw,23px);white-space:nowrap}
+.top h1 small{font-weight:450}
+.clock-status{font-size:11px}
+.mode{margin-left:auto}
+.mode button{padding:7px 10px}
+.layout{grid-template-columns:minmax(0,1.39fr) minmax(570px,1fr);gap:11px;padding-top:9px}
+.chart-card{height:660px;min-height:660px}
+.chart-card>.bar{height:46px;min-height:46px}
+.chart-toolbar{min-height:42px;flex-wrap:nowrap;padding:4px 9px}
+.chart-toolbar #timeframes{white-space:nowrap;display:flex;gap:3px}
+.chart-toolbar .btn{padding:6px 8px}
+.draw-cross{font-size:23px;color:#56aaff;padding:0 11px}
+.chart-wrap{height:535px;min-height:535px;margin:0 8px 0 52px;background:#07152c}
+.chart-wrap canvas{height:535px}
+.drawing-tools{position:absolute;z-index:1;left:-52px;top:0;bottom:0;width:49px;display:flex;flex-direction:column;gap:1px;align-items:center;background:#101e3a;border-right:1px solid #2d4876;color:#bbc9e9}
+.drawing-tools span{display:grid;place-items:center;width:42px;height:45px;font-size:22px;cursor:default}
+.drawing-tools span:nth-child(1){color:#56a9ff}
+.chart-note{font-size:10px;top:4px}
+.chart-footerline{height:29px;padding:5px 14px;display:flex;gap:16px;align-items:center;font-size:10px;color:#abbede}
+.drag-hint{margin-left:auto}
+.legend-ema{display:inline-flex;gap:5px;align-items:center}
+.legend-ema:before{content:'';display:inline-block;width:13px;height:2px;background:currentColor}
+.blue-line{color:#4295ff}.gold-line{color:#f4b33e}.green-line{color:#26d89a}.red-line{color:#e45b75}.neutral-line{color:#e7edf9}
+.right{gap:8px;height:660px}
+.right .card{flex-shrink:0}
+#aiCard{height:295px}
+#aiCard>.bar{height:40px;min-height:40px}
+#aiCard .tabs{padding:6px 10px 0}
+#aiCard .tabs .btn{font-size:11px;padding:6px}
+#aiCard .panel-body{padding:8px 11px}
+.signal-line{display:flex;gap:8px}
+.signal-line .signal{flex:1;padding:7px 9px;font-size:14px}
+.confidence-box{width:113px;flex:0 0 113px;text-align:center;font-size:10px;background:#10233d;border:1px solid #304a75;border-radius:7px;padding:3px 7px}
+.confidence-box strong{display:block;color:#9babc9;font-size:19px}
+.analysis-columns{display:grid;grid-template-columns:1fr .9fr;gap:7px;margin-top:8px}
+#analysisFacts{display:block;margin:0;min-height:112px}
+#analysisFacts .fact{margin:0 0 6px;line-height:1.25;font-size:11px}
+.signal-metrics{background:#11223f;border:1px solid #344d7c;border-radius:7px;padding:6px;font-size:10px}
+.breakdown-title{font-weight:700;margin-bottom:5px}
+.signal-metrics span{display:flex;justify-content:space-between;margin:4px 0;color:#dce6fc}
+.signal-metrics b{color:#8198ba}
+#aiCard .explain{font-size:10px;line-height:1.3;padding:6px 8px;margin-top:5px;max-height:42px;overflow:hidden}
+#riskCard{height:148px}
+#riskCard>.bar{min-height:33px;height:33px;padding:5px 10px}
+#riskCard .bar h2{font-size:13px}
+.risk-grid-compact{display:grid;grid-template-columns:1fr 1fr;gap:7px;padding:5px 11px 0}
+#riskCard .fields{padding:0;display:grid;grid-template-columns:1fr;gap:3px}
+#riskCard .fields label{display:grid;grid-template-columns:minmax(0,1fr) 92px;align-items:center;gap:4px;font-size:10px;height:22px}
+#riskCard .fields label:nth-child(n+3){display:none}
+#riskCard .fields input{height:22px;padding:2px 5px}
+#riskCard.advanced{height:auto}
+#riskCard.advanced .fields label:nth-child(n+3){display:grid}
+#riskCard .metrics{padding:0!important;display:grid;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:4px}
+#riskCard .metric{padding:2px 5px;min-height:29px}
+#riskCard .metric span{font-size:9px}
+#riskCard .metric b{font-size:10px}
+.risk-footer{display:flex;align-items:center;gap:5px;padding:4px 11px 0}
+.risk-edit-btn{font-size:10px;white-space:nowrap;padding:3px 6px}
+#riskCard .banner{margin:0;flex:1;padding:3px 5px;min-height:19px;font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#orderCard{height:201px;flex:1}
+#orderCard>.bar{height:33px;min-height:33px;padding:5px 10px}
+#orderCard .bar h2{font-size:13px}
+#orderCard .tabs{padding:4px 10px 0}
+#orderCard .tabs .btn{padding:5px;font-size:11px}
+#orderCard .side-actions{padding:5px 10px 0!important}
+#orderCard .side-actions .btn{padding:4px}
+.order-position-line,.order-sl-tp{display:flex;align-items:center;justify-content:space-between;padding:5px 12px 0;gap:8px;font-size:11px}
+.order-position-line b,.order-sl-tp b{margin-left:8px;color:#e9f1ff;font-variant-numeric:tabular-nums}
+.order-sl-tp{color:#55dfac}
+#orderCard .banner{margin:6px 11px 5px;padding:5px 7px;font-size:9px;line-height:1.2;max-height:30px;overflow:hidden}
+#orderCard .actions:last-child{padding:0 10px 5px}
+#orderCard .actions:last-child button{padding:7px}
+.bottom{margin-top:10px;height:124px}
+.bottom>.bar{height:40px;min-height:40px}
+.bottom .table-scroll{height:82px}
+.position-table th,.position-table td{padding:7px 11px}
+.position-warning{padding:2px 12px;color:#ffca77;font-size:10px}
+.foot{margin-top:7px;padding:6px 7px}
+@media(max-width:1300px){.layout{grid-template-columns:minmax(0,1fr) minmax(440px,.85fr)}.top h1{font-size:16px}.chart-toolbar{flex-wrap:wrap}.chart-card{height:660px}.chart-wrap,.chart-wrap canvas{height:535px;min-height:535px}}
+@media(max-width:1050px){.layout{grid-template-columns:1fr}.right{height:auto}.right .card,#aiCard,#riskCard,#orderCard{height:auto;flex:auto}.analysis-columns{min-height:115px}.bottom{height:auto}.top{flex-wrap:wrap;height:auto;padding:8px 4px}.top h1{flex-basis:100%}}
+@media(max-width:650px){.app{grid-template-columns:49px minmax(0,1fr)}.nav{padding:6px 2px}.nav button{min-height:40px}.chart-wrap{margin-left:35px}.drawing-tools{width:34px;left:-35px}.drawing-tools span{width:32px;font-size:17px}.chart-wrap,.chart-wrap canvas{height:395px;min-height:395px}.chart-card{height:520px;min-height:520px}.chart-toolbar #timeframes{overflow:auto}.analysis-columns{grid-template-columns:1fr}.confidence-box{display:none}.signal-metrics{display:none}.chart-footerline{font-size:9px;gap:7px;overflow:auto}.right{gap:8px}.clock-status{display:none}}
 </style></head>
 <body><div class="app" id="app">
 <nav class="nav" aria-label="Навігація">
@@ -58,29 +150,29 @@ body{background:radial-gradient(ellipse at 52% -15%,#192e60 0%,#09162e 47%,#0710
 <div class="workspace"><header class="top">
 <h1>AI TRADING ASSISTANT <small>— Персональний помічник трейдера</small></h1>
 <div class="mode"><button id="demoMode" class="active" type="button">Навчання (Demo)</button><button id="realMode" type="button">Торгівля (Real)</button></div>
-<div id="exchangeStatus" class="status warn"><span class="dot"></span><b>Bybit: API не підключено</b></div>
+<div class="status clock-status" id="clockStatus" aria-label="Поточний час">--:--</div><div id="exchangeStatus" class="status warn"><span class="dot"></span><b>Bybit: API не підключено</b></div>
 </header>
 <div class="layout">
 <section class="card chart-card" id="chartCard"><div class="bar"><h2>₿ BTCUSDT</h2><span id="quote" class="last">—</span><span id="quoteMeta" class="detail">Очікування даних</span><button class="btn ghost" id="maximizeChart" title="Розгорнути графік">⛶</button></div>
-<div class="chart-toolbar"><div id="timeframes"><button class="btn" data-tf="15">15хв</button><button class="btn" data-tf="60">1год</button><button class="btn" data-tf="240">4год</button><button class="btn active" data-tf="D">1Д</button><button class="btn" data-tf="W">1Тиж</button></div><span class="grow"></span><span class="tag">EMA 50 · EMA 200 · RSI · MACD</span></div>
-<div class="chart-wrap"><canvas id="chart" aria-label="Графік BTCUSDT, свічки, EMA, RSI, MACD та рівні плану"></canvas><div id="chartNote" class="chart-note">Завантаження свічок Bybit…</div></div>
-<div class="banner" id="chartHint">Перетягніть кольорові лінії TP, входу та SL на графіку, щоб змінити торговий план. Підтвердження ордерів відбувається окремо.</div>
+<div class="chart-toolbar"><span class="draw-cross" title="Робочі інструменти графіка">＋</span><div id="timeframes"><button class="btn" data-tf="1">1хв</button><button class="btn" data-tf="5">5хв</button><button class="btn" data-tf="15">15хв</button><button class="btn" data-tf="60">1год</button><button class="btn" data-tf="240">4год</button><button class="btn active" data-tf="D">1Д</button><button class="btn" data-tf="W">1Тиж</button></div><span class="grow"></span><span class="tag indicators-label">⌁ &nbsp; Індикатори &nbsp; │ &nbsp; EMA · RSI · MACD</span></div>
+<div class="chart-wrap"><div class="drawing-tools" aria-label="Інструменти графіка"><span title="Хрестик">＋</span><span title="Лінія тренду">╱</span><span title="Горизонтальні рівні">☷</span><span title="Текст">T</span><span title="Малювання">⌁</span><span title="Масштаб">⊕</span><span title="Повернутися">⌂</span></div><canvas id="chart" aria-label="Графік BTCUSDT, свічки, EMA, RSI, MACD та рівні плану"></canvas><div id="chartNote" class="chart-note">Завантаження свічок Bybit…</div></div>
+<div class="chart-footerline" id="chartHint"><span class="legend-ema blue-line">EMA 50</span><span class="legend-ema gold-line">EMA 200</span><span class="legend-ema green-line">TP</span><span class="legend-ema neutral-line">Вхід</span><span class="legend-ema red-line">SL</span><span class="drag-hint">↕ Перетягуйте рівні на графіку</span></div>
 </section>
 <div class="right" id="rightPanel">
 <section class="card" id="aiCard"><div class="bar"><h2>✧ AI Помічник трейдера</h2><button id="foldAI" class="btn ghost" title="Згорнути панель">−</button></div><div class="foldable"><div class="tabs" id="analysisTabs"><button class="btn active" data-tab="plan">Аналіз угоди</button><button class="btn" data-tab="signal">Деталі</button><button class="btn" data-tab="risk">Ризики</button><button class="btn" data-tab="context">Контекст</button></div>
-<div class="panel-body"><div class="signal" id="scenario">Очікуємо ринкові дані</div><div id="analysisFacts" class="fact">Після завантаження свічок покажемо об'єктивні технічні умови.</div><div id="explanation" class="explain">Це алгоритмічний технічний огляд, а не підтверджений AI-прогноз або рекомендація відкрити позицію.</div></div></div></section>
-<section class="card" id="riskCard"><div class="bar"><h2>▣ Розрахунок позиції · ризик</h2><button class="btn ghost" id="foldRisk" title="Приховати калькулятор">−</button></div><div id="riskContent"><div class="fields">
+<div class="panel-body"><div class="signal-line"><div class="signal" id="scenario">Очікуємо ринкові дані</div><div class="confidence-box">Оцінка сигналу<strong>—</strong></div></div><div class="analysis-columns"><div id="analysisFacts" class="fact">Після завантаження свічок покажемо об'єктивні технічні умови.</div><div class="signal-metrics"><div class="breakdown-title">Оцінка сигналу (деталі)</div><span>Узгодженість трендів <b>—</b></span><span>Реакція на обсяг <b>—</b></span><span>Технічні індикатори <b>—</b></span><span>Новинний фон <b>Н/Д</b></span></div></div><div id="explanation" class="explain">Це алгоритмічний технічний огляд, а не підтверджений AI-прогноз або рекомендація відкрити позицію.</div></div></div></section>
+<section class="card" id="riskCard"><div class="bar"><h2>▣ Розрахунок позиції · ризик</h2><button class="btn ghost" id="foldRisk" title="Приховати калькулятор">−</button></div><div id="riskContent"><div class="risk-grid-compact"><div class="fields">
 <label>Баланс, USDT (ввести вручну)<input id="balance" type="number" min="0" step="any" placeholder="Ваш баланс"></label>
 <label>Ризик на угоду, %<input id="riskPct" type="number" min="0.01" max="100" step="any" value="1"></label>
 <label>Ціна входу, USDT<input id="entry" type="number" min="0.0001" step="any" placeholder="Вхід"></label>
 <label>Stop Loss, USDT<input id="stop" type="number" min="0.0001" step="any" placeholder="SL"></label>
 <label>Take Profit, USDT<input id="target" type="number" min="0.0001" step="any" placeholder="TP"></label>
 <label>Комісія за сторону, % (оцінка)<input id="fee" type="number" min="0" step="any" value=".06"></label>
-</div><div class="metrics" style="padding:0 12px 10px"><div class="metric"><span>Кількість BTC</span><b id="quantity">—</b></div><div class="metric"><span>Номінал позиції</span><b id="notional">—</b></div><div class="metric"><span>Ризик за стопом</span><b id="loss">—</b></div><div class="metric"><span>Net R:R</span><b id="rr">—</b></div></div><div class="banner" id="riskMessage">Введіть баланс та рівні, щоб розрахувати ризик.</div></div></section>
-<section class="card" id="orderCard"><div class="bar"><h2>➤ Виконати угоду · Bybit</h2><button id="foldOrder" class="btn ghost" title="Згорнути панель">−</button></div><div id="orderContent"><div class="tabs" id="orderTypes"><button class="btn active" data-type="Limit">Limit</button><button class="btn" data-type="Market">Market</button><button class="btn" data-type="Trigger">Trigger</button></div><div class="actions" style="padding-top:10px"><button id="longButton" class="btn green">Лонг</button><button id="shortButton" class="btn">Шорт</button></div><div class="banner" id="executionStatus">Демо- й реальні ордери недоступні, поки не налаштовано захищене API-підключення. Публічні ринкові дані працюють окремо.</div><div class="actions"><button id="executeButton" class="btn green" disabled>Відкрити позицію · підключення потрібне</button></div></div></section>
+</div><div class="metrics" style="padding:0 12px 10px"><div class="metric"><span>Кількість BTC</span><b id="quantity">—</b></div><div class="metric"><span>Номінал позиції</span><b id="notional">—</b></div><div class="metric"><span>Ризик за стопом</span><b id="loss">—</b></div><div class="metric"><span>Net R:R</span><b id="rr">—</b></div></div></div><div class="risk-footer"><button class="btn risk-edit-btn" id="riskAdvancedButton" type="button">⚙ Рівні та комісії</button><div class="banner" id="riskMessage">Введіть баланс та рівні, щоб розрахувати ризик.</div></div></div></section>
+<section class="card" id="orderCard"><div class="bar"><h2>➤ Виконати угоду · Bybit</h2><button id="foldOrder" class="btn ghost" title="Згорнути панель">−</button></div><div id="orderContent"><div class="tabs order-tabs" id="orderTypes"><button class="btn active" data-type="Limit">Limit</button><button class="btn" data-type="Market">Market</button><button class="btn" data-type="Trigger">Trigger</button></div><div class="actions side-actions" style="padding-top:10px"><button id="longButton" class="btn green">Лонг</button><button id="shortButton" class="btn">Шорт</button></div><div class="order-position-line"><span>Ціна <b id="orderEntry">—</b></span><span>Кількість <b id="orderQuantity">—</b></span></div><div class="order-sl-tp"><span>☑ Stop Loss <b id="orderSL">—</b></span><span>☑ Take Profit <b id="orderTP">—</b></span></div><div class="banner" id="executionStatus">Демо- й реальні ордери недоступні, поки не налаштовано захищене API-підключення. Публічні ринкові дані працюють окремо.</div><div class="actions"><button id="executeButton" class="btn green" disabled>Відкрити позицію · підключення потрібне</button></div></div></section>
 </div>
 </div>
-<section class="card bottom" id="positions"><div class="bar"><button class="btn active" data-bottom="positions">Відкриті позиції</button><button class="btn" data-bottom="orders">Поточні ордери</button><button class="btn" data-bottom="journal">Журнал</button><button class="btn" data-bottom="settings">Налаштування</button><span class="grow"></span><button class="btn ghost" id="hideBottom">−</button></div><div id="bottomContent" class="table-scroll"><div class="notice">Немає підтверджених даних про відкриті позиції. Рахунок Bybit не підключено.</div></div></section>
+<section class="card bottom" id="positions"><div class="bar"><button class="btn active" data-bottom="positions">Відкриті позиції</button><button class="btn" data-bottom="orders">Поточні ордери</button><button class="btn" data-bottom="journal">Журнал</button><button class="btn" data-bottom="settings">Налаштування</button><span class="grow"></span><button class="btn ghost" id="hideBottom">−</button></div><div id="bottomContent" class="table-scroll"><table class="position-table"><thead><tr><th>Пара</th><th>Напрямок</th><th>Обсяг</th><th>Вхід</th><th>SL</th><th>TP</th><th>P&L (USDT)</th><th>P&L (%)</th><th>Дії</th></tr></thead><tbody><tr class="empty-position"><td>BTCUSDT</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td><button class="btn" disabled>Закрити 25%</button> <button class="btn" disabled>Закрити 50%</button> <button class="btn" disabled>SL → BE</button></td></tr></tbody></table><div class="position-warning">Рахунок Bybit не підключений · Реальні позиції не завантажені</div></div></section>
 <footer class="foot"><span id="footerMarket"><span class="dot"></span> Ринкові дані: очікування</span><span id="footerMode">Режим: Навчання (Demo), ордери недоступні</span><span><strong>Не є фінансовою рекомендацією.</strong> Дані рахунку не вигадуються.</span></footer>
 </div></div>
 <script>
@@ -91,6 +183,8 @@ const money=n=>Number.isFinite(n)?n.toLocaleString('uk-UA',{minimumFractionDigit
 const num=id=>Number($(id).value);
 const setText=(id,txt)=>$(id).textContent=txt;
 const value=id=>$(id).value;
+function updateClock(){setText('clockStatus',new Date().toLocaleTimeString('uk-UA',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/Ljubljana'})+' CET')}updateClock();setInterval(updateClock,30000);
+$('riskAdvancedButton').onclick=()=>{$('riskCard').classList.toggle('advanced');$('riskAdvancedButton').textContent=$('riskCard').classList.contains('advanced')?'⚙ Згорнути рівні':'⚙ Рівні та комісії'};
 function saveLayout(){try{localStorage.setItem('ata-layout',JSON.stringify({mode:state.mode,sidebar:state.sidebar}))}catch{}}
 try{const old=JSON.parse(localStorage.getItem('ata-layout')||'{}');if(old.mode==='real')state.mode='real';if(old.sidebar)state.sidebar=true}catch{}
 function applyMode(){const demo=state.mode==='demo';$('demoMode').classList.toggle('active',demo);$('realMode').classList.toggle('active',!demo);setText('footerMode','Режим: '+(demo?'Навчання (Bybit Demo)':'Торгівля (Bybit Real)')+' · торгівля через API поки вимкнена');setText('executionStatus',demo?'Bybit Demo API ще не налаштований. Це не тестове виконання ордерів: кнопка заблокована до безпечного підключення.':'Bybit Real API не налаштований. Реальні ордери заблоковано до окремого підтвердження і підключення.');saveLayout()}
@@ -112,7 +206,7 @@ function ema(arr,period){const out=[];let prev=null;const alpha=2/(period+1);for
 function rsi(close,period=14){const out=new Array(close.length).fill(null);if(close.length<=period)return out;let gain=0,loss=0;for(let i=1;i<=period;i++){const d=close[i]-close[i-1];gain+=Math.max(0,d);loss+=Math.max(0,-d)}gain/=period;loss/=period;for(let i=period;i<close.length;i++){if(i>period){const d=close[i]-close[i-1];gain=(gain*(period-1)+Math.max(0,d))/period;loss=(loss*(period-1)+Math.max(0,-d))/period}out[i]=loss===0?100:100-100/(1+gain/loss)}return out}
 function prepareAnalysis(){const cs=state.candles;if(cs.length<30)return;const close=cs.map(c=>c.c),e50=ema(close,50),e200=ema(close,200),e12=ema(close,12),e26=ema(close,26),macd=e12.map((v,i)=>v-e26[i]),signal=ema(macd,9),rs=rsi(close),last=close.length-1;state.analysis={price:close[last],above50:close[last]>e50[last],above200:close[last]>e200[last],rsi:rs[last],macd:macd[last],macdSignal:signal[last],e50,e200,macdLine:macd,signalLine:signal,rsiLine:rs};analysisView()}
 function analysisView(){const a=state.analysis;if(!a){setText('scenario','Ринок: дані недоступні');setText('analysisFacts','Немає підтверджених свічок, аналіз неможливий.');return}const up=a.above50&&a.above200,down=!a.above50&&!a.above200;setText('scenario',up?'↗ Ціна вище обох EMA':down?'↘ Ціна нижче обох EMA':'↔ Змішаний технічний контекст');const facts=$('analysisFacts');facts.textContent='';const rows=state.tab==='plan'?['Ціна щодо EMA50: '+(a.above50?'вище':'нижче'),'Ціна щодо EMA200: '+(a.above200?'вище':'нижче'),'RSI(14): '+(Number.isFinite(a.rsi)?a.rsi.toFixed(1):'—'),'MACD щодо сигналу: '+(a.macd>a.macdSignal?'вище':'нижче')]:state.tab==='signal'?['EMA50: '+money(a.e50.at(-1)),'EMA200: '+money(a.e200.at(-1)),'RSI(14): '+(a.rsi?.toFixed(1)||'—'),'MACD: '+a.macd.toFixed(2),'Оцінка ймовірності: не розрахована']:state.tab==='risk'?['Ліміт збитку залежить від вашого введеного балансу','План не може усунути прослизання й ліквідаційний ризик','Перевірте комісії, маржу, розмір і SL']:['Дані: публічні свічки Bybit','Таймфрейм: '+state.tf,'Індикатори: розраховані локально','AI-прогноз і новинний фон: не підключені'];for(const row of rows){const p=document.createElement('div');p.className='fact';p.textContent='✓ '+row;facts.appendChild(p)}setText('explanation',state.mode==='demo'?'Навчання: індикатори описують минулий рух, але не гарантують майбутню ціну. Побудуйте SL і TP, перевірте R:R та відстань до стопа.':'Торгівля: стислий огляд індикаторів без заяв про «впевненість AI». Перед угодою перевірте SL, розмір позиції та ризик.')}
-function calculate(){const b=num('balance'),risk=num('riskPct'),entry=num('entry'),stop=num('stop'),target=num('target'),fee=num('fee')/100;const ok=Number.isFinite(b)&&b>0&&risk>0&&risk<=100&&entry>0&&stop>0&&target>0&&fee>=0&&(state.dir==='long'?stop<entry&&target>entry:stop>entry&&target<entry);if(!ok){['quantity','notional','loss','rr'].forEach(x=>setText(x,'—'));setText('riskMessage','Вкажіть баланс і коректні рівні: для Long SL нижче входу та TP вище, для Short навпаки.');$('riskMessage').className='banner error';draw();return}const perLoss=Math.abs(entry-stop)+(entry+stop)*fee;const qty=Math.floor((b*risk/100/perLoss)*10000)/10000;const loss=qty*perLoss;const profit=qty*(Math.abs(target-entry)-(entry+target)*fee);setText('quantity',qty.toFixed(4)+' BTC');setText('notional',money(qty*entry)+' USDT');setText('loss',money(loss)+' USDT');setText('rr',loss>0?'1 : '+(profit/loss).toFixed(2):'—');const good=qty>0&&profit>0&&profit/loss>=1.5&&risk<=2;$('riskMessage').className='banner '+(good?'ok':'error');setText('riskMessage',qty<=0?'Баланс або ризик недостатній для кроку 0.0001 BTC.':profit<=0?'Після комісій ціль не дає додатного результату.':profit/loss<1.5?'R:R нижче орієнтира 1:1.5 — перегляньте план.':risk>2?'Ризик понад 2% балансу — підвищена небезпека.':'✓ Формальні параметри розрахунку перевірено. Це не рекомендація відкривати угоду.');draw()}
+function calculate(){const b=num('balance'),risk=num('riskPct'),entry=num('entry'),stop=num('stop'),target=num('target'),fee=num('fee')/100;const ok=Number.isFinite(b)&&b>0&&risk>0&&risk<=100&&entry>0&&stop>0&&target>0&&fee>=0&&(state.dir==='long'?stop<entry&&target>entry:stop>entry&&target<entry);if(!ok){['quantity','notional','loss','rr','orderEntry','orderQuantity','orderSL','orderTP'].forEach(x=>setText(x,'—'));setText('riskMessage','Вкажіть баланс і коректні рівні: для Long SL нижче входу та TP вище, для Short навпаки.');$('riskMessage').className='banner error';draw();return}const perLoss=Math.abs(entry-stop)+(entry+stop)*fee;const qty=Math.floor((b*risk/100/perLoss)*10000)/10000;const loss=qty*perLoss;const profit=qty*(Math.abs(target-entry)-(entry+target)*fee);setText('quantity',qty.toFixed(4)+' BTC');setText('notional',money(qty*entry)+' USDT');setText('loss',money(loss)+' USDT');setText('rr',loss>0?'1 : '+(profit/loss).toFixed(2):'—');setText('orderEntry',money(entry));setText('orderQuantity',qty.toFixed(4)+' BTC');setText('orderSL',money(stop));setText('orderTP',money(target));const good=qty>0&&profit>0&&profit/loss>=1.5&&risk<=2;$('riskMessage').className='banner '+(good?'ok':'error');setText('riskMessage',qty<=0?'Баланс або ризик недостатній для кроку 0.0001 BTC.':profit<=0?'Після комісій ціль не дає додатного результату.':profit/loss<1.5?'R:R нижче орієнтира 1:1.5 — перегляньте план.':risk>2?'Ризик понад 2% балансу — підвищена небезпека.':'✓ Формальні параметри розрахунку перевірено. Це не рекомендація відкривати угоду.');draw()}
 ['balance','riskPct','entry','stop','target','fee'].forEach(id=>$(id).addEventListener('input',()=>{if(['entry','stop','target'].includes(id))state.levels[id]=num(id)||null;calculate()}));
 async function loadCandles(){state.marketOk=false;setText('chartNote','Завантаження публічних котирувань Bybit…');try{const res=await fetch('/api/market-data?symbol=BTCUSDT&interval='+encodeURIComponent(state.tf),{cache:'no-store'});if(!res.ok)throw Error('HTTP '+res.status);const data=await res.json();if(!data.candles?.length)throw Error(data.error||'Порожня відповідь');state.candles=data.candles;state.marketOk=true;const last=state.candles.at(-1);setText('quote',money(last.c));setText('quoteMeta','USDT · '+new Date(data.updatedAt).toLocaleTimeString('uk-UA'));setText('chartNote','Bybit · linear · публічні свічки, без підключення рахунку');setText('footerMarket','● Ринкові дані Bybit · '+new Date(data.updatedAt).toLocaleTimeString('uk-UA'));$('footerMarket').style.color='#38da9e';if(!state.levels.entry){state.levels.entry=last.c;$('entry').value=last.c.toFixed(2)}prepareAnalysis();calculate();draw()}catch(e){state.candles=[];state.analysis=null;setText('chartNote','Ринкові дані недоступні — немає котирувань');setText('quote','—');setText('footerMarket','● Bybit Market API: помилка даних');setText('explanation','Неможливо підтвердити актуальну ціну. Перевірте мережу або доступність API.');draw()}}
 let dragInfo=null;
