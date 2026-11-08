@@ -35,6 +35,7 @@ jobs:
           demo = """
           <script>
           (() => {
+            window.__ATA_VISUAL_PREVIEW__ = true;
             const originalFetch = window.fetch.bind(window);
             window.fetch = async (input, init) => {
               if (String(input).startsWith('/api/market-data')) {
@@ -60,7 +61,7 @@ jobs:
           text=text.replace('Публічні ринкові дані працюють окремо.','Графік змодельований для перегляду дизайну.')
           text=text.replace('Дані: публічні свічки Bybit','Дані: змодельований приклад для перегляду')
           text=text.replace('Джерело графіка: публічні свічки Bybit · категорія linear.','Джерело графіка: змодельовані дані в GitHub Pages Preview.')
-          text=text.replace('</header>','<div style="width:100%;color:#ffd18c;font-size:11px;padding:0 3px 6px">ВІЗУАЛЬНИЙ ПЕРЕГЛЯД · Синтетичні свічки · Без зв’язку з рахунком Bybit · Ордери вимкнені</div></header>',1)
+          text=text.replace('</footer>','<span style="color:#ffd18c;font-size:10px">PREVIEW · Синтетичні свічки · Без зв’язку з рахунком Bybit · Ордери вимкнені</span></footer>',1)
           p.write_text(text)
           PY
       - uses: actions/upload-artifact@v4
