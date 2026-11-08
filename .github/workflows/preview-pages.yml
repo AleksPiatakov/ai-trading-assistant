@@ -1,0 +1,69 @@
+name: Publish visual preview (GitHub Pages)
+on:
+  push:
+    branches: [redesign-approved-trading-ui]
+    paths:
+      - public/dashboard.html
+      - .github/workflows/preview-pages.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: trading-assistant-pages
+  cancel-in-progress: true
+jobs:
+  preview:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare standalone visual preview
+        run: |
+          mkdir -p _site
+          cp public/dashboard.html _site/index.html
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('_site/index.html')
+          text=p.read_text()
+          # In a static visual preview, load clearly labeled sample candles.
+          demo = """
+          <script>
+          (() => {
+            const originalFetch = window.fetch.bind(window);
+            window.fetch = async (input, init) => {
+              if (String(input).startsWith('/api/market-data')) {
+                const candles = Array.from({length:180}, (_, i) => {
+                  const t=Date.UTC(2026,0,1)+i*86400000;
+                  const baseline=83000+i*120+Math.sin(i*.16)*2400+Math.cos(i*.39)*850;
+                  const open=baseline + Math.sin(i*2.3)*500;
+                  const close=baseline + Math.cos(i*1.7)*600;
+                  return {t,o:open,h:Math.max(open,close)+500,l:Math.min(open,close)-480,c:close,v:100+i*4};
+                });
+                return new Response(JSON.stringify({candles,updatedAt:Date.now(),source:'STATIC_VISUAL_PREVIEW'}),{status:200,headers:{'content-type':'application/json'}});
+              }
+              return originalFetch(input, init);
+            };
+          })();
+          </script>
+          """
+          text=text.replace('<script>\n(function(){',demo+'<script>\n(function(){',1)
+          text=text.replace('Bybit · linear · публічні свічки, без підключення рахунку','ВІЗУАЛЬНИЙ ПЕРЕГЛЯД · змодельований графік, не котирування')
+          text=text.replace('Ринкові дані Bybit · ','ДЕМО-ДАНІ ДЛЯ ПЕРЕГЛЯДУ · ')
+          text=text.replace('Ринкові дані: очікування','ДЕМО-ПЕРЕГЛЯД · не реальні дані')
+          text=text.replace('Bybit: API не підключено','Bybit: не підключено · PREVIEW')
+          text=text.replace('Публічні ринкові дані працюють окремо.','Графік змодельований для перегляду дизайну.')
+          text=text.replace('Дані: публічні свічки Bybit','Дані: змодельований приклад для перегляду')
+          text=text.replace('Джерело графіка: публічні свічки Bybit · категорія linear.','Джерело графіка: змодельовані дані в GitHub Pages Preview.')
+          text=text.replace('</header>','<div style="width:100%;color:#ffd18c;font-size:11px;padding:0 3px 6px">ВІЗУАЛЬНИЙ ПЕРЕГЛЯД · Синтетичні свічки · Без зв’язку з рахунком Bybit · Ордери вимкнені</div></header>',1)
+          p.write_text(text)
+          PY
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: deployment
+        uses: actions/deploy-pages@v4
