@@ -81,3 +81,22 @@ User-provided educational PDFs are **not imported automatically**, and no genera
 The assistant now compares **Long** and **Short** for the selected Bybit USDT Perpetual instrument once all 12 interval requests complete. This is a transparent, conservative, rules-based **trade-plan candidate**, not a trained prediction or statistically calibrated "best trade". Qualification checks 15m, 1h, 4h and 1D directions, hourly RSI and MACD confirmation, volatility (ATR), distance of current market price from the hourly price, observed 20-candle support/resistance, risk no greater than 5% price distance, and estimated net reward/risk >= 1.5. If commission data is absent, the displayed ratio is explicitly **gross**. Opposing or incomplete signals produce **«Утриматися»**, and the copy-to-plan action remains disabled. A plan older than four minutes is rejected. Existing chart levels are changed **only when the user explicitly selects «Перенести в план угоди»**; even then the exchange order button stays disabled, and live trading is not connected.
 
 This candidate selection is heuristic and may be unable to find a viable setup in many market states. It is not an endorsement of a particular asset, an investment recommendation, a guarantee of returns, or a substitute for market-data validation, fee/tick-size checking, and user review.
+
+## Background multi-market scanner (local Mac)
+
+Start the local bridge normally:
+```sh
+cd ~/Desktop/ai-trading-assistant
+git pull origin redesign-approved-trading-ui
+node scripts/local-demo-server.mjs
+```
+
+The same Node process now starts a **read-only local market scanner**, even when the dashboard browser tab is closed. It scans up to **10 predefined, active Bybit USDT-perpetual symbols** (`BTCUSDT, ETHUSDT, SOLUSDT, XRPUSDT, BNBUSDT, DOGEUSDT, ADAUSDT, LINKUSDT, AVAXUSDT, DOTUSDT`) approximately every **5 minutes**. To conserve public API requests, the initial scanner analyzes `15m, 1h, 4h, 1D` for each market rather than all 12 chart intervals for every market; the selected chart's independent assistant still covers its 12 supported intervals. It checks EMA 20/50/200 trend, RSI(14), MACD histogram, ATR(14), prior 20-candle high/low candidates, risk and gross R:R >= 1.5, with a refusal to invent setup candidates. This is a **heuristic pre-filter**, *not* backtested predictive accuracy; candidates may frequently be zero and commission/spread/slippage/liquidity are not yet verified. No API credentials or order endpoints are involved.
+
+- Dashboard: select **Торгові можливості** in the assistant or **Ринки** in sidebar to open the separate scanner dialog; filter Long/Short; click **На графік** explicitly to copy a current scanner plan to chart entry/SL/TP. The exchange execution action remains disabled.
+- Loopback-only status endpoint: `http://127.0.0.1:4177/api/scanner/opportunities`
+- Loopback-only history endpoint: `http://127.0.0.1:4177/api/scanner/history`
+- History of newly observed candidates (up to 100 records) is written locally to `~/Library/Application Support/AI Trading Assistant/scanner-history.json`, not committed to GitHub. The UI separates **Актуальні** from **Історія сигналів**; archived results are not executable recommendations. Local history is not a performance backtest.
+- A candidate count is refreshed in the visible browser UI roughly once per minute, or every 20 seconds while the scanner dialog is open. No OS push notifications are sent when the browser is closed.
+- **Background scope:** the scanner runs only while the Node server is running and the Mac is awake. It does **not** currently auto-start on Mac login, continue during system sleep, or run 24/7 on a cloud server.
+- Demo and Real share public market analysis, but real-account API connectivity and order execution are still **disabled**; do not copy API keys into source control.
