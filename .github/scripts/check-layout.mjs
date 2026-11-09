@@ -13,6 +13,20 @@ for(const [w,h] of [[1525,900],[1525,740],[1280,740],[980,800]]){
   const selectors=['#chartCard','#aiCard','#riskCard','#orderCard','#positions','#executeButton'];
   return Object.fromEntries(selectors.map(s=>{const el=document.querySelector(s);const r=el.getBoundingClientRect();return [s,{top:r.top,bottom:r.bottom,left:r.left,right:r.right,width:r.width,height:r.height,scrollHeight:el.scrollHeight,clientHeight:el.clientHeight}]}));
  });
+ const navIds=['homeNav','marketsNav','analysisNav','journalNav','riskNav','learnNav','settingsNav'];
+ for(const selectedId of navIds){
+  await page.locator('#'+selectedId).click();
+  const selected=await page.evaluate(()=>Array.from(document.querySelectorAll('.nav-reference .nav-action.active')).map(e=>e.id));
+  const current=await page.locator('#'+selectedId).getAttribute('aria-current');
+  if(selected.length!==1||selected[0]!==selectedId||current!=='page'){
+   errors.push('Sidebar selected state incorrect for '+selectedId+': '+selected.join(','));
+  }
+ }
+ await page.locator('#sidebarToggle').click();
+ if(!await page.locator('#app').evaluate(el=>el.classList.contains('expanded')))errors.push('Sidebar did not expand');
+ if(!await page.locator('#settingsNav').evaluate(el=>el.classList.contains('active')))errors.push('Collapse selection changed active destination');
+ await page.locator('#sidebarToggle').click();
+ await page.locator('#homeNav').click();
  await page.screenshot({path:`layout-screenshots/${w}x${h}.png`,fullPage:true});
  const p=boxes['#positions'],o=boxes['#orderCard'],e=boxes['#executeButton'];
  const threshold=2;
