@@ -454,6 +454,18 @@ button:focus-visible,input:focus-visible{outline:2px solid #9d88ff;outline-offse
  #chartCard .drawing-tools span svg{height:20px;width:20px}
 }
 
+
+/* Chart UI cleanup: remove repeated legends and keep header numbers on one readable line. */
+#chartCard .chart-footerline{display:none}
+#chartCard>.bar .chart-quote-group{min-width:0;overflow:hidden}
+#chartCard>.bar .detail:empty{display:none}
+#chartCard>.bar .chart-delta{overflow:hidden;text-overflow:ellipsis;min-width:0}
+#chartCard .chart-note{font-size:10px;letter-spacing:.025em;color:#b9a97d}
+@media(max-width:1350px){
+ #chartCard>.bar .chart-delta{font-size:11px}
+ #chartCard>.bar .last{font-size:18px}
+ #chartCard>.bar .chart-quote-group{gap:5px}
+}
 </style></head>
 <body><div class="app" id="app">
 <nav class="nav nav-reference" aria-label="Навігація">
@@ -556,7 +568,48 @@ function prepareAnalysis(){const cs=state.candles;if(cs.length<30)return;const c
 function analysisView(){const a=state.analysis;if(!a){setText('scenario','Ринок: дані недоступні');setText('analysisFacts','Немає підтверджених свічок, аналіз неможливий.');return}const up=a.above50&&a.above200,down=!a.above50&&!a.above200;setText('scenario',up?'↗ Ціна вище обох EMA':down?'↘ Ціна нижче обох EMA':'↔ Змішаний технічний контекст');const facts=$('analysisFacts');facts.textContent='';const rows=state.tab==='plan'?['Ціна щодо EMA50: '+(a.above50?'вище':'нижче'),'Ціна щодо EMA200: '+(a.above200?'вище':'нижче'),'RSI(14): '+(Number.isFinite(a.rsi)?a.rsi.toFixed(1):'—'),'MACD щодо сигналу: '+(a.macd>a.macdSignal?'вище':'нижче')]:state.tab==='signal'?['EMA50: '+money(a.e50.at(-1)),'EMA200: '+money(a.e200.at(-1)),'RSI(14): '+(a.rsi?.toFixed(1)||'—'),'MACD: '+a.macd.toFixed(2),'Оцінка ймовірності: не розрахована']:state.tab==='risk'?['Ліміт збитку залежить від вашого введеного балансу','План не може усунути прослизання й ліквідаційний ризик','Перевірте комісії, маржу, розмір і SL']:['Дані: публічні свічки Bybit','Таймфрейм: '+state.tf,'Індикатори: розраховані локально','AI-прогноз і новинний фон: не підключені'];for(const row of rows){const p=document.createElement('div');p.className='fact';p.textContent='✓ '+row;facts.appendChild(p)}setText('explanation',state.mode==='demo'?'Навчання: індикатори описують минулий рух, але не гарантують майбутню ціну. Побудуйте SL і TP, перевірте R:R та відстань до стопа.':'Торгівля: стислий огляд індикаторів без заяв про «впевненість AI». Перед угодою перевірте SL, розмір позиції та ризик.')}
 function calculate(){const b=num('balance'),risk=num('riskPct'),entry=num('entry'),stop=num('stop'),target=num('target'),fee=num('fee')/100;const ok=Number.isFinite(b)&&b>0&&risk>0&&risk<=100&&entry>0&&stop>0&&target>0&&fee>=0&&(state.dir==='long'?stop<entry&&target>entry:stop>entry&&target<entry);if(!ok){['quantity','notional','loss','rr','orderEntry','orderQuantity','orderSL','orderTP'].forEach(x=>setText(x,'—'));setText('riskMessage','Вкажіть баланс і коректні рівні: для Long SL нижче входу та TP вище, для Short навпаки.');$('riskMessage').className='banner error';draw();return}const perLoss=Math.abs(entry-stop)+(entry+stop)*fee;const qty=Math.floor((b*risk/100/perLoss)*10000)/10000;const loss=qty*perLoss;const profit=qty*(Math.abs(target-entry)-(entry+target)*fee);setText('quantity',qty.toFixed(4)+' BTC');setText('notional',money(qty*entry)+' USDT');setText('loss',money(loss)+' USDT');setText('rr',loss>0?'1 : '+(profit/loss).toFixed(2):'—');setText('orderEntry',money(entry));setText('orderQuantity',qty.toFixed(4)+' BTC');setText('orderSL',money(stop));setText('orderTP',money(target));const good=qty>0&&profit>0&&profit/loss>=1.5&&risk<=2;$('riskMessage').className='banner '+(good?'ok':'error');setText('riskMessage',qty<=0?'Баланс або ризик недостатній для кроку 0.0001 BTC.':profit<=0?'Після комісій ціль не дає додатного результату.':profit/loss<1.5?'R:R нижче орієнтира 1:1.5 — перегляньте план.':risk>2?'Ризик понад 2% балансу — підвищена небезпека.':'✓ Формальні параметри розрахунку перевірено. Це не рекомендація відкривати угоду.');draw()}
 ['balance','riskPct','entry','stop','target','fee'].forEach(id=>$(id).addEventListener('input',()=>{if(['entry','stop','target'].includes(id))state.levels[id]=num(id)||null;calculate()}));
-async function loadCandles(){state.marketOk=false;setText('chartNote','Завантаження публічних котирувань Bybit…');try{const res=await fetch('/api/market-data?symbol=BTCUSDT&interval='+encodeURIComponent(state.tf),{cache:'no-store'});if(!res.ok)throw Error('HTTP '+res.status);const data=await res.json();if(!data.candles?.length)throw Error(data.error||'Порожня відповідь');state.candles=data.candles;state.marketOk=true;const last=state.candles.at(-1);setText('quote',money(last.c));const prevC=state.candles.length>1?state.candles.at(-2).c:last.o;const move=last.c-prevC;const movePct=prevC?move/prevC*100:0;setText('quoteDelta',(move>=0?'+':'−')+money(Math.abs(move))+' ('+(movePct>=0?'+':'')+movePct.toFixed(2)+'%)');$('quoteDelta').classList.toggle('negative',move<0);setText('quoteMeta',(window.__ATA_VISUAL_PREVIEW__?'USDT · ПРИКЛАД':'USDT · '+new Date(data.updatedAt).toLocaleTimeString('uk-UA')));setText('chartNote',window.__ATA_VISUAL_PREVIEW__?'СИНТЕТИЧНІ ДАНІ · ПРИКЛАД, НЕ КОТИРУВАННЯ':'Bybit · linear · публічні свічки, без підключення рахунку');setText('footerMarket',window.__ATA_VISUAL_PREVIEW__?'● ПЕРЕГЛЯД · синтетичні дані':'● Ринкові дані Bybit · '+new Date(data.updatedAt).toLocaleTimeString('uk-UA'));$('footerMarket').style.color='#38da9e';if(!state.levels.entry){state.levels.entry=last.c;$('entry').value=last.c.toFixed(2)}if(window.__ATA_VISUAL_PREVIEW__&&!state.previewDefaultsApplied){const entry=last.c,stop=entry-3800,target=entry+7200;$('balance').value='100000';$('riskPct').value='1';$('entry').value=entry.toFixed(2);$('stop').value=stop.toFixed(2);$('target').value=target.toFixed(2);state.levels={entry,stop,target};state.previewDefaultsApplied=true;}prepareAnalysis();calculate();draw()}catch(e){state.candles=[];state.analysis=null;setText('chartNote','Ринкові дані недоступні — немає котирувань');setText('quote','—');setText('footerMarket','● Bybit Market API: помилка даних');setText('explanation','Неможливо підтвердити актуальну ціну. Перевірте мережу або доступність API.');draw()}}
+let currentCandleRequest=0;
+const timeframeLabel=tf=>({'1':'1хв','5':'5хв','15':'15хв','30':'30хв','60':'1год','240':'4год',D:'1Д',W:'1Тиж'}[tf]||tf);
+async function loadCandles(){
+ const request=++currentCandleRequest,tf=state.tf;
+ state.marketOk=false;
+ setText('chartNote',window.__ATA_VISUAL_PREVIEW__?'ДЕМО · ЗМІНА ЧАСУ…':'Завантаження свічок…');
+ try{
+  const res=await fetch('/api/market-data?symbol=BTCUSDT&interval='+encodeURIComponent(tf),{cache:'no-store'});
+  if(!res.ok)throw Error('HTTP '+res.status);
+  const data=await res.json();
+  if(request!==currentCandleRequest)return;
+  if(!data.candles?.length)throw Error(data.error||'Порожня відповідь');
+  if(window.__ATA_VISUAL_PREVIEW__&&data.interval&&data.interval!==tf)throw Error('Не той таймфрейм');
+  state.candles=data.candles;state.marketOk=true;state.loadedTf=tf;
+  const last=state.candles.at(-1);
+  setText('quote',money(last.c));
+  const prevC=state.candles.length>1?state.candles.at(-2).c:last.o;
+  const move=last.c-prevC,movePct=prevC?move/prevC*100:0;
+  setText('quoteDelta',(move>=0?'+':'−')+money(Math.abs(move))+' ('+(movePct>=0?'+':'')+movePct.toFixed(2)+'%)');
+  $('quoteDelta').classList.toggle('negative',move<0);
+  setText('quoteMeta',window.__ATA_VISUAL_PREVIEW__?'':'USDT · '+new Date(data.updatedAt).toLocaleTimeString('uk-UA'));
+  setText('chartNote',window.__ATA_VISUAL_PREVIEW__?'ДЕМО · НЕ КОТИРУВАННЯ':'Публічні свічки Bybit');
+  setText('footerMarket',window.__ATA_VISUAL_PREVIEW__?'● ДЕМО · синтетичні дані':'● Ринкові дані Bybit · '+new Date(data.updatedAt).toLocaleTimeString('uk-UA'));
+  $('footerMarket').style.color='#38da9e';
+  if(!state.levels.entry){state.levels.entry=last.c;$('entry').value=last.c.toFixed(2)}
+  if(window.__ATA_VISUAL_PREVIEW__&&!state.previewDefaultsApplied){
+   const entry=last.c,stop=entry-3800,target=entry+7200;
+   $('balance').value='100000';$('riskPct').value='1';
+   $('entry').value=entry.toFixed(2);$('stop').value=stop.toFixed(2);$('target').value=target.toFixed(2);
+   state.levels={entry,stop,target};state.previewDefaultsApplied=true;
+  }
+  prepareAnalysis();calculate();draw();
+ }catch(e){
+  if(request!==currentCandleRequest)return;
+  state.candles=[];state.analysis=null;state.marketOk=false;
+  setText('chartNote','Дані графіка недоступні');
+  setText('quote','—');setText('quoteDelta','—');
+  setText('footerMarket','● Помилка завантаження свічок');
+  setText('explanation','Неможливо завантажити дані для '+timeframeLabel(tf)+'. Спробуйте інший таймфрейм.');
+  draw();
+ }
+}
 $('chartFullscreenButton').onclick=()=>$('maximizeChart').click();
 $('indicatorsButton').onclick=()=>{const a=state.analysis;const msg=a?'EMA 50: '+money(a.e50.at(-1))+' | EMA 200: '+money(a.e200.at(-1))+' | RSI: '+(a.rsi?.toFixed(1)||'—'):'Індикатори недоступні без ринкових даних';$('chartDragTip').textContent=msg;$('chartDragTip').classList.toggle('hidden');};
 $('chartInfoButton').onclick=()=>{$('chartDragTip').textContent=window.__ATA_VISUAL_PREVIEW__?'Демонстраційні свічки. Немає підключення до рахунку Bybit.':'Публічні свічки Bybit. Позиції та ордери не підключені.';$('chartDragTip').classList.toggle('hidden');};
@@ -617,12 +670,16 @@ for(const [field,label,color] of [['target','TP','#29e49c'],['entry','Вхід',
  const v=num(field);if(!(v>0))continue;const yy=y(v);
  if(yy<p.t-3||yy>priceEnd+3)continue;
  ctx.save();ctx.strokeStyle=color;ctx.setLineDash([6,4]);ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(p.l,yy);ctx.lineTo(width-p.r,yy);ctx.stroke();ctx.restore();
- const labelSuffix=field==='entry'?'':(num('entry')>0?' ('+((v/num('entry')-1)*100>=0?'+':'')+((v/num('entry')-1)*100).toFixed(1)+'%)':'');
- const levelLabel=label+': '+money(v)+labelSuffix;
- const boxWidth=Math.min(183,Math.max(135,ctx.measureText(levelLabel).width+28));
+ const baseLabel=label+': '+money(v);
+ const diff=num('entry')>0?(v/num('entry')-1)*100:0;
+ const fullLabel=field==='entry'?baseLabel:baseLabel+' ('+(diff>0?'+':'')+diff.toFixed(1)+'%)';
+ const maxBadgeWidth=Math.max(110,Math.min(238,plotW*.34));
+ ctx.font='bold 12px system-ui';
+ const labelText=ctx.measureText(fullLabel).width+22<=maxBadgeWidth?fullLabel:baseLabel;
+ const boxWidth=Math.min(maxBadgeWidth,Math.max(102,Math.ceil(ctx.measureText(labelText).width+22)));
  ctx.fillStyle='#08192e';ctx.strokeStyle=color;ctx.lineWidth=1.6;
  ctx.beginPath();ctx.roundRect(p.l+7,yy-16,boxWidth,28,7);ctx.fill();ctx.stroke();
- ctx.fillStyle=color;ctx.font='bold 12px system-ui';ctx.fillText(levelLabel,p.l+15,yy+3);
+ ctx.fillStyle=color;ctx.fillText(labelText,p.l+16,yy+3,boxWidth-18);
  const handleX=width-p.r-12;
  ctx.fillStyle=color;ctx.strokeStyle='#e6ecfc';ctx.lineWidth=field==='entry'?2.8:1;
  ctx.beginPath();ctx.arc(handleX,yy,7,0,Math.PI*2);ctx.fill();ctx.stroke();
@@ -636,10 +693,10 @@ if(num('entry')>0&&num('stop')>0&&num('target')>0){
 }
 const last=cs.at(-1),prev=cs.length>1?cs.at(-2):last,periodChange=last.c-prev.c,periodPct=prev.c?periodChange/prev.c*100:0;
 const tx=p.l+11;ctx.textAlign='left';
-ctx.fillStyle='#f0f5ff';ctx.font='bold 14px system-ui';ctx.fillText('BTCUSDT · '+state.tf+' · '+(window.__ATA_VISUAL_PREVIEW__?'ПРИКЛАД':'Bybit'),tx,23);
+ctx.fillStyle='#f0f5ff';ctx.font='bold 14px system-ui';ctx.fillText('BTCUSDT · '+timeframeLabel(state.tf),tx,23,Math.max(100,plotW-220));
 ctx.font='bold 11px system-ui';
 let pos=tx;const segments=[['O '+money(last.o),'#dceaff'],['H '+money(last.h),'#2ae594'],['L '+money(last.l),'#2ae594'],['C '+money(last.c),'#2ae594'],[(periodChange>=0?'+':'−')+money(Math.abs(periodChange))+' ('+(periodPct>=0?'+':'')+periodPct.toFixed(2)+'%)',periodChange>=0?'#2ae594':'#ff6b84']];
-for(const [label,col] of segments){ctx.fillStyle=col;ctx.fillText(label,pos,44);pos+=ctx.measureText(label).width+11;if(pos>width-p.r-95)break}
+for(const [label,col] of segments){const available=width-p.r-18-pos;if(available<60)break;const w=ctx.measureText(label).width;if(w>available)break;ctx.fillStyle=col;ctx.fillText(label,pos,44);pos+=w+10}
 ctx.font='bold 11px system-ui';ctx.fillStyle='#e8f0ff';ctx.fillText('EMA 50',tx+10,66);ctx.fillStyle='#35b1ff';ctx.fillText(a?money(a.e50.at(-1)):'—',tx+74,66);
 ctx.fillStyle='#e8f0ff';ctx.fillText('EMA 200',tx+10,86);ctx.fillStyle='#f6b642';ctx.fillText(a?money(a.e200.at(-1)):'—',tx+74,86);
 ctx.strokeStyle='#35527d';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(p.l,rsiStart-7);ctx.lineTo(width-p.r,rsiStart-7);ctx.moveTo(p.l,macdStart-7);ctx.lineTo(width-p.r,macdStart-7);ctx.stroke();
@@ -668,7 +725,7 @@ if(a){
 }
 if(a){const mv=Math.max(1,...a.macdLine.slice(-76).map(v=>Math.abs(v)));ctx.fillStyle='#c7d3e9';ctx.font='10px system-ui';const z=(macdStart+macdEnd)/2;ctx.fillText(money(mv),width-p.r+10,macdStart+9);ctx.fillText('0.0',width-p.r+10,z+4);ctx.fillText('−'+money(mv),width-p.r+10,macdEnd-3);}
 if(cs.length){const lp=cs.at(-1).c,py=y(lp);if(py>p.t+2&&py<priceEnd-2){ctx.fillStyle='#19b96f';ctx.beginPath();ctx.roundRect(width-p.r+2,py-12,p.r-8,24,7);ctx.fill();ctx.font='bold 11px system-ui';ctx.fillStyle='#edfff8';ctx.fillText(money(lp),width-p.r+7,py+4)}}
-ctx.fillStyle='#8fa5c8';ctx.font='10px system-ui';const leap=Math.max(1,Math.ceil(cs.length/7));for(let i=0;i<cs.length;i+=leap){ctx.fillText(new Date(cs[i].t).toLocaleDateString('uk-UA',{day:'numeric',month:'short'}),x(i)-12,height-3)}
+ctx.fillStyle='#8fa5c8';ctx.font='10px system-ui';const leap=Math.max(1,Math.ceil(cs.length/7));for(let i=0;i<cs.length;i+=leap){ctx.fillText(['1','5','15','30','60'].includes(state.tf)?new Date(cs[i].t).toLocaleTimeString('uk-UA',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/Ljubljana'}):state.tf==='240'?new Date(cs[i].t).toLocaleDateString('uk-UA',{day:'numeric',month:'short',timeZone:'Europe/Ljubljana'}):new Date(cs[i].t).toLocaleDateString('uk-UA',{day:'numeric',month:'short',timeZone:'Europe/Ljubljana'}),x(i)-12,height-3)}
 }
 const canvas=$('chart');canvas.addEventListener('pointerdown',e=>{if(!state.range)return;const r=canvas.getBoundingClientRect(),yy=e.clientY-r.top;for(const f of ['entry','stop','target']){const v=num(f);const target=state.range.top+(state.range.max-v)/(state.range.max-state.range.min)*(state.range.bottom-state.range.top);if(v>0&&Math.abs(target-yy)<13){state.drag=f;canvas.setPointerCapture(e.pointerId);canvas.style.cursor='ns-resize';return}}});canvas.addEventListener('pointermove',e=>{if(!state.drag||!state.range)return;const r=canvas.getBoundingClientRect(),yy=e.clientY-r.top,rg=state.range;const bounded=Math.min(rg.bottom,Math.max(rg.top,yy)),price=rg.max-(bounded-rg.top)/(rg.bottom-rg.top)*(rg.max-rg.min);$(state.drag).value=price.toFixed(2);state.levels[state.drag]=price;calculate()});const stopDrag=()=>{state.drag=null;canvas.style.cursor='crosshair'};canvas.addEventListener('pointerup',stopDrag);canvas.addEventListener('pointercancel',stopDrag);window.addEventListener('resize',draw);applyMode();showBottom('positions');loadCandles();setInterval(loadCandles,60000);
 })();
