@@ -1342,6 +1342,9 @@ function renderOpportunity(){
  proposedOpportunity=recent&&multiSnapshot.symbol===state.symbol&&all.length===ANALYSIS_TFS.length?findNearestOpportunity(all):null;
  const candidate=proposedOpportunity;
  card.classList.toggle('opportunity-ready',candidate?.status==='ready');
+ // Keep proposed chart markers synchronized with the latest completed analysis.
+ // This does NOT modify the user's entry/SL/TP inputs or place an exchange order.
+ draw();
  apply.disabled=candidate?.status!=='ready';
  if(!candidate){
   status.textContent='Аналіз триває';
@@ -1892,6 +1895,9 @@ function draw(){
  const maxVolume=Math.max(1,...sample.map(x=>x.v||0));
  const e50=analysis?.e50?.slice(start,end)||null,e200=analysis?.e200?.slice(start,end)||null;
  const prices=sample.flatMap(x=>[x.l,x.h]);
+ const suggested=chartViewport.offset===0&&proposedOpportunity?.status==='ready'&&multiSnapshot?.symbol===state.symbol
+  &&Date.now()-multiSnapshot.at<240000?proposedOpportunity:null;
+ if(suggested)for(const v of [suggested.entry,suggested.sl,suggested.tp])if(Number.isFinite(v)&&v>0)prices.push(v);
  for(const v of [Number($('entry').value),Number($('stop').value),Number($('target').value)])
    if(Number.isFinite(v)&&v>0)prices.push(v);
  const minRaw=Math.min(...prices),maxRaw=Math.max(...prices);
@@ -1951,6 +1957,36 @@ function draw(){
    c.fillText(priceFmt(value),width-4,y+3);
  }
  c.textAlign='left';
+ // Suggested trade PLAN is separate from manually entered levels and never an active order.
+ if(suggested){
+   const planLines=[
+     {key:'entry',label:'ПЛАН Вхід',value:suggested.entry,color:'#dceaff'},
+     {key:'sl',label:'ПЛАН SL',value:suggested.sl,color:'#fd6b83'},
+     {key:'tp',label:'ПЛАН TP',value:suggested.tp,color:'#25e5a4'}
+   ];
+   const yEntry=yPrice(suggested.entry),yStop=yPrice(suggested.sl),yTarget=yPrice(suggested.tp);
+   c.save();
+   c.beginPath();c.rect(left,priceTop,plotWidth,priceBottom-priceTop);c.clip();
+   c.fillStyle='#19dba310';c.fillRect(left,Math.min(yEntry,yTarget),plotWidth,Math.abs(yTarget-yEntry));
+   c.fillStyle='#f16f8410';c.fillRect(left,Math.min(yEntry,yStop),plotWidth,Math.abs(yStop-yEntry));
+   c.restore();
+   c.font='bold 10px system-ui';
+   for(const line of planLines){
+     const y=yPrice(line.value);
+     if(y<priceTop||y>priceBottom)continue;
+     c.save();c.strokeStyle=line.color;c.lineWidth=1.4;c.setLineDash([7,5]);
+     c.beginPath();c.moveTo(left,y);c.lineTo(right,y);c.stroke();c.restore();
+     const text=line.label+' '+priceFmt(line.value);
+     const widthTag=Math.min(160,c.measureText(text).width+16);
+     const yTag=Math.max(priceTop+2,Math.min(priceBottom-23,y-11));
+     c.fillStyle='#0d2541';c.strokeStyle=line.color;c.lineWidth=1.2;
+     c.beginPath();c.roundRect(right-widthTag-10,yTag,widthTag,21,6);c.fill();c.stroke();
+     c.fillStyle=line.color;c.textAlign='left';c.fillText(text,right-widthTag-2,yTag+14);
+   }
+   c.fillStyle='#bcb2fa';c.font='bold 10px system-ui';c.textAlign='right';
+   c.fillText('AI ПЛАН · не ордер',right-8,priceTop+12);
+   c.textAlign='left';
+ }
  // Levels: only show them when the user has entered a numeric price.
  const values={entry:Number($('entry').value),stop:Number($('stop').value),target:Number($('target').value)};
  const valid=name=>$((name==='target'?'target':name)).value.trim()!==''&&Number.isFinite(values[name])&&values[name]>0;
