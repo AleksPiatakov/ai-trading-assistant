@@ -833,7 +833,8 @@ function setMarketSymbol(symbol){
   updateFavoriteIcon();closeMarketDropdown();
   for(const id of ['entry','stop','target'])$(id).value='';
   state.levels={entry:null,stop:null,target:null};state.range=null;
-  calculate();loadCandles();
+  multiRun++;multiBusy=false;multiSnapshot=null;renderMultiAnalysis();
+  calculate();loadCandles();refreshMultiAnalysis(true);
 }
 function closeMarketDropdown(){
   $('marketDropdown').classList.add('hidden');
@@ -867,7 +868,7 @@ async function loadMarketList(){
       state.symbol=availableMarkets.includes('BTCUSDT')?'BTCUSDT':availableMarkets[0]||'BTCUSDT';
       $('marketSymbolText').textContent=state.symbol;
     }
-    $('quantityLabel').textContent='Кількість '+state.symbol.slice(0,-4);updateFavoriteIcon();renderMarketList();loadCandles();
+    $('quantityLabel').textContent='Кількість '+state.symbol.slice(0,-4);updateFavoriteIcon();renderMarketList();loadCandles();refreshMultiAnalysis(true);
   }catch(e){
     if(token!==marketListRequest)return;
     marketsFetched=false;availableMarkets=[];
@@ -1221,6 +1222,107 @@ function renderDemoTradingTab(which){
 function renderNotes(){let items=[];try{items=JSON.parse(localStorage.getItem('ata-notes')||'[]')}catch{}const n=$('notes');if(n){n.textContent='';for(const item of items){const div=document.createElement('div');div.className='fact';div.textContent=item.at+' — '+item.t;n.appendChild(div)}}}
 function ema(arr,period){const out=[];let prev=null;const alpha=2/(period+1);for(const x of arr){prev=prev===null?x:prev+alpha*(x-prev);out.push(prev)}return out}
 function rsi(close,period=14){const out=new Array(close.length).fill(null);if(close.length<=period)return out;let gain=0,loss=0;for(let i=1;i<=period;i++){const d=close[i]-close[i-1];gain+=Math.max(0,d);loss+=Math.max(0,-d)}gain/=period;loss/=period;for(let i=period;i<close.length;i++){if(i>period){const d=close[i]-close[i-1];gain=(gain*(period-1)+Math.max(0,d))/period;loss=(loss*(period-1)+Math.max(0,-d))/period}out[i]=loss===0?100:100-100/(1+gain/loss)}return out}
+
+const ANALYSIS_TFS=['1','3','5','15','30','60','120','240','D','W','M','3M'];
+let multiSnapshot=null,multiRun=0,multiLastFetch=0,multiBusy=false;
+function analyzeInterval(candles,tf){
+ const n=candles.length;
+ if(n<50)return {tf,n,status:'insufficient',reason:'Недостатньо свічок'};
+ const close=candles.map(v=>v.c),last=candles[n-1],e20=ema(close,20),e50=ema(close,50);
+ const e200=n>=200?ema(close,200):null,rs=rsi(close,14).at(-1);
+ const e12=ema(close,12),e26=ema(close,26);
+ const macd=e12.map((v,i)=>v-e26[i]),signal=ema(macd,9),hist=macd.at(-1)-signal.at(-1);
+ const positive=last.c>e20.at(-1)&&e20.at(-1)>e50.at(-1);
+ const negative=last.c<e20.at(-1)&&e20.at(-1)<e50.at(-1);
+ let direction=positive?'up':negative?'down':'mixed';
+ if(e200&&((direction==='up'&&last.c<e200.at(-1))||(direction==='down'&&last.c>e200.at(-1))))direction='mixed';
+ const trueRanges=[];
+ for(let i=n-14;i<n;i++)trueRanges.push(Math.max(candles[i].h-candles[i].l,Math.abs(candles[i].h-candles[i-1].c),Math.abs(candles[i].l-candles[i-1].c)));
+ const atr=trueRanges.reduce((a,v)=>a+v,0)/14;
+ const volumeBase=candles.slice(-21,-1).reduce((a,v)=>a+v.v,0)/20;
+ const range=candles.slice(-21,-1);
+ return {tf,n,status:'ok',direction,price:last.c,updated:last.t,skills:{
+  ema20:e20.at(-1),ema50:e50.at(-1),ema200:e200?.at(-1)??null,
+  rsi:rs,macd:hist,atr,atrPercent:atr/last.c*100,
+  relativeVolume:volumeBase>0?last.v/volumeBase:null,
+  support:Math.min(...range.map(v=>v.l)),resistance:Math.max(...range.map(v=>v.h)),
+  momentum:100*(last.c/close[n-6]-1)
+ }};
+}
+function renderMultiAnalysis(){
+ const matrix=$('skillMatrix'),insights=$('skillInsights'),summary=$('multiSummary'),sources=$('skillSources');
+ matrix.replaceChildren();insights.replaceChildren();
+ if(!multiSnapshot){summary.textContent='Очікування ринкових даних усіх інтервалів';return}
+ const rows=multiSnapshot.rows,valid=rows.filter(r=>r.status==='ok');
+ const up=valid.filter(r=>r.direction==='up').length,down=valid.filter(r=>r.direction==='down').length;
+ summary.textContent='Пара '+multiSnapshot.symbol+': перевірено '+rows.length+'/12; придатних '+valid.length+'. Висхідних '+up+', низхідних '+down+', змішаних '+(valid.length-up-down)+'.';
+ for(const row of rows){
+  const cell=document.createElement('div');cell.className='skill-tf '+(row.direction||'');
+  const h=document.createElement('strong'),line=document.createElement('span');
+  h.textContent=readableTf(row.tf);
+  line.textContent=row.status!=='ok'?(row.reason||'Дані недоступні'):
+   (row.direction==='up'?'↑ EMA вгору':row.direction==='down'?'↓ EMA вниз':'↔ Змішано')+' • RSI '+row.skills.rsi.toFixed(1);
+  cell.append(h,line);matrix.append(cell);
+ }
+ const add=(title,value)=>{
+  const item=document.createElement('div');item.className='insight';
+  const label=document.createElement('strong');label.textContent=title+': ';
+  item.append(label,document.createTextNode(value));insights.append(item);
+ };
+ for(const group of [
+  ['Короткі','1,3,5,15'],['День','30,60,120,240'],['Свінг','D,W'],['Місяці','M,3M']
+ ]){
+  const selected=valid.filter(row=>group[1].split(',').includes(row.tf));
+  add(group[0],selected.length+' придатних; ↑ '+selected.filter(r=>r.direction==='up').length+', ↓ '+selected.filter(r=>r.direction==='down').length);
+ }
+ const selected=valid.find(r=>r.tf===state.tf);
+ if(selected){
+  const k=selected.skills,fmt=x=>Number(x).toLocaleString('en-US',{maximumFractionDigits:5});
+  add('ATR(14)',fmt(k.atr)+' ('+k.atrPercent.toFixed(2)+'% ціни) на '+readableTf(selected.tf));
+  add('Обсяг',k.relativeVolume==null?'Немає даних':k.relativeVolume.toFixed(2)+'× до попередніх 20 свічок');
+  add('Підтримка / опір',fmt(k.support)+' / '+fmt(k.resistance)+' за попередні 20 свічок');
+  add('MACD / імпульс',fmt(k.macd)+' / '+k.momentum.toFixed(2)+'% за 5 свічок');
+ }
+ if(up&&down)add('Конфлікт','Таймфрейми вказують на різні напрямки — єдиного тренду немає.');
+ if(rows.some(r=>r.status!=='ok'))add('Покриття','Деякі інтервали відсутні або не мають достатньої історії.');
+ add('Контроль ризику','Перед угодою перевір розмір позиції, SL, TP, комісії та ліквідність. Це не готовий торговий сигнал.');
+ sources.textContent='Bybit public OHLCV • '+new Date(multiSnapshot.at).toLocaleTimeString('uk-UA')+' • EMA 20/50/200, RSI, MACD, ATR, обсяг, імпульс, рівні й MTF. Оцінка впевненості не розраховується.';
+}
+function readableTf(tf){return ({'1':'1хв','3':'3хв','5':'5хв','15':'15хв','30':'30хв','60':'1год','120':'2год','240':'4год',D:'1Д',W:'1Тиж',M:'1Міс','3M':'3Міс'})[tf]||tf}
+async function refreshMultiAnalysis(force=false){
+ const symbol=state.symbol;
+ if(!availableMarkets.includes(symbol)||document.hidden)return;
+ if(multiBusy&&!force)return;
+ if(!force&&multiSnapshot?.symbol===symbol&&Date.now()-multiLastFetch<180000)return;
+ const token=++multiRun;multiBusy=true;
+ const button=$('refreshAllTimeframes');button.disabled=true;
+ $('multiSummary').textContent='Аналіз 12 таймфреймів Bybit…';
+ const rows=[];
+ for(let i=0;i<ANALYSIS_TFS.length;i+=2){
+  if(token!==multiRun||symbol!==state.symbol)break;
+  const pair=ANALYSIS_TFS.slice(i,i+2);
+  const batch=await Promise.all(pair.map(async tf=>{
+   try{
+    const url=new URL('/api/market/candles',location.origin);
+    url.searchParams.set('symbol',symbol);url.searchParams.set('interval',tf);
+    const response=await fetch(url,{cache:'no-store',signal:AbortSignal.timeout(12000)});
+    const data=await response.json();
+    if(!response.ok||!Array.isArray(data.candles))throw Error('Bybit unavailable');
+    return analyzeInterval(data.candles,tf);
+   }catch{return {tf,status:'unavailable',reason:'Дані недоступні'}}
+  }));
+  rows.push(...batch);
+  if(token===multiRun&&symbol===state.symbol){
+   multiSnapshot={symbol,rows:rows.slice(),at:Date.now()};renderMultiAnalysis();
+  }
+ }
+ if(token===multiRun&&symbol===state.symbol){
+  multiLastFetch=Date.now();multiBusy=false;button.disabled=false;
+ }
+}
+$('refreshAllTimeframes').onclick=()=>refreshMultiAnalysis(true);
+setInterval(()=>{if(!document.hidden)refreshMultiAnalysis()},180000);
+
 function prepareAnalysis(){const cs=state.candles;if(cs.length<30)return;const close=cs.map(c=>c.c),e50=ema(close,50),e200=ema(close,200),e12=ema(close,12),e26=ema(close,26),macd=e12.map((v,i)=>v-e26[i]),signal=ema(macd,9),rs=rsi(close),last=close.length-1;state.analysis={price:close[last],above50:close[last]>e50[last],above200:close[last]>e200[last],rsi:rs[last],macd:macd[last],macdSignal:signal[last],e50,e200,macdLine:macd,signalLine:signal,rsiLine:rs};analysisView()}
 function analysisView(){
  const a=state.analysis,tab=state.tab||'plan';
