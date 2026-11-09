@@ -1283,11 +1283,98 @@ multiDetailControl.onclick=()=>{
  multiDetailControl.setAttribute('aria-expanded',String(expanded));
  multiDetailControl.innerHTML=expanded?'Згорнути детальний аналіз <span aria-hidden="true">⌃</span>':'Показати всі 12 таймфреймів <span aria-hidden="true">⌄</span>';
 };
+
+let proposedOpportunity=null;
+const opportunityFmt=n=>Number(n).toLocaleString('en-US',{maximumFractionDigits:n<1?7:n<100?4:2});
+/* The nearest eligible candidate is an evidence-based trade PLAN, never an order.
+   Qualification: 1h & 4h alignment, daily not opposing, RSI/MACD sanity,
+   positive room to observed price extreme, net R:R >= 1.5, and current price
+   not too far from the last H1 candle. Never estimate win probability. */
+function findNearestOpportunity(rows){
+ const map=Object.fromEntries(rows.filter(r=>r.status==='ok').map(r=>[r.tf,r]));
+ const h1=map['60'],h4=map['240'],m15=map['15'],daily=map.D;
+ if(!h1||!h4||!m15||!daily)return {status:'wait',reason:'Для перевірки потрібні повні дані 15хв, 1год, 4год і 1Д.'};
+ const current=Number.isFinite(marketTickerPrice)&&hasLiveMarket()?marketTickerPrice:h1.price;
+ if(!Number.isFinite(current)||current<=0||!Number.isFinite(h1.skills.atr)||h1.skills.atr<=0)
+  return {status:'wait',reason:'Немає надійної актуальної ціни або ATR.'};
+ const options=[];
+ for(const side of ['long','short']){
+  const d=side==='long'?'up':'down';
+  if(h1.direction!==d||h4.direction!==d)continue;
+  if(daily.direction!=='mixed'&&daily.direction!==d)continue;
+  if(m15.direction!==d&&m15.direction!=='mixed')continue;
+  const k=h1.skills,atr=k.atr;
+  // Avoid chasing far beyond the hourly reference candle.
+  if(Math.abs(current-h1.price)>atr*.45)continue;
+  if(side==='long'&&!(k.rsi>=42&&k.rsi<=67&&k.macd>0))continue;
+  if(side==='short'&&!(k.rsi>=33&&k.rsi<=58&&k.macd<0))continue;
+  // Only use known observed price levels. Never manufacture distant targets.
+  const entry=current;
+  const sl=side==='long'?Math.min(k.support,entry-atr):Math.max(k.resistance,entry+atr);
+  const tp=side==='long'?k.resistance:k.support;
+  const risk=Math.abs(entry-sl),reward=Math.abs(tp-entry);
+  if(![entry,sl,tp,risk,reward].every(Number.isFinite)||risk<=0||reward<=0)continue;
+  if(risk/entry>.05)continue;
+  const feePct=Number($('fee').value);
+  const feeRate=$('fee').value.trim()!==''&&Number.isFinite(feePct)&&feePct>=0?feePct/100:null;
+  // If no trading fee known, show gross ratio explicitly and don't pass as net.
+  const commission=feeRate===null?0:(entry+sl)*feeRate;
+  const gross=reward/risk,net=(reward-(feeRate===null?0:(entry+tp)*feeRate))/(risk+commission);
+  if(net<1.5)continue;
+  const distanceToNearest=0;
+  const validation=(daily.direction===d?2:0)+(m15.direction===d?1:0)+
+    (Math.abs(k.momentum)>0.1?1:0)+(k.relativeVolume>=1?1:0);
+  options.push({status:'ready',side,entry,sl,tp,gross,net,feeKnown:feeRate!==null,
+    score:validation,nearest:distanceToNearest,
+    because:'1год і 4год мають '+(side==='long'?'висхідний':'низхідний')+
+      ' напрямок EMA; 1Д не суперечить; RSI '+k.rsi.toFixed(1)+
+      ', MACD '+(k.macd>0?'позитивний':'негативний')+'.',
+    source:'Bybit public OHLCV · 1год / 4год / 1Д / 15хв'});
+ }
+ options.sort((a,b)=>b.score-a.score||b.net-a.net);
+ if(options.length)return options[0];
+ return {status:'wait',reason:'Зараз немає сценарію, що одночасно проходить перевірку трендів 1год/4год/1Д, RSI, MACD, рівнів SL/TP і R:R ≥ 1:1.5. Краще зачекати нового підтвердження.'};
+}
+function renderOpportunity(){
+ const card=$('tradeOpportunity'),status=$('opportunityState'),details=$('opportunityDetails'),apply=$('applyOpportunity');
+ const all=multiSnapshot?.rows||[];
+ proposedOpportunity=all.length===ANALYSIS_TFS.length?findNearestOpportunity(all):null;
+ const candidate=proposedOpportunity;
+ card.classList.toggle('opportunity-ready',candidate?.status==='ready');
+ apply.disabled=candidate?.status!=='ready';
+ if(!candidate){
+  status.textContent='Аналіз триває';
+  details.textContent='Збираємо 12 таймфреймів для перевірки можливих Long і Short.';
+ }else if(candidate.status!=='ready'){
+  status.textContent='Утриматися';
+  details.textContent=candidate.reason;
+ }else{
+  const direction=candidate.side==='long'?'LONG':'SHORT';
+  status.textContent='Сценарій '+direction+' • перевірити';
+  details.textContent='План '+direction+' ('+multiSnapshot.symbol+'): вхід ≈ '+opportunityFmt(candidate.entry)+
+    ', SL '+opportunityFmt(candidate.sl)+', TP '+opportunityFmt(candidate.tp)+
+    '. R:R '+(candidate.feeKnown?'після оціненої комісії':'без комісії')+
+    ' 1:'+candidate.net.toFixed(2)+'.\n'+candidate.because+
+    '\nПлан розраховано за поточними спостереженнями, він може втратити актуальність до виконання. Не є наказом торгувати.';
+ }
+}
+$('applyOpportunity').onclick=()=>{
+ const candidate=proposedOpportunity;
+ if(!candidate||candidate.status!=='ready'||multiSnapshot?.symbol!==state.symbol)return;
+ state.dir=candidate.side;
+ for(const [field,v] of [['entry',candidate.entry],['stop',candidate.sl],['target',candidate.tp]])$(field).value=String(Number(v.toPrecision(9)));
+ for(const [id,side] of [['longButton','long'],['shortButton','short']]){
+  const el=$(id);if(el)el.classList.toggle('active',side===state.dir);
+ }
+ calculate();draw();
+ $('opportunityState').textContent='Перенесено в план • ордери вимкнені';
+};
 function renderMultiAnalysis(){
  const matrix=$('skillMatrix'),insights=$('skillInsights'),summary=$('multiSummary'),sources=$('skillSources');
  matrix.replaceChildren();insights.replaceChildren();
- if(!multiSnapshot){summary.textContent='Очікування ринкових даних усіх інтервалів';return}
+ if(!multiSnapshot){summary.textContent='Очікування ринкових даних усіх інтервалів';renderOpportunity();return}
  const rows=multiSnapshot.rows,valid=rows.filter(r=>r.status==='ok');
+ renderOpportunity();
  const up=valid.filter(r=>r.direction==='up').length,down=valid.filter(r=>r.direction==='down').length;
  summary.textContent='Пара '+multiSnapshot.symbol+': перевірено '+rows.length+'/12; придатних '+valid.length+'. Висхідних '+up+', низхідних '+down+', змішаних '+(valid.length-up-down)+'.';
  for(const row of rows){
