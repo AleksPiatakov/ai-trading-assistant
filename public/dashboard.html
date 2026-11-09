@@ -1044,6 +1044,7 @@ body.workspace-standalone #rightPanel.detached-panel.is-minimized{height:auto!im
 (function(){
 'use strict';
 let demoAccount=null,demoAccountError='';
+let workspaceChannel=null,applyingRemoteTradeState=false;
 const $=id=>document.getElementById(id), state={symbol:'BTCUSDT',mode:'demo',tf:'D',tab:'plan',type:'Limit',dir:'long',candles:[],levels:{entry:null,stop:null,target:null},drag:null,range:null,marketOk:false,sidebar:false,analysis:null};
 
 let availableMarkets=[],marketsFetched=false,marketListRequest=0,marketTab='all',lastPriceRequest=0;
@@ -2270,6 +2271,10 @@ function calculate(){
    }
  }
  draw();
+ if(workspaceChannel&&!applyingRemoteTradeState)workspaceChannel.postMessage({
+  type:'fields',source:workspaceStandalone?'workspace':'chart',symbol:state.symbol,tf:state.tf,dir:state.dir,
+  fields:Object.fromEntries(['balance','riskPct','entry','stop','target','fee'].map(id=>[id,$(id).value]))
+ });
 }
 ['balance','riskPct','entry','stop','target','fee'].forEach(id=>$(id).addEventListener('input',()=>{
  if(planIds.includes(id)){state.levels[id]=num(id)||null;manualPlanLocked=true;autoDraft=null;autoStatus('Ручні рівні захищено від автозаміни')}
@@ -3002,6 +3007,39 @@ try{
  }
 }catch{}
 refreshDetachedWindow();
+if(typeof BroadcastChannel!=='undefined'){
+ workspaceChannel=new BroadcastChannel('ata-trader-workspace-fields');
+ workspaceChannel.onmessage=e=>{
+  const msg=e.data;
+  if(msg?.type==='request'&&!workspaceStandalone){
+   workspaceChannel.postMessage({
+    type:'fields',source:'chart',symbol:state.symbol,tf:state.tf,dir:state.dir,
+    fields:Object.fromEntries(['balance','riskPct','entry','stop','target','fee'].map(id=>[id,$(id).value]))
+   });
+   return;
+  }
+  if(msg?.type!=='fields'||msg.source===(workspaceStandalone?'workspace':'chart'))return;
+  const values=msg.fields;
+  if(!values||typeof values!=='object')return;
+  const ids=['balance','riskPct','entry','stop','target','fee'];
+  if(ids.some(id=>typeof values[id]!=='string'||values[id].length>60))return;
+  applyingRemoteTradeState=true;
+  try{
+   if(workspaceStandalone){
+    if(availableMarkets.includes(msg.symbol)&&state.symbol!==msg.symbol)setMarketSymbol(msg.symbol);
+   }else{
+    if(availableMarkets.includes(msg.symbol)&&state.symbol!==msg.symbol)setMarketSymbol(msg.symbol);
+    manualPlanLocked=true;autoDraft=null;autoStatus('Рівні синхронізовано з окремого вікна · автозаміна заблокована');
+   }
+   if(msg.dir==='long'||msg.dir==='short')state.dir=msg.dir;
+   $('longButton').classList.toggle('green',state.dir==='long');
+   $('shortButton').classList.toggle('red',state.dir==='short');
+   for(const id of ids){$(id).value=values[id];if(['entry','stop','target'].includes(id))state.levels[id]=Number(values[id])||null}
+   calculate();
+  }finally{applyingRemoteTradeState=false}
+ };
+ if(workspaceStandalone)workspaceChannel.postMessage({type:'request'});
+}
 if(workspaceStandalone){
  const section=new URLSearchParams(location.search).get('section');
  openDetachedWindow(['ai','risk','order'].includes(section)?section:'ai');
