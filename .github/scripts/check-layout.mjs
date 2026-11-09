@@ -23,6 +23,10 @@ for(const [w,h] of [[1525,900],[1525,740],[1280,740],[980,800]]){
   if(selected.length!==1||selected[0]!==selectedId||current!=='page'){
    errors.push('Sidebar selected state incorrect for '+selectedId+': '+selected.join(','));
   }
+  if(selectedId==='marketsNav'){
+   if(!await page.locator('#scannerOverlay').isVisible())errors.push('Market scanner modal did not open');
+   await page.locator('#scannerClose').click();
+  }
   if(selectedId==='settingsNav'){
    if(!await page.locator('#settingsOverlay').isVisible())errors.push('Settings modal did not open');
    await page.locator('#settingsClose').click();
