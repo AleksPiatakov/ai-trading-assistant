@@ -999,70 +999,212 @@ function calculate(){
 }
 ['balance','riskPct','entry','stop','target','fee'].forEach(id=>$(id).addEventListener('input',()=>{if(['entry','stop','target'].includes(id))state.levels[id]=num(id)||null;calculate()}));
 let currentCandleRequest=0;
-let candleFetching=false,lastCandleSuccess=0,lastMarketUpdateError='';
-const CANDLE_POLL_MS=15000;
+let candleFetching=false,lastCandleSuccess=0,lastMarketRestFetch=0,lastMarketUpdateError='';
+const CANDLE_POLL_MS=15000,REST_RESYNC_MS=120000;
 const timeframeLabel=tf=>({'1':'1хв','5':'5хв','15':'15хв','30':'30хв','60':'1год','240':'4год',D:'1Д',W:'1Тиж'}[tf]||tf);
+let marketSocket=null,marketSocketToken=0,marketHeartBeat=null,marketReconnectTimer=null;
+let lastFeedAt=0,marketReconnectAttempts=0,marketDrawTimer=null,marketCandleDirty=false;
+let marketTickerPrice=null,marketTickerPercent=null,marketFeedPriceTime=0;
+const LIVE_STALE_MS=22000;
+function hasLiveMarket(){return marketSocket?.readyState===WebSocket.OPEN&&lastFeedAt>0&&Date.now()-lastFeedAt<LIVE_STALE_MS}
+function updateQuote(){
+ const latest=state.candles.at(-1),previous=state.candles.at(-2);
+ const isFresh=Number.isFinite(marketTickerPrice)&&Date.now()-marketFeedPriceTime<LIVE_STALE_MS&&hasLiveMarket();
+ const price=isFresh?marketTickerPrice:latest?.c;
+ const percent=isFresh&&Number.isFinite(marketTickerPercent)?marketTickerPercent:
+   previous?.c&&latest?.c?100*(latest.c-previous.c)/previous.c:null;
+ if(Number.isFinite(price))setText('quote',price.toLocaleString('en-US',{maximumFractionDigits:8}));
+ else setText('quote','—');
+ setText('quoteDelta',Number.isFinite(percent)?(percent>0?'+':'')+percent.toFixed(2)+'%':'');
+ $('quoteDelta').classList.toggle('negative',Number.isFinite(percent)&&percent<0);
+}
 function marketDataState(){
-  if(!state.marketOk){
-    setText('quoteMeta',lastMarketUpdateError?'Bybit • зв’язок втрачено':'USDT Perpetual • очікування даних');
-    return;
-  }
-  const time=lastCandleSuccess?
-    new Date(lastCandleSuccess).toLocaleTimeString('uk-UA',{hour:'2-digit',minute:'2-digit',second:'2-digit',timeZone:'Europe/Ljubljana'}):'—';
-  setText('quoteMeta','USDT Perpetual • оновлено '+time+(lastMarketUpdateError?' • затримка даних':''));
+ const text=$('quoteMeta');
+ const timestamp=hasLiveMarket()?lastFeedAt:lastCandleSuccess;
+ const time=timestamp?new Date(timestamp).toLocaleTimeString('uk-UA',{
+   hour:'2-digit',minute:'2-digit',second:'2-digit',timeZone:'Europe/Ljubljana'
+ }):'—';
+ if(hasLiveMarket()){
+   text.textContent='● Потік Bybit · '+time;
+   text.style.color='#34dcac';
+ }else if(state.marketOk){
+   text.textContent='◌ REST · '+time+(lastMarketUpdateError?' · затримка':'');
+   text.style.color='#f3bd6c';
+ }else{
+   text.textContent=lastMarketUpdateError?'Bybit • немає зв’язку':'Bybit • підключення…';
+   text.style.color='#b8c6df';
+ }
+}
+function queueMarketDraw(candleChanged=false){
+ marketCandleDirty=marketCandleDirty||candleChanged;
+ if(marketDrawTimer!==null||document.hidden)return;
+ marketDrawTimer=setTimeout(()=>{
+   marketDrawTimer=null;
+   if(marketCandleDirty){marketCandleDirty=false;prepareAnalysis()}
+   updateQuote();marketDataState();
+   if(!state.drag)draw();
+ },160);
+}
+function stopMarketSocket(){
+ marketSocketToken++;
+ clearInterval(marketHeartBeat);marketHeartBeat=null;
+ clearTimeout(marketReconnectTimer);marketReconnectTimer=null;
+ if(marketSocket){
+   const previous=marketSocket;marketSocket=null;
+   previous.onopen=previous.onmessage=previous.onclose=previous.onerror=null;
+   try{previous.close(1000,'Change market')}catch{}
+ }
+ lastFeedAt=0;marketTickerPrice=null;marketTickerPercent=null;marketFeedPriceTime=0;
+ marketCandleDirty=false;
+ clearTimeout(marketDrawTimer);marketDrawTimer=null;
+}
+function scheduleMarketReconnect(token){
+ if(token!==marketSocketToken||document.hidden)return;
+ clearTimeout(marketReconnectTimer);
+ marketReconnectAttempts=Math.min(6,marketReconnectAttempts+1);
+ const delay=Math.min(30000,1000*2**(marketReconnectAttempts-1));
+ marketReconnectTimer=setTimeout(()=>{if(token===marketSocketToken)connectMarketSocket()},delay);
+}
+function connectMarketSocket(){
+ if(document.hidden||!availableMarkets.includes(state.symbol))return;
+ stopMarketSocket();
+ const token=marketSocketToken,symbol=state.symbol,interval=state.tf;
+ let socket;
+ try{socket=new WebSocket('wss://stream.bybit.com/v5/public/linear')}catch{
+   scheduleMarketReconnect(token);marketDataState();return;
+ }
+ marketSocket=socket;
+ socket.onopen=()=>{
+   if(token!==marketSocketToken||state.symbol!==symbol||state.tf!==interval)return;
+   socket.send(JSON.stringify({op:'subscribe',args:['tickers.'+symbol,'kline.'+interval+'.'+symbol]}));
+   marketHeartBeat=setInterval(()=>{
+     if(socket.readyState===WebSocket.OPEN)socket.send(JSON.stringify({op:'ping'}));
+   },20000);
+ };
+ socket.onmessage=event=>{
+   if(token!==marketSocketToken||state.symbol!==symbol||state.tf!==interval)return;
+   let msg;try{msg=JSON.parse(event.data)}catch{return}
+   if(msg.op==='subscribe'&&msg.success===false){
+     lastMarketUpdateError='Bybit відхилив підписку WebSocket';socket.close();return;
+   }
+   if(msg.topic==='tickers.'+symbol){
+     const tick=Array.isArray(msg.data)?msg.data[0]:msg.data;
+     if(!tick||typeof tick!=='object')return;
+     let changed=false;
+     if(tick.lastPrice!==undefined){
+       const price=Number(tick.lastPrice);
+       if(Number.isFinite(price)&&price>0){
+         marketTickerPrice=price;
+         marketFeedPriceTime=Date.now();
+         changed=true;
+       }
+     }
+     if(tick.price24hPcnt!==undefined){
+       const value=Number(tick.price24hPcnt)*100;
+       if(Number.isFinite(value))marketTickerPercent=value;
+     }
+     lastFeedAt=Date.now();marketReconnectAttempts=0;lastMarketUpdateError='';
+     if(changed)queueMarketDraw(false);else marketDataState();
+   }else if(msg.topic==='kline.'+interval+'.'+symbol){
+     const data=Array.isArray(msg.data)?msg.data:[msg.data];
+     let changed=false;
+     for(const k of data){
+       if(!k)continue;
+       const item={t:Number(k.start),o:Number(k.open),h:Number(k.high),l:Number(k.low),c:Number(k.close),v:Number(k.volume)};
+       if(![item.t,item.o,item.h,item.l,item.c,item.v].every(Number.isFinite)||item.t<=0||item.l>item.h)continue;
+       const old=state.candles.at(-1);
+       if(old&&item.t<old.t)continue;
+       if(old?.t===item.t){
+         if(old.c!==item.c||old.h!==item.h||old.l!==item.l||old.v!==item.v){
+           state.candles[state.candles.length-1]=item;changed=true;
+         }
+       }else{
+         state.candles.push(item);if(state.candles.length>220)state.candles.shift();changed=true;
+       }
+     }
+     lastFeedAt=Date.now();marketReconnectAttempts=0;lastMarketUpdateError='';
+     if(changed){state.marketOk=true;queueMarketDraw(true)}else marketDataState();
+   }
+ };
+ socket.onerror=()=>{
+   if(token===marketSocketToken)lastMarketUpdateError='WebSocket недоступний';
+ };
+ socket.onclose=()=>{
+   if(token!==marketSocketToken)return;
+   clearInterval(marketHeartBeat);marketHeartBeat=null;
+   marketSocket=null;lastFeedAt=0;
+   marketTickerPrice=null;marketTickerPercent=null;marketFeedPriceTime=0;
+   marketDataState();updateQuote();
+   scheduleMarketReconnect(token);
+ };
+ marketDataState();
 }
 async function loadCandles({silent=false}={}){
-  // Each request keeps its symbol/timeframe identity so stale responses cannot
-  // overwrite a later selection. Background polls do not clear the canvas.
-  if(silent&&(candleFetching||document.hidden||state.drag))return;
-  const requestId=++currentCandleRequest;
-  const symbol=state.symbol,interval=state.tf;
-  if(!silent){
-    state.candles=[];state.analysis=null;state.marketOk=false;
-    lastMarketUpdateError='';lastCandleSuccess=0;
-    setText('quote','—');setText('quoteDelta','');
-    setText('chartNote','');setText('footerMarket','');
-    marketDataState();analysisView();draw();
-  }
-  if(!availableMarkets.includes(symbol))return;
-  candleFetching=true;
-  try{
-    const url=new URL(marketApi('/api/market/candles'),location.origin);
-    url.searchParams.set('symbol',symbol);url.searchParams.set('interval',interval);
-    const response=await fetch(url,{cache:'no-store',signal:AbortSignal.timeout(12000)});
-    const data=await response.json();
-    if(requestId!==currentCandleRequest||symbol!==state.symbol||interval!==state.tf)return;
-    if(!response.ok||!Array.isArray(data.candles)||!data.candles.length)
-      throw Error(data.error||'Свічки відсутні');
-    const fresh=data.candles.filter(v=>[v.c,v.o,v.h,v.l,v.t,v.v].every(Number.isFinite));
-    if(!fresh.length)throw Error('Bybit повернув некоректні свічки');
-    const prior=state.candles;
-    const changed=prior.length!==fresh.length||prior.at(-1)?.t!==fresh.at(-1)?.t||
-      prior.at(-1)?.c!==fresh.at(-1)?.c||prior.at(-1)?.v!==fresh.at(-1)?.v;
-    state.candles=fresh;state.marketOk=true;
-    lastCandleSuccess=Date.now();lastMarketUpdateError='';
-    const latest=fresh.at(-1),previous=fresh.at(-2);
-    setText('quote',latest.c.toLocaleString('en-US',{maximumFractionDigits:8}));
-    const delta=previous?.c?100*(latest.c-previous.c)/previous.c:null;
-    setText('quoteDelta',Number.isFinite(delta)?(delta>0?'+':'')+delta.toFixed(2)+'%':'');
-    $('quoteDelta').classList.toggle('negative',delta<0);
-    setText('chartNote','');marketDataState();
-    if(changed||!silent){prepareAnalysis();draw();}
-  }catch(error){
-    if(requestId!==currentCandleRequest||symbol!==state.symbol||interval!==state.tf)return;
-    lastMarketUpdateError=error?.message||'Немає зв’язку з Bybit';
-    marketDataState();
-    setText('chartNote','Оновлення затримується: '+lastMarketUpdateError);
-    if(!silent)draw();
-  }finally{
-    if(requestId===currentCandleRequest)candleFetching=false;
-  }
+ if(silent&&(candleFetching||document.hidden||state.drag))return;
+ const requestId=++currentCandleRequest,symbol=state.symbol,interval=state.tf;
+ if(!silent){
+   stopMarketSocket();marketReconnectAttempts=0;
+   state.candles=[];state.analysis=null;state.marketOk=false;
+   lastMarketUpdateError='';lastCandleSuccess=0;
+   setText('quote','—');setText('quoteDelta','');
+   setText('chartNote','');setText('footerMarket','');
+   marketDataState();analysisView();draw();
+ }
+ if(!availableMarkets.includes(symbol))return;
+ candleFetching=true;
+ try{
+   const url=new URL(marketApi('/api/market/candles'),location.origin);
+   url.searchParams.set('symbol',symbol);url.searchParams.set('interval',interval);
+   const response=await fetch(url,{cache:'no-store',signal:AbortSignal.timeout(12000)});
+   const data=await response.json();
+   if(requestId!==currentCandleRequest||symbol!==state.symbol||interval!==state.tf)return;
+   if(!response.ok||!Array.isArray(data.candles)||!data.candles.length)
+     throw Error(data.error||'Свічки відсутні');
+   const fresh=data.candles.filter(v=>[v.c,v.o,v.h,v.l,v.t,v.v].every(Number.isFinite));
+   if(!fresh.length)throw Error('Bybit повернув некоректні свічки');
+   const existing=state.candles;
+   const newest=existing.at(-1),restLast=fresh.at(-1);
+   // Keep an already-newer WebSocket candle when a delayed REST snapshot arrives.
+   if(newest&&newest.t>restLast.t){
+     const keep=existing.filter(v=>v.t>restLast.t);
+     state.candles=fresh.concat(keep).slice(-220);
+   }else if(newest&&newest.t===restLast.t&&hasLiveMarket()){
+     fresh[fresh.length-1]=newest;
+     state.candles=fresh;
+   }else state.candles=fresh;
+   state.marketOk=true;lastCandleSuccess=Date.now();lastMarketRestFetch=Date.now();
+   lastMarketUpdateError='';setText('chartNote','');
+   prepareAnalysis();updateQuote();marketDataState();draw();
+ }catch(error){
+   if(requestId!==currentCandleRequest||symbol!==state.symbol||interval!==state.tf)return;
+   lastMarketUpdateError=error?.message||'Немає зв’язку з Bybit';
+   marketDataState();
+   setText('chartNote','Оновлення затримується: '+lastMarketUpdateError);
+   if(!silent)draw();
+ }finally{
+   if(requestId===currentCandleRequest){
+     candleFetching=false;
+     if(!silent&&marketSocket===null&&!document.hidden)connectMarketSocket();
+   }
+ }
 }
-// Poll on a single interval rather than starting a new network loop each time
-// the timeframe or trading account mode changes. Both modes share market data.
-setInterval(()=>{if(availableMarkets.includes(state.symbol))loadCandles({silent:true})},CANDLE_POLL_MS);
+// Reconcile with REST every two minutes when live. Poll more frequently ONLY
+// if WebSocket is disconnected; we do not poll at 100ms.
+setInterval(()=>{
+ if(document.hidden||!availableMarkets.includes(state.symbol))return;
+ if(marketSocket?.readyState===WebSocket.OPEN&&lastFeedAt>0&&Date.now()-lastFeedAt>LIVE_STALE_MS){
+   try{marketSocket.close()}catch{}
+ }
+ if(!hasLiveMarket()||Date.now()-lastMarketRestFetch>=REST_RESYNC_MS){
+   loadCandles({silent:true});
+ }
+},CANDLE_POLL_MS);
 document.addEventListener('visibilitychange',()=>{
-  if(!document.hidden&&availableMarkets.includes(state.symbol))loadCandles({silent:true});
+ if(document.hidden){stopMarketSocket();return}
+ if(availableMarkets.includes(state.symbol)){
+   loadCandles({silent:true});
+   connectMarketSocket();
+ }
 });
 $('chartFullscreenButton').onclick=()=>$('maximizeChart').click();
 $('indicatorsButton').onclick=()=>{};
@@ -1203,11 +1345,12 @@ function draw(){
    }
  }
  // Price label: latest close, not a fabricated live ticker.
- if(last.c>=min&&last.c<=max){
-   const y=yPrice(last.c);c.fillStyle=last.c>=last.o?'#079e70':'#b74362';
+ const displayedPrice=hasLiveMarket()&&Number.isFinite(marketTickerPrice)?marketTickerPrice:last.c;
+ if(displayedPrice>=min&&displayedPrice<=max){
+   const y=yPrice(displayedPrice);c.fillStyle=displayedPrice>=last.o?'#079e70':'#b74362';
    const tagX=right+7,tagW=Math.max(42,width-tagX-3);
    c.beginPath();c.roundRect(tagX,y-11,tagW,22,8);c.fill();
-   const priceLabel=priceFmt(last.c);
+   const priceLabel=priceFmt(displayedPrice);
    let labelFont=11;
    c.font='bold '+labelFont+'px system-ui';
    while(c.measureText(priceLabel).width>tagW-8&&labelFont>8){
