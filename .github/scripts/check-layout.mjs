@@ -30,12 +30,18 @@ for(const [w,h] of [[1525,900],[1525,740],[1280,740],[980,800]]){
  if(w===1525&&h===900){
    let networkRequests=0;
    page.on('request',req=>{if(req.url().includes('/api/market-data'))networkRequests++});
-   for(const tf of ['1','5','15','30','60','240','D','W']){
+   for(const tf of ['1','5','15','30','60','240','D']){
      await page.locator('#timeframes [data-tf="'+tf+'"]').click();
      const active=await page.locator('#timeframes [data-tf="'+tf+'"]').evaluate(el=>el.classList.contains('active'));
      if(!active)errors.push('Timeframe selection failed for '+tf);
      if(await page.locator('#quote').innerText()!=='—')errors.push('Unverified market quote shown');
      if(await page.locator('#chartNote').innerText()!=='')errors.push('Unwanted chart note');
+   }
+   for(const tf of ['W','M','3M']){
+     await page.locator('#longTfToggle').click();
+     await page.locator('#longTfMenu [data-long-tf="'+tf+'"]').click();
+     const active=await page.locator('#longTfToggle').evaluate(el=>el.classList.contains('active'));
+     if(!active)errors.push('Long timeframe selection failed for '+tf);
    }
    if(networkRequests>0)errors.push('UI shell attempted to fetch market data');
    const values=await page.locator('#balance,#entry,#stop,#target').evaluateAll(els=>els.map(e=>e.value));
