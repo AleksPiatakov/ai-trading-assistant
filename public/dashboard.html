@@ -936,6 +936,13 @@ body.scanner-standalone .scanner-summary,body.scanner-standalone .scanner-result
 .scanner-row-actions{display:flex;gap:7px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
 .scanner-caution{font-size:11px;color:#d4bb8b;line-height:1.5}
 @media(max-width:700px){.scanner-row-actions{justify-content:stretch}.scanner-row-actions .btn{flex:1}}
+
+.auto-plan-strip{display:flex;align-items:center;gap:12px;padding:6px 12px;background:#122b4d;border-bottom:1px solid #385a85;font-size:11px;color:#c0d5ef;min-height:37px}
+.auto-plan-strip label{display:flex;align-items:center;gap:7px;white-space:nowrap;font-weight:700;cursor:pointer;color:#e9e3ff}
+.auto-plan-strip input{accent-color:#8255fb}
+#autoPlanStatus{flex:1}
+#autoPlanReset{padding:4px 8px;font-size:10px}
+@media(max-width:740px){.auto-plan-strip{flex-wrap:wrap}}
 </style></head>
 <body><div class="app" id="app">
 <nav class="nav nav-reference" aria-label="Навігація">
@@ -968,7 +975,7 @@ body.scanner-standalone .scanner-summary,body.scanner-standalone .scanner-result
 <div class="layout">
 <section class="card chart-card" id="chartCard"><div class="bar"><div class="market-selector-container"><button id="marketSelectButton" class="market-select-button" type="button" aria-expanded="false" aria-controls="marketDropdown" aria-label="Вибрати торгову пару"><span class="coin-icon" aria-hidden="true">₿</span><span id="marketSymbolText">BTCUSDT</span><span class="market-caret">⌄</span></button><button type="button" class="help-info" data-help="symbol" aria-label="Пояснення: Вибір торгової пари" title="Що це?">і</button><button id="marketFavorite" class="market-favorite-button" type="button" aria-label="Додати пару до обраних" title="Додати до обраних">☆</button><div class="market-dropdown hidden" id="marketDropdown"><div class="market-searchbox"><input id="marketSearch" type="search" placeholder="Пошук пари, наприклад ETHUSDT" autocomplete="off" aria-label="Пошук торгових пар"></div><div class="market-filter-tabs"><button id="marketAllTab" class="active" type="button">Усі USDT Perpetual</button><button id="marketFavTab" type="button">★ Обрані</button></div><div id="marketList" class="market-list" role="listbox" aria-label="Торгові пари"></div><div id="marketListStatus" class="market-list-status"></div></div></div><span class="chart-quote-group"><span id="quote" class="last">—</span><span id="quoteDelta" class="chart-delta"></span><span id="quoteMeta" class="detail"></span></span><button class="chart-collapse-button" id="maximizeChart" title="Розгорнути графік" aria-label="Розгорнути графік">»</button></div>
 <div class="chart-toolbar"><span class="draw-cross" aria-hidden="true">＋</span><div id="timeframes"><button class="btn" data-tf="1">1хв</button><button class="btn" data-tf="5">5хв</button><button class="btn" data-tf="15">15хв</button><button class="btn" data-tf="30">30хв</button><button class="btn" data-tf="60">1год</button><button class="btn" data-tf="240">4год</button><button class="btn active" data-tf="D">1Д</button><div class="long-tf-picker" id="longTfPicker"><button class="btn long-tf-toggle" id="longTfToggle" type="button" aria-haspopup="menu" aria-controls="longTfMenu" aria-expanded="false"><span id="longTfLabel">1Тиж</span><span class="long-tf-chevron" aria-hidden="true">⌄</span></button><div class="long-tf-menu hidden" id="longTfMenu" role="menu" aria-label="Довші часові інтервали"><button type="button" data-long-tf="W" role="menuitemradio" aria-checked="false"><span>1 тиждень</span><small>Одна свічка — 7 днів</small></button><button type="button" data-long-tf="M" role="menuitemradio" aria-checked="false"><span>1 місяць</span><small>Календарний місяць</small></button><button type="button" data-long-tf="3M" role="menuitemradio" aria-checked="false"><span>3 місяці</span><small>Календарний квартал</small></button></div></div></div><button type="button" class="help-info" data-help="timeframes" aria-label="Пояснення: Таймфрейми" title="Що це?">і</button><span class="grow"></span><div class="chart-toolbar-actions"><button class="btn chart-window-action" id="openAssistantWindow" type="button" aria-controls="rightPanel" aria-expanded="false">✧ AI Помічник</button><button class="btn chart-window-action" id="openRiskWindow" type="button" aria-controls="rightPanel">▣ Калькулятор</button><button class="btn chart-window-action" id="openOrderWindow" type="button" aria-controls="rightPanel">➤ Угода</button><button class="chart-tool-action" id="indicatorsButton" type="button" title="Показники EMA, RSI, MACD" aria-expanded="false" aria-controls="indicatorOptions"><span class="trend-glyph">⌁</span> Індикатори</button><button type="button" class="help-info" data-help="indicators" aria-label="Пояснення: Індикатори" title="Що це?">і</button><button class="chart-tool-icon" id="chartInfoButton" type="button" title="Інформація про графік">▤</button><button class="chart-tool-icon" id="chartFullscreenButton" type="button" title="На весь екран">⛶</button></div></div>
-<div class="indicator-options hidden" id="indicatorOptions" aria-label="Видимість індикаторів"><label><input type="checkbox" id="showEma" checked> EMA 50 / 200</label><label><input type="checkbox" id="showVolume" checked> Обсяг</label><label><input type="checkbox" id="showRsi" checked> RSI</label><label><input type="checkbox" id="showMacd" checked> MACD</label><button class="btn ghost" type="button" id="closeIndicatorOptions">Готово</button></div><div class="chart-wrap"><div class="drawing-tools" aria-label="Інструменти графіка"><button type="button" class="drawing-tool-button" data-chart-tool="pencil" title="Олівець" aria-label="Олівець" aria-pressed="false"><svg aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="m6 23 15-15 5 5-15 15-7 2 2-7ZM18 11l5 5M21 8l3-3a3 3 0 0 1 4 4l-2 3"/></svg></button><button type="button" class="drawing-tool-button" data-chart-tool="trend" title="Лінія тренду" aria-label="Лінія тренду" aria-pressed="false"><svg aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M7 25 25 7"/><circle cx="7" cy="25" r="2.5"/><circle cx="25" cy="7" r="2.5"/></svg></button><button type="button" class="drawing-tool-button" data-chart-tool="horizontal" title="Горизонтальні рівні" aria-label="Горизонтальні рівні" aria-pressed="false"><svg aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8h22M5 16h22M5 24h22"/><circle cx="20" cy="8" r="3" fill="#0c1d39"/><circle cx="11" cy="16" r="3" fill="#0c1d39"/><circle cx="23" cy="24" r="3" fill="#0c1d39"/></svg></button><button type="button" class="drawing-tool-button" data-chart-tool="polyline" title="З’єднані точки" aria-label="З’єднані точки" aria-pressed="false"><svg aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M6 24 14 8l12 10-8 9"/><circle cx="6" cy="24" r="2.4"/><circle cx="14" cy="8" r="2.4"/><circle cx="26" cy="18" r="2.4"/><circle cx="18" cy="27" r="2.4"/></svg></button><button type="button" class="drawing-tool-button" data-chart-tool="text" title="Текст" aria-label="Текст" aria-pressed="false"><svg aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8V5h22v3M16 5v22M11 27h10"/></svg></button><button type="button" class="drawing-tool-button" data-chart-tool="rectangle" title="Геометричні лінії" aria-label="Геометричні лінії" aria-pressed="false"><svg aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="m7 7 18 18M25 7 7 25M7 7v18h18V7H7"/><circle cx="7" cy="7" r="2"/><circle cx="25" cy="7" r="2"/><circle cx="7" cy="25" r="2"/><circle cx="25" cy="25" r="2"/></svg></button><button type="button" class="drawing-tool-button" data-chart-tool="levels" title="Налаштування рівнів" aria-label="Налаштування рівнів" aria-pressed="false"><svg aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h24M4 16h24M4 24h24"/><circle cx="11" cy="8" r="3.2" fill="#0c1d39"/><circle cx="22" cy="16" r="3.2" fill="#0c1d39"/><circle cx="13" cy="24" r="3.2" fill="#0c1d39"/></svg></button><button type="button" class="drawing-tool-button" data-chart-tool="eraser" title="Маркер" aria-label="Маркер" aria-pressed="false"><svg aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="13" width="20" height="8" rx="3" transform="rotate(-42 16 17)"/><path d="m8 24 4 3M20 9l4 4"/></svg></button><button type="button" class="drawing-tool-button" data-chart-tool="zoom" title="Збільшення" aria-label="Збільшення" aria-pressed="false"><svg aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><circle cx="14" cy="14" r="9"/><path d="M14 9v10M9 14h10M21 21l7 7"/></svg></button><span class="drawing-separator" aria-hidden="true"></span><button type="button" class="drawing-tool-button" data-chart-tool="home" title="Робоча область" aria-label="Робоча область" aria-pressed="false"><svg aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="m6 15 10-10 10 10v12H6V15Z"/></svg></button></div><canvas id="chart" aria-label="Графік BTCUSDT, свічки, EMA, RSI, MACD та рівні плану"></canvas><div id="chartNote" class="chart-note"></div><div id="chartDragTip" class="chart-drag-tip hidden"></div></div>
+<div id="autoPlanStrip" class="auto-plan-strip" role="status"><label><input id="autoPlanEnabled" type="checkbox" checked> Автопідготовка</label><span id="autoPlanStatus">Очікуємо підтверджений план сканера</span><button id="autoPlanReset" class="btn ghost" type="button">Очистити автоплан</button></div><div class="indicator-options hidden" id="indicatorOptions" aria-label="Видимість індикаторів"><label><input type="checkbox" id="showEma" checked> EMA 50 / 200</label><label><input type="checkbox" id="showVolume" checked> Обсяг</label><label><input type="checkbox" id="showRsi" checked> RSI</label><label><input type="checkbox" id="showMacd" checked> MACD</label><button class="btn ghost" type="button" id="closeIndicatorOptions">Готово</button></div><div class="chart-wrap"><div class="drawing-tools" aria-label="Інструменти графіка"><button type="button" class="drawing-tool-button" data-chart-tool="pencil" title="Олівець" aria-label="Олівець" aria-pressed="false"><svg aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="m6 23 15-15 5 5-15 15-7 2 2-7ZM18 11l5 5M21 8l3-3a3 3 0 0 1 4 4l-2 3"/></svg></button><button type="button" class="drawing-tool-button" data-chart-tool="trend" title="Лінія тренду" aria-label="Лінія тренду" aria-pressed="false"><svg aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M7 25 25 7"/><circle cx="7" cy="25" r="2.5"/><circle cx="25" cy="7" r="2.5"/></svg></button><button type="button" class="drawing-tool-button" data-chart-tool="horizontal" title="Горизонтальні рівні" aria-label="Горизонтальні рівні" aria-pressed="false"><svg aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8h22M5 16h22M5 24h22"/><circle cx="20" cy="8" r="3" fill="#0c1d39"/><circle cx="11" cy="16" r="3" fill="#0c1d39"/><circle cx="23" cy="24" r="3" fill="#0c1d39"/></svg></button><button type="button" class="drawing-tool-button" data-chart-tool="polyline" title="З’єднані точки" aria-label="З’єднані точки" aria-pressed="false"><svg aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M6 24 14 8l12 10-8 9"/><circle cx="6" cy="24" r="2.4"/><circle cx="14" cy="8" r="2.4"/><circle cx="26" cy="18" r="2.4"/><circle cx="18" cy="27" r="2.4"/></svg></button><button type="button" class="drawing-tool-button" data-chart-tool="text" title="Текст" aria-label="Текст" aria-pressed="false"><svg aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8V5h22v3M16 5v22M11 27h10"/></svg></button><button type="button" class="drawing-tool-button" data-chart-tool="rectangle" title="Геометричні лінії" aria-label="Геометричні лінії" aria-pressed="false"><svg aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="m7 7 18 18M25 7 7 25M7 7v18h18V7H7"/><circle cx="7" cy="7" r="2"/><circle cx="25" cy="7" r="2"/><circle cx="7" cy="25" r="2"/><circle cx="25" cy="25" r="2"/></svg></button><button type="button" class="drawing-tool-button" data-chart-tool="levels" title="Налаштування рівнів" aria-label="Налаштування рівнів" aria-pressed="false"><svg aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h24M4 16h24M4 24h24"/><circle cx="11" cy="8" r="3.2" fill="#0c1d39"/><circle cx="22" cy="16" r="3.2" fill="#0c1d39"/><circle cx="13" cy="24" r="3.2" fill="#0c1d39"/></svg></button><button type="button" class="drawing-tool-button" data-chart-tool="eraser" title="Маркер" aria-label="Маркер" aria-pressed="false"><svg aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="13" width="20" height="8" rx="3" transform="rotate(-42 16 17)"/><path d="m8 24 4 3M20 9l4 4"/></svg></button><button type="button" class="drawing-tool-button" data-chart-tool="zoom" title="Збільшення" aria-label="Збільшення" aria-pressed="false"><svg aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><circle cx="14" cy="14" r="9"/><path d="M14 9v10M9 14h10M21 21l7 7"/></svg></button><span class="drawing-separator" aria-hidden="true"></span><button type="button" class="drawing-tool-button" data-chart-tool="home" title="Робоча область" aria-label="Робоча область" aria-pressed="false"><svg aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="m6 15 10-10 10 10v12H6V15Z"/></svg></button></div><canvas id="chart" aria-label="Графік BTCUSDT, свічки, EMA, RSI, MACD та рівні плану"></canvas><div id="chartNote" class="chart-note"></div><div id="chartDragTip" class="chart-drag-tip hidden"></div></div>
 <div class="chart-footerline" id="chartHint"><span id="emaLegend50" class="legend-ema blue-line">EMA 50</span><span id="emaLegend200" class="legend-ema gold-line">EMA 200</span><span class="legend-ema green-line">Take Profit</span><span class="legend-ema neutral-line">Вхід</span><span class="legend-ema red-line">Stop Loss</span><span class="drag-hint">↕ Перетягуйте рівні на графіку</span></div>
 </section>
 <div class="right detached-panel is-closed" id="rightPanel" role="dialog" aria-label="Робоче вікно трейдера" aria-modal="false">
@@ -1038,6 +1045,7 @@ function updateFavoriteIcon(){
 function setMarketSymbol(symbol){
   if(!availableMarkets.includes(symbol))return;
   if(state.symbol===symbol){closeMarketDropdown();return}
+  if(autoDraft&&symbol!==autoDraft.symbol){autoDraft=null;manualPlanLocked=true;autoStatus('Пару змінено вручну · автозаміна заблокована')}
   state.symbol=symbol;
   loadChartAnnotations();
   chartViewport.offset=0;chartViewport.count=80;
@@ -1083,7 +1091,7 @@ async function loadMarketList(){
       try{localStorage.setItem('ata-market-symbol',state.symbol)}catch{}
     }
     $('marketSymbolText').textContent=state.symbol;
-    $('quantityLabel').textContent='Кількість '+state.symbol.slice(0,-4);updateFavoriteIcon();renderMarketList();loadCandles();refreshMultiAnalysis(true);
+    $('quantityLabel').textContent='Кількість '+state.symbol.slice(0,-4);updateFavoriteIcon();renderMarketList();loadCandles();refreshMultiAnalysis(true);maybePrepareAutoPlan();
   }catch(e){
     if(token!==marketListRequest)return;
     marketsFetched=false;availableMarkets=[];
@@ -1179,6 +1187,53 @@ document.addEventListener('keydown',event=>{
 /* Dedicated scanner viewer. All calculations run on local Node, even when the tab closes.
    Only explicit "На графік" interaction changes manual planning inputs. */
 let scannerSnapshot=null,scannerHistory=[],scannerView='current',scannerFocusedBefore=null,scannerRefreshBusy=false,scannerLastError='';
+let autoDraft=null,manualPlanLocked=false,autoPlanEnabled=true;
+try{autoPlanEnabled=localStorage.getItem('ata-auto-plan-enabled')!=='false'}catch{}
+$('autoPlanEnabled').checked=autoPlanEnabled;
+const autoStatus=m=>{if(!scannerStandalone)$('autoPlanStatus').textContent=m};
+const planIds=['entry','stop','target'];
+const emptyPlan=()=>planIds.every(id=>$(id).value.trim()==='');
+function freshScannerCandidate(p){
+ if(!p||typeof p.symbol!=='string'||!/^[A-Z0-9]{3,30}USDT$/.test(p.symbol)||!['long','short'].includes(p.side))return false;
+ const age=Date.now()-Date.parse(p.scannedAt);
+ if(!Number.isFinite(age)||age<0||age>600000||Number(p.confirmations)<3)return false;
+ const [entry,stop,target]=[p.entry,p.stop,p.target].map(Number);
+ if(![entry,stop,target].every(v=>Number.isFinite(v)&&v>0))return false;
+ if(p.side==='long'&&!(stop<entry&&target>entry)||p.side==='short'&&!(stop>entry&&target<entry))return false;
+ return Math.abs(target-entry)/Math.abs(entry-stop)>=1.5;
+}
+function maybePrepareAutoPlan(){
+ if(scannerStandalone||!autoPlanEnabled)return;
+ if(autoDraft||manualPlanLocked||!emptyPlan()){autoStatus(autoDraft?'Автоплан '+autoDraft.symbol+' підготовлено · рівні заблоковано від автозаміни':'Власний план захищено · автозаміна призупинена');return}
+ const snap=scannerSnapshot;
+ if(snap?.status!=='ready'||!snap.updatedAt||Date.now()-Date.parse(snap.updatedAt)>600000){autoStatus('Очікуємо свіжий завершений аналіз');return}
+ const list=(Array.isArray(snap.opportunities)?snap.opportunities:[]).filter(freshScannerCandidate).filter(p=>availableMarkets.includes(p.symbol));
+ list.sort((a,b)=>Number(b.confirmations)-Number(a.confirmations)||Number(b.rr)-Number(a.rr));
+ const p=list[0];
+ if(!p){autoStatus('Підтверджених торгових планів немає · список уваги не застосовується');return}
+ if(p.symbol!==state.symbol)setMarketSymbol(p.symbol);
+ selectTimeframe('60');
+ state.dir=p.side;
+ $('longButton').classList.toggle('green',state.dir==='long');$('shortButton').classList.toggle('red',state.dir==='short');
+ for(const [id,v] of [['entry',p.entry],['stop',p.stop],['target',p.target]]){
+  $(id).value=String(Number(Number(v).toPrecision(9)));state.levels[id]=Number(v);
+ }
+ autoDraft={symbol:p.symbol,scannedAt:p.scannedAt};
+ calculate();draw();
+ autoStatus('Чернетку '+p.symbol+' '+p.side.toUpperCase()+' підготовлено · Entry/SL/TP · НЕ ордер');
+ $('executionStatus').textContent='Автоматично підставлено план із сканера. Ордер на Bybit не надсилався.';
+}
+$('autoPlanEnabled').onchange=e=>{
+ autoPlanEnabled=e.target.checked;
+ try{localStorage.setItem('ata-auto-plan-enabled',String(autoPlanEnabled))}catch{}
+ autoStatus(autoPlanEnabled?'Автопідготовку увімкнено':'Автопідготовку вимкнено · рівні збережено');
+ if(autoPlanEnabled)maybePrepareAutoPlan();
+};
+$('autoPlanReset').onclick=()=>{
+ if(!autoDraft||manualPlanLocked){autoStatus('Ручні рівні не очищаються');return}
+ for(const id of planIds()){$(id).value='';state.levels[id]=null}
+ autoDraft=null;calculate();autoStatus('Автоплан очищено · наступний план після нового сканування');
+};
 const scannerFormat=v=>Number(v).toLocaleString('en-US',{maximumFractionDigits:Math.abs(v)<1?7:Math.abs(v)<100?4:2});
 const scannerStandalone=new URLSearchParams(location.search).get('scanner')==='1';
 let scannerPopup=null;
@@ -1230,6 +1285,7 @@ function applyScannerMarket(item,withPlan=false){
  if(!availableMarkets.includes(item.symbol)){
   $('scannerSummary').textContent='Пара ще не завантажена в списку Bybit.';return;
  }
+ if(withPlan){manualPlanLocked=true;autoDraft=null;autoStatus('План перенесено вручну · автозаміна заблокована')}
  setMarketSymbol(item.symbol);selectTimeframe('60');
  if(withPlan){
   const fields=[['entry',item.entry],['stop',item.stop],['target',item.target]];
@@ -1459,6 +1515,7 @@ async function fetchScannerSnapshot(){
   $('scannerAlertCount').textContent=String(count);
   $('scannerAlertCount').classList.toggle('hidden',count===0);
   renderAssistantWatch();
+  maybePrepareAutoPlan();
  }catch(e){
   scannerLastError='Сканер недоступний. Запусти локальний сервер node scripts/local-demo-server.mjs.';
   scannerSnapshot=null;
@@ -1999,6 +2056,7 @@ function renderOpportunity(){
 $('applyOpportunity').onclick=()=>{
  const candidate=proposedOpportunity;
  if(!candidate||candidate.status!=='ready'||multiSnapshot?.symbol!==state.symbol)return;
+ manualPlanLocked=true;autoDraft=null;autoStatus('План підтверджено вручну · автозаміна заблокована');
  state.dir=candidate.side;
  for(const [field,v] of [['entry',candidate.entry],['stop',candidate.sl],['target',candidate.tp]])$(field).value=String(Number(v.toPrecision(9)));
  $('longButton').classList.toggle('green',state.dir==='long');
@@ -2190,7 +2248,10 @@ function calculate(){
  }
  draw();
 }
-['balance','riskPct','entry','stop','target','fee'].forEach(id=>$(id).addEventListener('input',()=>{if(['entry','stop','target'].includes(id))state.levels[id]=num(id)||null;calculate()}));
+['balance','riskPct','entry','stop','target','fee'].forEach(id=>$(id).addEventListener('input',()=>{
+ if(planIds().includes(id)){state.levels[id]=num(id)||null;manualPlanLocked=true;autoDraft=null;autoStatus('Ручні рівні захищено від автозаміни')}
+ calculate();
+}));
 let currentCandleRequest=0;
 let candleFetching=false,lastCandleSuccess=0,lastMarketRestFetch=0,lastMarketUpdateError='';
 const CANDLE_POLL_MS=15000,REST_RESYNC_MS=120000;
@@ -2809,7 +2870,7 @@ canvas.addEventListener('pointermove',e=>{
    const bounded=Math.min(rg.bottom,Math.max(rg.top,yy));
    const price=rg.max-(bounded-rg.top)/(rg.bottom-rg.top)*(rg.max-rg.min);
    $(state.drag).value=price.toFixed(price<1?7:price<100?4:2);
-   state.levels[state.drag]=price;calculate();return;
+   state.levels[state.drag]=price;manualPlanLocked=true;autoDraft=null;autoStatus('Рівень змінено вручну');calculate();return;
  }
  if(chartPan){
    const plot=Math.max(120,canvas.getBoundingClientRect().width-107);
