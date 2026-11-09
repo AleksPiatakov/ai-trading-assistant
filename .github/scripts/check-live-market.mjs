@@ -197,7 +197,7 @@ if(persisted.symbol!=='ETHUSDT'||persisted.tf!=='W')errors.push('Local preferenc
 // Explicit selection may populate a planning form but must never submit orders.
 await page.locator('#marketsNav').click();
 await page.waitForFunction(()=>document.querySelectorAll('.scanner-result').length===2,null,{timeout:5000});
-await page.locator('.scanner-result').filter({hasText:'ETHUSDT'}).locator('button').click();
+await page.locator('.scanner-result').filter({hasText:'ETHUSDT'}).getByRole('button',{name:'На графік'}).click();
 if(await page.locator('#scannerOverlay').isVisible())errors.push('Selecting a scanner plan did not close the dialog');
 if(await page.locator('#marketSymbolText').innerText()!=='ETHUSDT')errors.push('Scanner plan selected wrong market');
 if(!await page.locator('#timeframes [data-tf="60"]').evaluate(el=>el.classList.contains('active')))
