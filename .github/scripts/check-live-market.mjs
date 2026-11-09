@@ -6,6 +6,7 @@ const errors=[];
 page.on('pageerror',e=>errors.push(e.message));
 await page.addInitScript(()=>{
   window.open=()=>null; // Keep existing modal smoke tests on the popup-blocked fallback.
+  localStorage.setItem('ata-auto-plan-enabled','false'); // Preserve explicit-plan regression behavior.
   window.__marketSockets=[];
   window.__marketSubscriptions=[];
   class MockWebSocket{
