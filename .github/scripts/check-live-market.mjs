@@ -73,6 +73,29 @@ if(await page.locator('#longTfLabel').innerText()!=='3Міс')errors.push('Quart
 await page.locator('#longTfToggle').click();
 await page.locator('[data-long-tf="W"]').click();
 await page.waitForFunction(()=>window.__marketSubscriptions.includes('kline.W.BTCUSDT'),null,{timeout:10000});
+// Drawing toolbar must be actionable, with real canvas annotations and erasing.
+const toolButtons=page.locator('[data-chart-tool]');
+if(await toolButtons.count()!==10)errors.push('Expected 10 chart drawing buttons');
+await page.locator('[data-chart-tool="trend"]').click();
+if(await page.locator('[data-chart-tool="trend"]').getAttribute('aria-pressed')!=='true')
+ errors.push('Trendline tool did not activate');
+const chartBox=await page.locator('#chart').boundingBox();
+await page.mouse.move(chartBox.x+chartBox.width*.25,chartBox.y+chartBox.height*.24);
+await page.mouse.down();
+await page.mouse.move(chartBox.x+chartBox.width*.43,chartBox.y+chartBox.height*.37,{steps:6});
+await page.mouse.up();
+const drawingCount=await page.evaluate(()=>JSON.parse(localStorage.getItem('ata-drawings-BTCUSDT|D')||'[]').length);
+if(drawingCount!==1)errors.push('Trend drawing not saved');
+await page.locator('[data-chart-tool="eraser"]').click();
+await page.mouse.click(chartBox.x+chartBox.width*.25,chartBox.y+chartBox.height*.24);
+const afterErase=await page.evaluate(()=>JSON.parse(localStorage.getItem('ata-drawings-BTCUSDT|D')||'[]').length);
+if(afterErase!==0)errors.push('Eraser failed to remove line');
+await page.locator('[data-chart-tool="home"]').click();
+await page.locator('#settingsNav').click();
+if(!await page.locator('#settingsOverlay').isVisible())errors.push('Settings did not open as a modal');
+if(await page.locator('#settingsOverlay #demoCredentialsForm').count()!==1)errors.push('Bybit Demo form missing from modal');
+await page.locator('#settingsClose').click();
+if(await page.locator('#settingsOverlay').isVisible())errors.push('Settings modal could not be closed');
 await page.locator('#marketSelectButton').click();
 await page.locator('#marketSearch').fill('ETH');
 await page.locator('.market-list-entry').filter({hasText:'ETHUSDT'}).click();
