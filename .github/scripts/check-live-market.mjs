@@ -53,6 +53,12 @@ await page.evaluate(()=>{
 });
 await page.waitForFunction(()=>document.querySelector('#quote')?.textContent==='102.25',{timeout:4000});
 await page.waitForFunction(()=>document.querySelectorAll('#skillMatrix .skill-tf').length===12,null,{timeout:20000});
+const opportunity=await page.locator('#tradeOpportunity').innerText();
+if(!opportunity.includes('Найближча торгова можливість'))errors.push('Trade plan opportunity not rendered');
+const opportunityStatus=await page.locator('#opportunityState').innerText();
+const planEnabled=await page.locator('#applyOpportunity').isEnabled();
+if(opportunityStatus==='Утриматися'&&planEnabled)errors.push('Unsafe plan button enabled while assistant advises waiting');
+if(await page.locator('#executeButton').isEnabled())errors.push('Live trade execution became enabled');
 const intervals=await page.locator('#skillMatrix .skill-tf').count();
 if(intervals!==12)errors.push('Multi-timeframe analysis did not cover all 12 intervals');
 if(await page.locator('#multiDetails').isVisible())errors.push('Detailed multi-timeframe section expanded by default');
