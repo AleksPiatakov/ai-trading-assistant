@@ -6,7 +6,6 @@ on:
     branches: [redesign-approved-trading-ui]
     paths:
       - public/dashboard.html
-      - public/preview-data.js
       - .github/workflows/preview-pages.yml
   workflow_dispatch:
 permissions:
@@ -24,28 +23,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Prepare standalone visual preview
+      - name: Prepare static UI shell
         run: |
           mkdir -p _site
           cp public/dashboard.html _site/index.html
-          cp public/preview-data.js _site/preview-data.js
-          python3 - <<'PY'
-          from pathlib import Path
-          p=Path('_site/index.html')
-          text=p.read_text()
-          # Dedicated sample data script is shared with browser regression tests.
-          text=text.replace('<script>\\n(function(){','<script src="./preview-data.js"></script>\\n<script>\\n(function(){',1)
-          text=text.replace('Bybit · linear · публічні свічки, без підключення рахунку','ВІЗУАЛЬНИЙ ПЕРЕГЛЯД · змодельований графік, не котирування')
-          text=text.replace('Ринкові дані Bybit · ','ДЕМО-ДАНІ ДЛЯ ПЕРЕГЛЯДУ · ')
-          text=text.replace('Ринкові дані: очікування','ДЕМО-ПЕРЕГЛЯД · не реальні дані')
-          text=text.replace('Bybit: API не підключено','Bybit: не підключено · PREVIEW')
-          text=text.replace('Публічні ринкові дані працюють окремо.','Графік змодельований для перегляду дизайну.')
-          text=text.replace('Дані: публічні свічки Bybit','Дані: змодельований приклад для перегляду')
-          text=text.replace('Джерело графіка: публічні свічки Bybit · категорія linear.','Джерело графіка: змодельовані дані в GitHub Pages Preview.')
-          text=text.replace('</footer>','<span style="color:#ffd18c;font-size:10px">PREVIEW · Синтетичні свічки · Без зв’язку з рахунком Bybit · Ордери вимкнені</span></footer>',1)
-          p.write_text(text)
-          PY
-      - uses: actions/upload-artifact@v4
+     - uses: actions/upload-artifact@v4
         with:
           name: trading-assistant-browser-preview
           path: _site/index.html
