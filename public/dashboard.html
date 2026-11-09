@@ -1053,7 +1053,7 @@ function draw(){
  const rect=canvas.getBoundingClientRect(),width=Math.max(320,Math.round(rect.width)),height=Math.max(280,Math.round(rect.height)),dpr=Math.min(2,devicePixelRatio||1);
  canvas.width=width*dpr;canvas.height=height*dpr;
  const c=canvas.getContext('2d');c.scale(dpr,dpr);
- const left=12,right=width-91,priceTop=74,priceBottom=height*.655,
+ const left=12,right=width-79,priceTop=74,priceBottom=height*.655,
    rsiTop=height*.68,rsiBottom=height*.785,macdTop=height*.816,macdBottom=height*.945;
  const plotWidth=right-left;
  c.fillStyle='#07172f';c.fillRect(0,0,width,height);
@@ -1172,8 +1172,16 @@ function draw(){
  // Price label: latest close, not a fabricated live ticker.
  if(last.c>=min&&last.c<=max){
    const y=yPrice(last.c);c.fillStyle=last.c>=last.o?'#079e70':'#b74362';
-   c.fillRect(right+1,y-11,width-right-2,22);
-   c.font='bold 11px system-ui';c.fillStyle='#fff';c.fillText(priceFmt(last.c),right+6,y+4);
+   const tagX=right+7,tagW=Math.max(42,width-tagX-3);
+   c.beginPath();c.roundRect(tagX,y-11,tagW,22,8);c.fill();
+   const priceLabel=priceFmt(last.c);
+   let labelFont=11;
+   c.font='bold '+labelFont+'px system-ui';
+   while(c.measureText(priceLabel).width>tagW-8&&labelFont>8){
+     labelFont-=.5;c.font='bold '+labelFont+'px system-ui';
+   }
+   c.fillStyle='#fff';c.textAlign='center';c.fillText(priceLabel,tagX+tagW/2,y+4);
+   c.textAlign='left';
  }
  c.font='11px system-ui';c.textAlign='left';c.fillStyle='#f1d9ff';
  c.fillText('RSI (14)'+(Number.isFinite(analysis?.rsi)?'   '+analysis.rsi.toFixed(1):''),left+5,rsiTop+13);
