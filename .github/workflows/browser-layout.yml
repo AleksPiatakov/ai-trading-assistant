@@ -4,6 +4,7 @@ on:
     branches: [redesign-approved-trading-ui]
     paths:
       - public/dashboard.html
+      - .github/scripts/check-layout.mjs
       - .github/workflows/browser-layout.yml
       - .github/workflows/preview-pages.yml
   workflow_dispatch:
