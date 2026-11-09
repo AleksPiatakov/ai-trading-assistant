@@ -1231,7 +1231,7 @@ $('autoPlanEnabled').onchange=e=>{
 };
 $('autoPlanReset').onclick=()=>{
  if(!autoDraft||manualPlanLocked){autoStatus('Ручні рівні не очищаються');return}
- for(const id of planIds()){$(id).value='';state.levels[id]=null}
+ for(const id of planIds){$(id).value='';state.levels[id]=null}
  autoDraft=null;calculate();autoStatus('Автоплан очищено · наступний план після нового сканування');
 };
 const scannerFormat=v=>Number(v).toLocaleString('en-US',{maximumFractionDigits:Math.abs(v)<1?7:Math.abs(v)<100?4:2});
@@ -2249,7 +2249,7 @@ function calculate(){
  draw();
 }
 ['balance','riskPct','entry','stop','target','fee'].forEach(id=>$(id).addEventListener('input',()=>{
- if(planIds().includes(id)){state.levels[id]=num(id)||null;manualPlanLocked=true;autoDraft=null;autoStatus('Ручні рівні захищено від автозаміни')}
+ if(planIds.includes(id)){state.levels[id]=num(id)||null;manualPlanLocked=true;autoDraft=null;autoStatus('Ручні рівні захищено від автозаміни')}
  calculate();
 }));
 let currentCandleRequest=0;
