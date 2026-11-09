@@ -643,6 +643,7 @@ function setMarketSymbol(symbol){
   if(!availableMarkets.includes(symbol))return;
   if(state.symbol===symbol){closeMarketDropdown();return}
   state.symbol=symbol;
+  chartViewport.offset=0;chartViewport.count=80;
   $('quantityLabel').textContent='Кількість '+symbol.slice(0,-4);
   $('marketSymbolText').textContent=symbol;
   try{localStorage.setItem('ata-market-symbol',symbol)}catch{}
@@ -798,7 +799,7 @@ $('marketsNav').onclick=()=>{ $('chartCard').scrollIntoView({behavior:'smooth'})
 $('longButton').onclick=()=>{state.dir='long';$('longButton').classList.add('green');$('shortButton').classList.remove('red');calculate();draw()};$('shortButton').onclick=()=>{state.dir='short';$('shortButton').classList.add('red');$('longButton').classList.remove('green');calculate();draw()};
 document.querySelectorAll('#orderTypes button').forEach(b=>b.onclick=()=>{state.type=b.dataset.type;document.querySelectorAll('#orderTypes button').forEach(x=>x.classList.toggle('active',x===b));});
 document.querySelectorAll('#analysisTabs button').forEach(b=>b.onclick=()=>{state.tab=b.dataset.tab;document.querySelectorAll('#analysisTabs button').forEach(x=>x.classList.toggle('active',x===b));analysisView()});
-document.querySelectorAll('#timeframes button').forEach(b=>b.onclick=()=>{state.tf=b.dataset.tf;document.querySelectorAll('#timeframes button').forEach(x=>x.classList.toggle('active',x===b));loadCandles()});
+document.querySelectorAll('#timeframes button').forEach(b=>b.onclick=()=>{state.tf=b.dataset.tf;chartViewport.offset=0;chartViewport.count=80;document.querySelectorAll('#timeframes button').forEach(x=>x.classList.toggle('active',x===b));loadCandles()});
 document.querySelectorAll('[data-bottom]').forEach(b=>b.onclick=()=>showBottom(b.dataset.bottom));
 function showBottom(which){document.querySelectorAll('[data-bottom]').forEach(b=>b.classList.toggle('active',b.dataset.bottom===which));const s=$('bottomContent');if(which==='positions'||which==='orders'){renderDemoTradingTab(which);return}
 if(which==='journal'){s.innerHTML='<div style="padding:12px"><textarea id="journalText" rows="3" style="width:100%;background:#07162c;color:white;border:1px solid #395685;padding:8px" placeholder="Запишіть ідею або результат аналізу"></textarea><button id="saveNote" class="btn purple">Зберегти локально</button><div id="notes" style="padding-top:10px"></div></div>';$('saveNote').onclick=()=>{const t=$('journalText').value.trim();if(t){try{let a=JSON.parse(localStorage.getItem('ata-notes')||'[]');a.unshift({t,at:new Date().toLocaleString('uk-UA')});localStorage.setItem('ata-notes',JSON.stringify(a.slice(0,50)))}catch{}$('journalText').value='';renderNotes()}};renderNotes()}if(which==='settings'){s.innerHTML=`<section class="demo-credentials" aria-labelledby="demoConfigTitle">
@@ -1119,6 +1120,7 @@ function connectMarketSocket(){
            state.candles[state.candles.length-1]=item;changed=true;
          }
        }else{
+         if(chartViewport.offset>0)chartViewport.offset+=1;
          state.candles.push(item);if(state.candles.length>220)state.candles.shift();changed=true;
        }
      }
@@ -1223,6 +1225,14 @@ $('chart').addEventListener('pointermove',e=>{
 });
 $('chart').addEventListener('pointerleave',()=>{if(chartTip.textContent==='Перетягніть, щоб змінити TP')chartTip.classList.add('hidden')});
 let dragInfo=null;
+const chartViewport={count:80,offset:0};
+let chartPan=null;
+const visibleCandleCount=()=>Math.min(state.candles.length,Math.max(18,Math.round(chartViewport.count)));
+const maxChartOffset=()=>Math.max(0,state.candles.length-visibleCandleCount());
+function constrainChartViewport(){chartViewport.offset=Math.max(0,Math.min(maxChartOffset(),Math.round(chartViewport.offset)))}
+function chartZoom(factor){chartViewport.count=Math.max(18,Math.min(220,Math.round(chartViewport.count*factor)));constrainChartViewport();draw()}
+function chartMove(delta){chartViewport.offset+=delta;constrainChartViewport();draw()}
+function chartResetView(){chartViewport.offset=0;chartViewport.count=80;draw()}
 function draw(){
  const canvas=$('chart');if(!canvas)return;
  const rect=canvas.getBoundingClientRect(),width=Math.max(320,Math.round(rect.width)),height=Math.max(280,Math.round(rect.height)),dpr=Math.min(2,devicePixelRatio||1);
@@ -1253,9 +1263,13 @@ function draw(){
  const percent=previous?.c?100*(last.c-previous.c)/previous.c:NaN;
  const signed=n=>Number.isFinite(n)?(n>0?'+':'')+n.toFixed(2)+'%':'—';
  const priceFmt=v=>Number(v).toLocaleString('en-US',{maximumFractionDigits:v<1?8:v<100?5:2});
- const sample=candles;
+ constrainChartViewport();
+ const end=candles.length-chartViewport.offset;
+ const start=Math.max(0,end-visibleCandleCount());
+ const sample=candles.slice(start,end);
+ const displayLast=sample.at(-1);
  const maxVolume=Math.max(1,...sample.map(x=>x.v||0));
- const e50=analysis?.e50||null,e200=analysis?.e200||null;
+ const e50=analysis?.e50?.slice(start,end)||null,e200=analysis?.e200?.slice(start,end)||null;
  const prices=sample.flatMap(x=>[x.l,x.h]);
  for(const v of [Number($('entry').value),Number($('stop').value),Number($('target').value)])
    if(Number.isFinite(v)&&v>0)prices.push(v);
@@ -1267,15 +1281,15 @@ function draw(){
  state.range={min,max,top:priceTop,bottom:priceBottom};
  // Price scale and OHLC header reflect the actual latest Bybit candle.
  c.font='11px system-ui';c.fillStyle='#a9bfe1';
- const ohlc='O '+priceFmt(last.o)+'   H '+priceFmt(last.h)+'   L '+priceFmt(last.l)+'   C '+priceFmt(last.c);
+ const ohlc='O '+priceFmt(displayLast.o)+'   H '+priceFmt(displayLast.h)+'   L '+priceFmt(displayLast.l)+'   C '+priceFmt(displayLast.c);
  c.fillText(ohlc,left+5,40);
  if(Number.isFinite(percent)){
    const text=signed(percent);c.fillStyle=percent>=0?'#36df9e':'#f87992';
    c.fillText(text,left+5+Math.min(c.measureText(ohlc).width+17,plotWidth-100),40);
  }
  c.fillStyle='#a8bbd9';
- const emaText='EMA 50 '+(analysis?priceFmt(analysis.e50.at(-1)):'—')+
-   '    EMA 200 '+(analysis?priceFmt(analysis.e200.at(-1)):'—');
+ const emaText='EMA 50 '+(e50?priceFmt(e50.at(-1)):'—')+
+   '    EMA 200 '+(e200?priceFmt(e200.at(-1)):'—');
  c.fillText(emaText,left+5,60);
  // Candles and volume are clipped to their respective chart regions.
  c.save();c.beginPath();c.rect(left,priceTop,plotWidth,priceBottom-priceTop);c.clip();
@@ -1346,7 +1360,7 @@ function draw(){
  }
  // Price label: latest close, not a fabricated live ticker.
  const displayedPrice=hasLiveMarket()&&Number.isFinite(marketTickerPrice)?marketTickerPrice:last.c;
- if(displayedPrice>=min&&displayedPrice<=max){
+ if(chartViewport.offset===0&&displayedPrice>=min&&displayedPrice<=max){
    const y=yPrice(displayedPrice);c.fillStyle=displayedPrice>=last.o?'#079e70':'#b74362';
    const tagX=right+7,tagW=Math.max(42,width-tagX-3);
    c.beginPath();c.roundRect(tagX,y-11,tagW,22,8);c.fill();
@@ -1372,20 +1386,21 @@ function draw(){
  for(const v of [30,50,70])c.fillText(String(v),width-6,rsiBottom-v/100*(rsiBottom-rsiTop)+3);
  if(analysis){
    c.save();c.beginPath();c.rect(left,rsiTop,plotWidth,rsiBottom-rsiTop);c.clip();
-   line(analysis.rsiLine,v=>rsiBottom-(v/100)*(rsiBottom-rsiTop),'#c47aff',2);
+   line(analysis.rsiLine.slice(start,end),v=>rsiBottom-(v/100)*(rsiBottom-rsiTop),'#c47aff',2);
    c.restore();
-   const macdNumbers=[...analysis.macdLine,...analysis.signalLine].filter(Number.isFinite);
+   const viewMacd=analysis.macdLine.slice(start,end),viewSignal=analysis.signalLine.slice(start,end);
+   const macdNumbers=[...viewMacd,...viewSignal].filter(Number.isFinite);
    const bound=Math.max(1e-9,...macdNumbers.map(Math.abs));
    const macdY=v=>(macdTop+macdBottom)/2-v/bound*(macdBottom-macdTop)*.43;
-   const histogram=analysis.macdLine.map((v,i)=>v-analysis.signalLine[i]);
+   const histogram=viewMacd.map((v,i)=>v-viewSignal[i]);
    c.save();c.beginPath();c.rect(left,macdTop,plotWidth,macdBottom-macdTop);c.clip();
    c.strokeStyle='#466489';c.beginPath();c.moveTo(left,macdY(0));c.lineTo(right,macdY(0));c.stroke();
    for(let i=0;i<histogram.length;i++){
      const v=histogram[i],x=left+step*(i+.5),zero=macdY(0),yy=macdY(v);
      c.fillStyle=v>=0?'#14c9a1':'#df536a';c.fillRect(x-barWidth/2,Math.min(zero,yy),barWidth,Math.max(1,Math.abs(zero-yy)));
    }
-   line(analysis.macdLine,macdY,'#26affb',1.7);
-   line(analysis.signalLine,macdY,'#ffb32f',1.7);
+   line(viewMacd,macdY,'#26affb',1.7);
+   line(viewSignal,macdY,'#ffb32f',1.7);
    c.restore();
    c.textAlign='right';c.fillStyle='#b4c8e4';
    c.fillText(bound.toFixed(2),width-5,macdTop+4);
@@ -1402,6 +1417,50 @@ function draw(){
  }
  c.textAlign='left';
 }
-const canvas=$('chart');canvas.addEventListener('pointerdown',e=>{if(!state.range)return;const r=canvas.getBoundingClientRect(),yy=e.clientY-r.top;for(const f of ['entry','stop','target']){const v=num(f);const target=state.range.top+(state.range.max-v)/(state.range.max-state.range.min)*(state.range.bottom-state.range.top);if(v>0&&Math.abs(target-yy)<13){state.drag=f;canvas.setPointerCapture(e.pointerId);canvas.style.cursor='ns-resize';return}}});canvas.addEventListener('pointermove',e=>{if(!state.drag||!state.range)return;const r=canvas.getBoundingClientRect(),yy=e.clientY-r.top,rg=state.range;const bounded=Math.min(rg.bottom,Math.max(rg.top,yy)),price=rg.max-(bounded-rg.top)/(rg.bottom-rg.top)*(rg.max-rg.min);$(state.drag).value=price.toFixed(2);state.levels[state.drag]=price;calculate()});const stopDrag=()=>{state.drag=null;canvas.style.cursor='crosshair'};canvas.addEventListener('pointerup',stopDrag);canvas.addEventListener('pointercancel',stopDrag);window.addEventListener('resize',draw);applyMode();showBottom('positions');loadMarketList();if(localDemo())loadDemoAccountData();
+const canvas=$('chart');
+canvas.style.touchAction='none';
+canvas.style.cursor='grab';
+canvas.addEventListener('wheel',e=>{
+ if(!state.candles.length)return;
+ e.preventDefault();
+ if(Math.abs(e.deltaX)>Math.abs(e.deltaY)*1.1)chartMove(Math.round(e.deltaX/24));
+ else chartZoom(e.deltaY<0?.83:1.2);
+},{passive:false});
+canvas.addEventListener('pointerdown',e=>{
+ if(!state.range||e.button!==0)return;
+ const bounds=canvas.getBoundingClientRect(),yy=e.clientY-bounds.top,rg=state.range;
+ for(const field of ['entry','stop','target']){
+   if($(field).value.trim()==='')continue;
+   const v=num(field);
+   if(!Number.isFinite(v)||v<=0)continue;
+   const y=rg.top+(rg.max-v)/(rg.max-rg.min)*(rg.bottom-rg.top);
+   if(Math.abs(y-yy)<11){
+     state.drag=field;canvas.setPointerCapture(e.pointerId);
+     canvas.style.cursor='ns-resize';return;
+   }
+ }
+ chartPan={x:e.clientX,offset:chartViewport.offset};
+ canvas.setPointerCapture(e.pointerId);canvas.style.cursor='grabbing';
+});
+canvas.addEventListener('pointermove',e=>{
+ if(state.drag&&state.range){
+   const bounds=canvas.getBoundingClientRect(),yy=e.clientY-bounds.top,rg=state.range;
+   const bounded=Math.min(rg.bottom,Math.max(rg.top,yy));
+   const price=rg.max-(bounded-rg.top)/(rg.bottom-rg.top)*(rg.max-rg.min);
+   $(state.drag).value=price.toFixed(price<1?7:price<100?4:2);
+   state.levels[state.drag]=price;calculate();return;
+ }
+ if(chartPan){
+   const plot=Math.max(150,canvas.getBoundingClientRect().width-91);
+   const perCandle=plot/Math.max(1,visibleCandleCount());
+   chartViewport.offset=chartPan.offset+Math.round((e.clientX-chartPan.x)/Math.max(2,perCandle));
+   constrainChartViewport();draw();
+ }
+});
+const stopDrag=()=>{state.drag=null;chartPan=null;canvas.style.cursor='grab'};
+canvas.addEventListener('pointerup',stopDrag);
+canvas.addEventListener('pointercancel',stopDrag);
+canvas.addEventListener('dblclick',e=>{e.preventDefault();chartResetView()});
+window.addEventListener('resize',draw);applyMode();showBottom('positions');loadMarketList();if(localDemo())loadDemoAccountData();
 })();
 </script></body></html>
