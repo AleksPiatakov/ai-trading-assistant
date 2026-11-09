@@ -36,6 +36,8 @@ jobs:
           sleep 2
       - name: Inspect visible panel bounds at desktop sizes
         run: node .github/scripts/check-layout.mjs
+      - name: Verify streaming and symbol navigation
+        run: node .github/scripts/check-live-market.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
