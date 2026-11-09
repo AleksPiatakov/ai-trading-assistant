@@ -760,6 +760,37 @@ body.real-account .help-info{visibility:hidden;pointer-events:none}
 #aiCard #applyOpportunity:disabled{opacity:.48;cursor:not-allowed}
 #aiCard .trade-opportunity.opportunity-ready{border-color:#277f77;background:linear-gradient(110deg,#092f35,#10253e)}
 #aiCard .trade-opportunity.opportunity-ready #opportunityState{color:#74e3c7}
+
+/* Dedicated scanner dialog; intentionally narrower and flatter than dashboard cards */
+#aiCard .scanner-launch{margin-left:auto;margin-right:6px;padding:5px 10px;min-height:29px;border-radius:8px;border:1px solid #866de0;background:#302b77;color:#e9e1ff;font-size:11px;font-weight:700;white-space:nowrap;cursor:pointer}
+#aiCard .scanner-launch:hover{background:#4b32ae}
+.scanner-overlay{position:fixed;inset:0;z-index:11000;display:flex;align-items:center;justify-content:center;background:#030b1ddd;padding:15px}
+.scanner-overlay.hidden{display:none}
+.scanner-dialog{display:flex;flex-direction:column;width:min(880px,100%);max-height:90vh;border:1px solid #526fa1;background:linear-gradient(155deg,#152c50,#091b35);border-radius:17px;box-shadow:0 22px 68px #020610cc;color:#edf4ff;overflow:hidden}
+.scanner-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:17px 20px;border-bottom:1px solid #395983}
+.scanner-heading small{font-size:9px;letter-spacing:.1em;color:#ab9aec}
+.scanner-heading h2{margin:3px 0;font-size:21px;font-weight:800}
+.scanner-heading p{font-size:11px;line-height:1.5;color:#abc1df;margin:4px 0 0}
+#scannerClose{width:34px;height:34px;flex:none;border:1px solid #587bad;border-radius:8px;background:#1d385d;color:#eaf3ff;cursor:pointer;font-size:25px}
+.scanner-controls{display:flex;gap:12px;flex-wrap:wrap;align-items:center;padding:12px 20px;border-bottom:1px solid #385781}
+#scannerState{font-size:11px;color:#94dabb;margin-right:auto}
+.scanner-controls label{display:flex;gap:6px;align-items:center;color:#c3d4e9;font-size:11px}
+#scannerFilter{height:31px;padding:3px 8px;border-radius:8px;border:1px solid #597ba8;background:#0f2546;color:#eaf3ff}
+#scannerRefresh{min-height:31px;padding:5px 11px;font-size:11px}
+.scanner-summary{padding:11px 20px 5px;color:#afc5e2;font-size:12px}
+.scanner-results{display:grid;gap:8px;padding:12px 20px 20px;overflow-y:auto;min-height:90px}
+.scanner-result{display:grid;grid-template-columns:1fr auto;gap:9px;align-items:center;background:#102744;border:1px solid #3e5f8e;border-radius:10px;padding:11px 13px}
+.scanner-result header{display:flex;align-items:center;gap:10px;margin-bottom:5px}
+.scanner-result header strong{font-size:15px}
+.scanner-result .direction{font-size:11px;border-radius:6px;padding:4px 7px;font-weight:700}
+.scanner-result .direction.long{background:#11503e;color:#76eec3}
+.scanner-result .direction.short{background:#632e46;color:#ff9eb1}
+.scanner-result .scanner-data{font-size:11px;color:#c1d3ef;line-height:1.6}
+.scanner-result .scanner-data strong{color:#f0f5ff}
+.scanner-result .scanner-reason{font-size:10px;color:#91abc9;margin-top:5px}
+.scanner-result .btn{font-size:11px;padding:8px 11px;white-space:nowrap}
+.scanner-footer{border-top:1px solid #36537f;padding:11px 20px;font-size:10px;color:#a5b9d5;line-height:1.5}
+@media(max-width:780px){#aiCard .scanner-launch{font-size:0;padding:5px 8px}#aiCard .scanner-launch::before{content:'◉';font-size:16px}.scanner-result{grid-template-columns:1fr}.scanner-heading{padding:13px}.scanner-controls,.scanner-results,.scanner-summary{padding-left:13px;padding-right:13px}}
 </style></head>
 <body><div class="app" id="app">
 <nav class="nav nav-reference" aria-label="Навігація">
@@ -796,7 +827,7 @@ body.real-account .help-info{visibility:hidden;pointer-events:none}
 <div class="chart-footerline" id="chartHint"><span class="legend-ema blue-line">EMA 50</span><span class="legend-ema gold-line">EMA 200</span><span class="legend-ema green-line">Take Profit</span><span class="legend-ema neutral-line">Вхід</span><span class="legend-ema red-line">Stop Loss</span><span class="drag-hint">↕ Перетягуйте рівні на графіку</span></div>
 </section>
 <div class="right" id="rightPanel">
-<section class="card" id="aiCard"><div class="bar"><h2><span class="heading-icon assistant-mark" aria-hidden="true">✧</span> AI Помічник трейдера <button type="button" class="help-info" data-help="assistant" aria-label="Пояснення: AI Помічник трейдера" title="Що це?">і</button></h2><button id="foldAI" class="btn ghost" title="Згорнути панель">−</button></div><div class="foldable"><div class="tabs" id="analysisTabs"><button class="btn active" data-tab="plan">Аналіз угоди</button><button class="btn" data-tab="signal">Деталі сигналу</button><button class="btn" data-tab="context">Контекст</button><button class="btn" data-tab="risk">Ризики</button></div>
+<section class="card" id="aiCard"><div class="bar"><h2><span class="heading-icon assistant-mark" aria-hidden="true">✧</span> AI Помічник трейдера <button type="button" class="help-info" data-help="assistant" aria-label="Пояснення: AI Помічник трейдера" title="Що це?">і</button></h2><button id="openScanner" class="btn scanner-launch" type="button" title="Сканер ринку">◉ Торгові можливості</button><button id="foldAI" class="btn ghost" title="Згорнути панель">−</button></div><div class="foldable"><div class="tabs" id="analysisTabs"><button class="btn active" data-tab="plan">Аналіз угоди</button><button class="btn" data-tab="signal">Деталі сигналу</button><button class="btn" data-tab="context">Контекст</button><button class="btn" data-tab="risk">Ризики</button></div>
 <div class="panel-body"><div class="signal-line"><div class="signal" id="scenario">Аналіз ще не сформовано</div><div class="confidence-box">Впевненість <strong>—</strong></div></div><div class="analysis-columns"><div id="analysisFacts" class="fact"></div><div class="signal-metrics"><div class="breakdown-title">Показники аналізу <small>Не розраховано</small></div><span>Узгодженість трендів <b>—</b></span><span>Реакція на обсяг <b>—</b></span><span>Технічні індикатори <b>—</b></span><span>Новинний фон <b>—</b></span></div></div><div id="explanation" class="explain"></div><div class="multi-analysis" id="multiAnalysis"><div class="multi-analysis-header"><div><strong>Багатотаймфреймовий аналіз</strong><small>12 інтервалів Bybit • незалежно від відкритого графіка</small></div><button id="refreshAllTimeframes" type="button" class="btn ghost">Оновити аналіз</button></div><div id="multiSummary" class="multi-summary" role="status" aria-live="polite">Ще не розраховано</div><section id="tradeOpportunity" class="trade-opportunity" aria-labelledby="opportunityTitle">
 <div class="opportunity-heading"><strong id="opportunityTitle">Найближча торгова можливість</strong><span id="opportunityState">Очікування аналізу</span></div>
 <div id="opportunityDetails" class="opportunity-details" role="status" aria-live="polite">Помічник порівняє Long і Short за даними різних таймфреймів. Угоди не відкриваються автоматично.</div>
@@ -815,6 +846,14 @@ body.real-account .help-info{visibility:hidden;pointer-events:none}
 </div>
 <section class="card bottom" id="positions"><div class="bar"><button class="btn active" data-bottom="positions">Відкриті позиції</button><button type="button" class="help-info" data-help="positions" aria-label="Пояснення: Відкриті позиції" title="Що це?">і</button><button class="btn" data-bottom="orders">Поточні ордери</button><button type="button" class="help-info" data-help="orders" aria-label="Пояснення: Поточні ордери" title="Що це?">і</button><button class="btn" data-bottom="journal">Журнал</button><button type="button" class="help-info" data-help="journal" aria-label="Пояснення: Журнал" title="Що це?">і</button><button class="btn" data-bottom="settings">Налаштування</button><button type="button" class="help-info" data-help="settings" aria-label="Пояснення: Налаштування" title="Що це?">і</button><span class="grow"></span><button class="btn ghost" id="hideBottom">−</button></div><div id="bottomContent" class="table-scroll"><table class="position-table"><thead><tr><th>Пара</th><th>Напрямок</th><th>Обсяг</th><th>Вхід</th><th>SL</th><th>TP</th><th>P&L (USDT)</th><th>P&L (%)</th><th>Дії</th></tr></thead><tbody><tr class="empty-position"><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td><button class="btn" disabled>Закрити 25%</button> <button class="btn" disabled>Закрити 50%</button> <button class="btn" disabled>SL → BE</button></td></tr></tbody></table></div></section>
 <footer class="foot"><span id="footerMarket"></span><span id="footerMode"></span></footer>
+</div></div>
+<div id="scannerOverlay" class="scanner-overlay hidden" aria-hidden="true">
+<div class="scanner-dialog" role="dialog" aria-modal="true" aria-labelledby="scannerTitle">
+ <header class="scanner-heading"><div><small>AI TRADING ASSISTANT · BYBIT PUBLIC</small><h2 id="scannerTitle">◉ Торгові можливості</h2><p>Локальний сканер перевіряє ринки, навіть коли сторінка закрита, доки запущено сервер.</p></div><button id="scannerClose" type="button" aria-label="Закрити сканер">×</button></header>
+ <div class="scanner-controls"><span id="scannerState" role="status">Очікування сканера</span><label>Напрямок <select id="scannerFilter"><option value="all">Усі</option><option value="long">Long</option><option value="short">Short</option></select></label><button id="scannerRefresh" type="button" class="btn ghost">Оновити список</button></div>
+ <div class="scanner-summary" id="scannerSummary"></div>
+ <div id="scannerResults" class="scanner-results"></div>
+ <footer class="scanner-footer">Сканер лише пропонує плани, не відкриває позиції. Комісії, спред, ліквідність та прослизання необхідно перевірити перед торгівлею.</footer>
 </div></div>
 <div id="settingsOverlay" class="settings-overlay hidden" aria-hidden="true"><div class="settings-modal" role="dialog" aria-modal="true" aria-labelledby="settingsModalTitle"><div class="settings-modal-header"><div><span class="settings-kicker">AI TRADING ASSISTANT</span><h2 id="settingsModalTitle">Налаштування</h2></div><button id="settingsClose" type="button" aria-label="Закрити налаштування">×</button></div><div id="settingsModalContent" class="settings-modal-content"><section class="chart-config-section"><h3>Налаштування рівнів графіка</h3><p>Введені рівні використовуються для планування угоди й не надсилаються на біржу.</p><div class="chart-config-grid"><label>Вхід (USDT)<input type="number" step="any" min="0.00000001" id="settingEntry" placeholder="Не встановлено"></label><label>Stop Loss (USDT)<input type="number" step="any" min="0.00000001" id="settingStop" placeholder="Не встановлено"></label><label>Take Profit (USDT)<input type="number" step="any" min="0.00000001" id="settingTarget" placeholder="Не встановлено"></label></div><button class="btn purple" id="applyChartSettings" type="button">Застосувати рівні</button><span id="chartSettingsStatus" role="status" aria-live="polite"></span></section><section class="demo-credentials" aria-labelledby="demoConfigTitle">
 <div class="demo-config-heading"><span id="demoConfigTitle">Bybit Demo API</span><span class="demo-config-chip" id="demoKeyState">—</span></div>
