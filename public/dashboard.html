@@ -738,6 +738,18 @@ body.real-account .help-info{visibility:hidden;pointer-events:none}
 #aiCard .skill-insights .insight strong{color:#e9f0ff}
 #aiCard .skill-sources{margin-top:8px;font-size:10px;line-height:1.45;color:#92aacc}
 @media(max-width:1200px){#aiCard .skill-matrix{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* Compact assistant: summary is visible by default, full MTF matrix is opt-in. */
+#aiCard .multi-analysis{padding-top:9px;margin-top:9px}
+#aiCard .multi-analysis-header{flex-wrap:wrap}
+#aiCard .multi-summary{margin:7px 0 5px;max-width:100%;line-height:1.45}
+#aiCard .multi-details-toggle{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;margin:5px 0 0;padding:8px 10px;min-height:32px;border:1px solid #45699b;border-radius:8px;background:#132e53;color:#e4efff;font-size:11px;font-weight:650;cursor:pointer}
+#aiCard .multi-details-toggle:hover{background:#1e4070;border-color:#8069bc}
+#aiCard .multi-details-toggle:focus-visible{outline:2px solid #a992ff;outline-offset:2px}
+#aiCard .multi-details[hidden]{display:none!important}
+#aiCard .multi-details{margin-top:9px;padding-top:9px;border-top:1px solid #334e79}
+#aiCard .multi-details .skill-matrix{margin-top:0}
+@media(min-width:681px){#aiCard .multi-analysis-header small{max-width:275px}}
 </style></head>
 <body><div class="app" id="app">
 <nav class="nav nav-reference" aria-label="Навігація">
@@ -775,7 +787,7 @@ body.real-account .help-info{visibility:hidden;pointer-events:none}
 </section>
 <div class="right" id="rightPanel">
 <section class="card" id="aiCard"><div class="bar"><h2><span class="heading-icon assistant-mark" aria-hidden="true">✧</span> AI Помічник трейдера <button type="button" class="help-info" data-help="assistant" aria-label="Пояснення: AI Помічник трейдера" title="Що це?">і</button></h2><button id="foldAI" class="btn ghost" title="Згорнути панель">−</button></div><div class="foldable"><div class="tabs" id="analysisTabs"><button class="btn active" data-tab="plan">Аналіз угоди</button><button class="btn" data-tab="signal">Деталі сигналу</button><button class="btn" data-tab="context">Контекст</button><button class="btn" data-tab="risk">Ризики</button></div>
-<div class="panel-body"><div class="signal-line"><div class="signal" id="scenario">Аналіз ще не сформовано</div><div class="confidence-box">Впевненість <strong>—</strong></div></div><div class="analysis-columns"><div id="analysisFacts" class="fact"></div><div class="signal-metrics"><div class="breakdown-title">Показники аналізу <small>Не розраховано</small></div><span>Узгодженість трендів <b>—</b></span><span>Реакція на обсяг <b>—</b></span><span>Технічні індикатори <b>—</b></span><span>Новинний фон <b>—</b></span></div></div><div id="explanation" class="explain"></div><div class="multi-analysis" id="multiAnalysis"><div class="multi-analysis-header"><div><strong>Багатотаймфреймовий аналіз</strong><small>12 інтервалів Bybit • незалежно від відкритого графіка</small></div><button id="refreshAllTimeframes" type="button" class="btn ghost">Оновити аналіз</button></div><div id="multiSummary" class="multi-summary" role="status" aria-live="polite">Ще не розраховано</div><div id="skillMatrix" class="skill-matrix"></div><div id="skillInsights" class="skill-insights"></div><div id="skillSources" class="skill-sources">Джерело: публічні ринкові свічки Bybit. Індикатори не гарантують результату угоди.</div></div></div></div></section>
+<div class="panel-body"><div class="signal-line"><div class="signal" id="scenario">Аналіз ще не сформовано</div><div class="confidence-box">Впевненість <strong>—</strong></div></div><div class="analysis-columns"><div id="analysisFacts" class="fact"></div><div class="signal-metrics"><div class="breakdown-title">Показники аналізу <small>Не розраховано</small></div><span>Узгодженість трендів <b>—</b></span><span>Реакція на обсяг <b>—</b></span><span>Технічні індикатори <b>—</b></span><span>Новинний фон <b>—</b></span></div></div><div id="explanation" class="explain"></div><div class="multi-analysis" id="multiAnalysis"><div class="multi-analysis-header"><div><strong>Багатотаймфреймовий аналіз</strong><small>12 інтервалів Bybit • незалежно від відкритого графіка</small></div><button id="refreshAllTimeframes" type="button" class="btn ghost">Оновити аналіз</button></div><div id="multiSummary" class="multi-summary" role="status" aria-live="polite">Ще не розраховано</div><button id="toggleMultiDetails" class="btn ghost multi-details-toggle" type="button" aria-expanded="false" aria-controls="multiDetails">Показати всі 12 таймфреймів <span aria-hidden="true">⌄</span></button><div id="multiDetails" class="multi-details" hidden><div id="skillMatrix" class="skill-matrix"></div><div id="skillInsights" class="skill-insights"></div><div id="skillSources" class="skill-sources">Джерело: публічні ринкові свічки Bybit. Індикатори не гарантують результату угоди.</div></div></div></div></div></section>
 <section class="card" id="riskCard"><div class="bar"><h2><span class="heading-icon" aria-hidden="true">▣</span> Розрахунок позиції <span class="subtle-heading">(ризик-менеджмент)</span> <button type="button" class="help-info" data-help="risk" aria-label="Пояснення: Калькулятор ризику" title="Що це?">і</button></h2><button class="btn ghost" id="foldRisk" title="Приховати калькулятор">−</button></div><div id="riskContent"><div class="risk-grid-compact"><div class="fields">
 <label>Баланс (USDT)<input id="balance" type="number" min="0" step="any" placeholder="Ваш баланс"></label>
 <label>Ризик на угоду (%)<input id="riskPct" type="number" min="0.01" max="100" step="any" placeholder="—"></label>
@@ -1249,6 +1261,14 @@ function analyzeInterval(candles,tf){
   momentum:100*(last.c/close[n-6]-1)
  }};
 }
+
+const multiDetailControl=$('toggleMultiDetails');
+multiDetailControl.onclick=()=>{
+ const details=$('multiDetails'),expanded=details.hidden;
+ details.hidden=!expanded;
+ multiDetailControl.setAttribute('aria-expanded',String(expanded));
+ multiDetailControl.innerHTML=expanded?'Згорнути детальний аналіз <span aria-hidden="true">⌃</span>':'Показати всі 12 таймфреймів <span aria-hidden="true">⌄</span>';
+};
 function renderMultiAnalysis(){
  const matrix=$('skillMatrix'),insights=$('skillInsights'),summary=$('multiSummary'),sources=$('skillSources');
  matrix.replaceChildren();insights.replaceChildren();
