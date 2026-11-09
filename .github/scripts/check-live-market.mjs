@@ -38,6 +38,10 @@ await page.route('**/api/scanner/history',route=>route.fulfill({
 await page.route('**/api/scanner/opportunities',route=>route.fulfill({
  status:200,contentType:'application/json',body:JSON.stringify({
   status:'ready',completed:2,total:2,updatedAt:new Date().toISOString(),errors:[],
+  attention:[
+   {symbol:'ETHUSDT',side:'long',passed:4,total:5,reason:'EMA 1год і 4год збігаються',waitFor:['Підтвердження обсягу'],rsi:52,relativeVolume:1.2,hasTradePlan:false},
+   {symbol:'BTCUSDT',side:'short',passed:3,total:5,reason:'Імпульс вниз',waitFor:['Підтвердження EMA'],rsi:45,relativeVolume:0.8,hasTradePlan:false}
+  ],
   opportunities:[
    {symbol:'ETHUSDT',side:'long',entry:55,stop:50,target:65,rr:2,confirmations:3,
     scannedAt:new Date().toISOString(),reasons:['EMA 1год/4год узгоджені']},
@@ -144,6 +148,13 @@ await page.waitForFunction(()=>document.querySelector('#quote')?.textContent==='
 await page.locator('#openScanner').click();
 if(!await page.locator('#scannerOverlay').isVisible())errors.push('Scanner modal did not open');
 await page.waitForFunction(()=>document.querySelectorAll('.scanner-result').length===2,{timeout:5000});
+await page.locator('#scannerAttentionTab').click();
+if(await page.locator('.scanner-attention-row').count()!==2)errors.push('Watchlist pair recommendations not shown');
+const watchText=await page.locator('#scannerResults').innerText();
+if(!watchText.includes('Критерії уваги')||!watchText.includes('Очікувати'))errors.push('Watchlist lacks criteria or what to await');
+await page.locator('#scannerFilter').selectOption('short');
+if(await page.locator('.scanner-attention-row').count()!==1)errors.push('Watchlist direction filter failed');
+await page.locator('#scannerCurrentTab').click();
 await page.locator('#scannerFilter').selectOption('short');
 if(await page.locator('.scanner-result').count()!==1)errors.push('Scanner direction filter failed');
 await page.locator('#scannerHistoryTab').click();
