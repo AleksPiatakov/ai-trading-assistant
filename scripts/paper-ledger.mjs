@@ -65,7 +65,9 @@ export function createPaperLedger({path,loadCandles,now=()=>Date.now(),costs=tra
     const targetHit=row.side==='long'?candle.h>=row.target:candle.l<=row.target;
     const timed=candle.t-entryAt>=HOLD;
     if(!stopHit&&!targetHit&&!timed)continue;
-    const level=stopHit?row.stop:targetHit?row.target:candle.c;
+    // Stop orders through an opening gap use the worse of stop and open.
+    const worstStop=row.side==='long'?Math.min(row.stop,candle.o):Math.max(row.stop,candle.o);
+    const level=stopHit?worstStop:targetHit?row.target:candle.c;
     const exit=level*(1-direction*costs.slippagePerSide);
     const risk=Math.abs(row.entry-row.stop);
     row.exit=exit;row.exitAt=new Date(candle.t+BAR).toISOString();row.status='closed';
