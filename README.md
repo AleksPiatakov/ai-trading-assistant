@@ -100,3 +100,9 @@ The same Node process now starts a **read-only local market scanner**, even when
 - A candidate count is refreshed in the visible browser UI roughly once per minute, or every 20 seconds while the scanner dialog is open. No OS push notifications are sent when the browser is closed.
 - **Background scope:** the scanner runs only while the Node server is running and the Mac is awake. It does **not** currently auto-start on Mac login, continue during system sleep, or run 24/7 on a cloud server.
 - Demo and Real share public market analysis, but real-account API connectivity and order execution are still **disabled**; do not copy API keys into source control.
+
+## Pairs to watch (attention ranking)
+
+The local market scanner returns **two separate lists** in the same read-only `/api/scanner/opportunities` response: `opportunities` (trade-plan candidates that pass strict gates) and `attention` (pairs worth watching, without a trade entry recommendation). The latter uses four available intervals (15m, 1h, 4h, 1D), checks EMA alignment, broad multi-timeframe direction, a non-extreme 1h RSI, 1h MACD direction and relative 1h volume. Each displayed row contains the transparent count of **five observation conditions**, why it is watched, and what condition remains missing. These condition counts are **not prediction confidence or probabilities of profit**.
+
+The assistant's compact "На які пари звернути увагу" section lists at most three observed markets, and "Усі пари" opens the distinct scanner modal's "Пари під наглядом" tab. Selecting a watched pair opens its 1h chart **without copying any hypothetical entry, stop, take-profit or executing orders**. The source universe is currently restricted to 10 preselected USDT perpetual markets. No claims of actual trade readiness, news or exchange spread/liquidity screening are made based on the watchlist alone.
