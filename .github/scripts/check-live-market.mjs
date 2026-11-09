@@ -62,6 +62,17 @@ await page.evaluate(()=>{
   }]});
 });
 await page.waitForTimeout(250);
+await page.locator('#longTfToggle').click();
+if(await page.locator('#longTfMenu').evaluate(el=>el.classList.contains('hidden')))errors.push('Long timeframe menu closed');
+await page.locator('[data-long-tf="M"]').click();
+await page.waitForFunction(()=>window.__marketSubscriptions.includes('kline.M.BTCUSDT'),null,{timeout:10000});
+if(await page.locator('#longTfLabel').innerText()!=='1Міс')errors.push('Monthly label mismatch');
+await page.locator('#longTfToggle').click();
+await page.locator('[data-long-tf="3M"]').click();
+if(await page.locator('#longTfLabel').innerText()!=='3Міс')errors.push('Quarterly label mismatch');
+await page.locator('#longTfToggle').click();
+await page.locator('[data-long-tf="W"]').click();
+await page.waitForFunction(()=>window.__marketSubscriptions.includes('kline.W.BTCUSDT'),null,{timeout:10000});
 await page.locator('#marketSelectButton').click();
 await page.locator('#marketSearch').fill('ETH');
 await page.locator('.market-list-entry').filter({hasText:'ETHUSDT'}).click();
