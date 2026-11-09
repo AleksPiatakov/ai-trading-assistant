@@ -794,6 +794,21 @@ body.real-account .help-info{visibility:hidden;pointer-events:none}
 
 .scanner-empty,.scanner-errors{padding:17px;border:1px dashed #43658d;border-radius:9px;font-size:12px;line-height:1.5;color:#a9bfdf}
 .scanner-errors{padding:9px;color:#e5ba83}
+
+/* Matching the approved compact assistant visual hierarchy. */
+#aiCard .panel-body{padding-top:2px}
+#aiCard .analysis-columns{gap:8px}
+#aiCard #analysisFacts{min-height:0;padding:8px 10px}
+#aiCard .signal-metrics{padding:8px 9px}
+#aiCard .signal-metrics span{padding:5px 0}
+#aiCard .signal-metrics b{font-variant-numeric:tabular-nums;font-size:10px;color:#86e6c8;white-space:nowrap}
+#aiCard .signal{font-weight:750;font-size:12px;border-color:#238766}
+#aiCard .confidence-box{font-size:10px}
+#aiCard .confidence-box strong{font-size:17px;color:#8df2bf}
+#aiCard .trade-opportunity{margin:7px 0;padding:9px}
+#aiCard .opportunity-details{margin:5px 0;line-height:1.45}
+#aiCard .multi-analysis{margin-top:7px;padding-top:8px}
+@media(max-width:1050px){#aiCard .signal-metrics b{white-space:normal;text-align:right}}
 </style></head>
 <body><div class="app" id="app">
 <nav class="nav nav-reference" aria-label="Навігація">
@@ -831,7 +846,7 @@ body.real-account .help-info{visibility:hidden;pointer-events:none}
 </section>
 <div class="right" id="rightPanel">
 <section class="card" id="aiCard"><div class="bar"><h2><span class="heading-icon assistant-mark" aria-hidden="true">✧</span> AI Помічник трейдера <button type="button" class="help-info" data-help="assistant" aria-label="Пояснення: AI Помічник трейдера" title="Що це?">і</button></h2><button id="openScanner" class="btn scanner-launch" type="button" title="Сканер ринку">◉ Торгові можливості</button><button id="foldAI" class="btn ghost" title="Згорнути панель">−</button></div><div class="foldable"><div class="tabs" id="analysisTabs"><button class="btn active" data-tab="plan">Аналіз угоди</button><button class="btn" data-tab="signal">Деталі сигналу</button><button class="btn" data-tab="context">Контекст</button><button class="btn" data-tab="risk">Ризики</button></div>
-<div class="panel-body"><div class="signal-line"><div class="signal" id="scenario">Аналіз ще не сформовано</div><div class="confidence-box">Впевненість <strong>—</strong></div></div><div class="analysis-columns"><div id="analysisFacts" class="fact"></div><div class="signal-metrics"><div class="breakdown-title">Показники аналізу <small>Не розраховано</small></div><span>Узгодженість трендів <b>—</b></span><span>Реакція на обсяг <b>—</b></span><span>Технічні індикатори <b>—</b></span><span>Новинний фон <b>—</b></span></div></div><div id="explanation" class="explain"></div><div class="multi-analysis" id="multiAnalysis"><div class="multi-analysis-header"><div><strong>Багатотаймфреймовий аналіз</strong><small>12 інтервалів Bybit • незалежно від відкритого графіка</small></div><button id="refreshAllTimeframes" type="button" class="btn ghost">Оновити аналіз</button></div><div id="multiSummary" class="multi-summary" role="status" aria-live="polite">Ще не розраховано</div><section id="tradeOpportunity" class="trade-opportunity" aria-labelledby="opportunityTitle">
+<div class="panel-body"><div class="signal-line"><div class="signal" id="scenario">Аналіз ще не сформовано</div><div class="confidence-box">Перевірка умов <strong id="assistantCheckCount">—</strong></div></div><div class="analysis-columns"><div id="analysisFacts" class="fact"></div><div class="signal-metrics"><div class="breakdown-title">Показники аналізу <small id="assistantMetricsStatus">Перевірка</small></div><span>Тренди 1год / 4год <b id="assistantTrends">—</b></span><span>Обсяг (1год) <b id="assistantVolume">—</b></span><span>RSI / MACD <b id="assistantTechnical">—</b></span><span>Новини <b id="assistantNews">Не підключено</b></span></div></div><div id="explanation" class="explain"></div><div class="multi-analysis" id="multiAnalysis"><div class="multi-analysis-header"><div><strong>Багатотаймфреймовий аналіз</strong><small>12 інтервалів Bybit • незалежно від відкритого графіка</small></div><button id="refreshAllTimeframes" type="button" class="btn ghost">Оновити аналіз</button></div><div id="multiSummary" class="multi-summary" role="status" aria-live="polite">Ще не розраховано</div><section id="tradeOpportunity" class="trade-opportunity" aria-labelledby="opportunityTitle">
 <div class="opportunity-heading"><strong id="opportunityTitle">Найближча торгова можливість</strong><span id="opportunityState">Очікування аналізу</span></div>
 <div id="opportunityDetails" class="opportunity-details" role="status" aria-live="polite">Помічник порівняє Long і Short за даними різних таймфреймів. Угоди не відкриваються автоматично.</div>
 <button id="applyOpportunity" type="button" class="btn ghost" disabled>Перенести в план угоди</button>
@@ -1547,6 +1562,18 @@ function renderMultiAnalysis(){
  const rows=multiSnapshot.rows,valid=rows.filter(r=>r.status==='ok');
  renderOpportunity();
  const up=valid.filter(r=>r.direction==='up').length,down=valid.filter(r=>r.direction==='down').length;
+ const byTf=Object.fromEntries(valid.map(x=>[x.tf,x]));
+ const oneH=byTf['60'],fourH=byTf['240'];
+ const both=oneH&&fourH&&oneH.direction!=='mixed'&&oneH.direction===fourH.direction;
+ $('assistantTrends').textContent=!oneH||!fourH?'Немає даних':both?'✓ Узгоджено':'↔ Розбіжність';
+ $('assistantVolume').textContent=oneH?.skills?.relativeVolume!=null?oneH.skills.relativeVolume.toFixed(2)+'×':'—';
+ $('assistantTechnical').textContent=oneH&&Number.isFinite(oneH.skills.rsi)?'RSI '+oneH.skills.rsi.toFixed(1)+' · MACD '+(oneH.skills.macd>0?'↑':'↓'):'—';
+ $('assistantNews').textContent='Не підключено';
+ const totalChecks=4;
+ const passed=[!!both,!!(oneH&&oneH.skills.relativeVolume>=.6),!!(oneH&&oneH.skills.rsi>=30&&oneH.skills.rsi<=70),!!(oneH&&fourH)].filter(Boolean).length;
+ $('assistantCheckCount').textContent=oneH&&fourH?passed+'/'+totalChecks:'—';
+ $('assistantMetricsStatus').textContent='За даними Bybit';
+
  summary.textContent='Пара '+multiSnapshot.symbol+': перевірено '+rows.length+'/12; придатних '+valid.length+'. Висхідних '+up+', низхідних '+down+', змішаних '+(valid.length-up-down)+'.';
  for(const row of rows){
   const cell=document.createElement('div');cell.className='skill-tf '+(row.direction||'');
