@@ -20,7 +20,7 @@ Open the application with `node scripts/local-demo-server.mjs` and visit `http:/
 - The local scanner observes up to 10 predefined symbols every five minutes. Only full, confirmed scanner plans enter the paper ledger; "watch" candidates do not.
 - Detects a newly appearing symbol/side setup and creates a **waiting-fill** entry at the detection time.
 - The earliest eligible paper fill is the open of a **subsequent, completed 15-minute candle**. The ledger refuses to reconstruct a fill if the live data stream was absent long enough to create an unverifiable gap.
-- Outcome is tracked on closed 15-minute candles with conservative SL-first ambiguity, adverse slippage and estimated fees. Missing history or disconnections are not treated as winning trades.
+- Outcome is tracked on closed 15-minute candles with conservative SL-first ambiguity, adverse slippage and estimated fees. Missing history or disconnections are not treated as winning trades; trades with unverified history gaps are marked **unverifiable** and excluded from performance metrics.
 - Paper state persists locally at `~/Library/Application Support/AI Trading Assistant/paper-ledger.json`. No orders or API credentials are involved.
 - `GET /api/strategy/paper` returns the current statistics. `GET /api/strategy/backtest?symbol=BTCUSDT` runs/returns a historical test. Both are read-only, local-host-only endpoints.
 
