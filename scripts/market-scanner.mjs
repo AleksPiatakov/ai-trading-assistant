@@ -43,6 +43,13 @@ function analyze(candles,tf){
   return {tf,price:last.c,lastTime:last.t,direction,rsi:rsi(close),macd,atr,support,resistance,
     relVolume:volumeBaseline>0?last.v/volumeBaseline:null};
 }
+function frameSummary(data){
+ return REQUIRED.map(tf=>data[tf]).filter(Boolean).map(f=>({
+  tf:f.tf,direction:f.direction,price:f.price,rsi:f.rsi,macd:f.macd,
+  relativeVolume:f.relVolume,support:f.support,resistance:f.resistance,
+  atrPct:f.price>0?100*f.atr/f.price:null,lastTime:f.lastTime
+ }));
+}
 function proposal(symbol,data,asOf){
   const m15=data['15'],h1=data['60'],h4=data['240'],daily=data.D;
   if(!m15||!h1||!h4||!daily)return null;
@@ -64,7 +71,7 @@ function proposal(symbol,data,asOf){
     if(side==='short'&&!(stop>price&&target<price))continue;
     const confirmations=[h1,h4,m15,daily].filter(x=>x.direction===d).length;
     out.push({symbol,side,entry:price,stop,target,rr,confirmations,checks:4,
-      timeframe:'60',priceAsOf:h1.lastTime,scannedAt:asOf,
+      timeframe:'60',priceAsOf:h1.lastTime,scannedAt:asOf,timeframes:frameSummary(data),
       reasons:['EMA 1год і 4год узгоджені',daily.direction===d?'Денний тренд підтверджує':'Денний тренд змішаний',
         'RSI та MACD відповідають напрямку','Підтримка/опір за 20 свічками, R:R ≥ 1:1.5'],
       warning:'Умовний план за останньою 1год свічкою; комісії, спред і прослизання не враховані. Перевір актуальну ціну перед дією.'});
@@ -100,7 +107,7 @@ function attentionCandidate(symbol,frames,asOf){
  return {symbol,side,passed,total:checks.length,aligned,frames:rows.length,
   up,down,mixed:rows.length-up-down,rsi:h1.rsi,relativeVolume:volumePresent?h1.relVolume:null,
   atrPct:finite(h1.atr)&&h1.price>0?100*h1.atr/h1.price:null,
-  checkedAt:asOf,hasTradePlan:false,
+  checkedAt:asOf,timeframes:frameSummary(frames),hasTradePlan:false,
   reason:aligned?'1год і 4год показують узгоджений напрямок EMA.':
    'Є рух або ознаки імпульсу, але 1год і 4год поки не узгоджені.',
   waitFor:pending.length?pending.slice(0,2):['Підтвердити актуальний вхід, SL/TP, R:R і ліквідність'],
