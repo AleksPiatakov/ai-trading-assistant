@@ -154,6 +154,17 @@ if(await page.locator('#longTfLabel').innerText()!=='1Тиж')errors.push('Saved
 if(!await page.locator('#longTfToggle').evaluate(el=>el.classList.contains('active')))errors.push('Saved timeframe button is not active after reload');
 const persisted=await page.evaluate(()=>({symbol:localStorage.getItem('ata-market-symbol'),tf:localStorage.getItem('ata-market-timeframe')}));
 if(persisted.symbol!=='ETHUSDT'||persisted.tf!=='W')errors.push('Local preference storage does not match selections');
+// Explicit selection may populate a planning form but must never submit orders.
+await page.locator('#openScanner').click();
+await page.waitForFunction(()=>document.querySelectorAll('.scanner-result').length===2,null,{timeout:5000});
+await page.locator('.scanner-result').filter({hasText:'ETHUSDT'}).locator('button').click();
+if(await page.locator('#scannerOverlay').isVisible())errors.push('Selecting a scanner plan did not close the dialog');
+if(await page.locator('#marketSymbolText').innerText()!=='ETHUSDT')errors.push('Scanner plan selected wrong market');
+if(!await page.locator('#timeframes [data-tf="60"]').evaluate(el=>el.classList.contains('active')))
+ errors.push('Scanner plan did not open one-hour chart');
+if(await page.locator('#entry').inputValue()!=='55'||await page.locator('#stop').inputValue()!=='50'||await page.locator('#target').inputValue()!=='65')
+ errors.push('Scanner plan entry/SL/TP not copied after explicit action');
+if(await page.locator('#executeButton').isEnabled())errors.push('Scanner candidate enabled order submission');
 if(errors.length)throw Error('Live market smoke test failed: '+errors.join(' | '));
 console.log('Live WebSocket ticker/kline and BTC→ETH switching: success');
 await browser.close();
