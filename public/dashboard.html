@@ -1457,13 +1457,21 @@ function draw(){
    // Never widen the price-scale gutter just to accommodate a badge.
    let labelFont=11;
    c.font='bold '+labelFont+'px system-ui';
-   const badgeRight=width-4,availableWidth=Math.max(36,badgeRight-(right+5));
-   const badgeMaxWidth=Math.min(64,availableWidth);
-   while(c.measureText(priceLabel).width+8>badgeMaxWidth&&labelFont>8){
+   // Fixed-width tag: update only its price and color, never its geometry.
+   const tagW=64,tagX=width-4-tagW;
+   while(c.measureText(priceLabel).width>tagW-8&&labelFont>8){
      labelFont-=.5;c.font='bold '+labelFont+'px system-ui';
    }
-   const tagW=Math.min(badgeMaxWidth,Math.max(35,Math.ceil(c.measureText(priceLabel).width+8)));
-   const tagX=badgeRight-tagW;
+   // Dashed horizontal guide between the latest candle and the fixed price tag.
+   c.save();
+   c.strokeStyle=displayedPrice>=last.o?'#20bd91':'#dd647f';
+   c.lineWidth=1.2;
+   c.setLineDash([4,4]);
+   c.beginPath();
+   c.moveTo(left+candleWidth-step*.5,y);
+   c.lineTo(tagX-4,y);
+   c.stroke();
+   c.restore();
    c.beginPath();c.roundRect(tagX,y-11,tagW,22,8);c.fill();
    c.fillStyle='#fff';c.textAlign='center';c.fillText(priceLabel,tagX+tagW/2,y+4);
    c.textAlign='left';
