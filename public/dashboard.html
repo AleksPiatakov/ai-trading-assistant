@@ -844,6 +844,44 @@ body.real-account .help-info{visibility:hidden;pointer-events:none}
 .scanner-toast.hidden{display:none}
 .scanner-toast button{background:#17466b;border:1px solid #5b819c;color:#eaf7ff;border-radius:6px;padding:5px 7px;cursor:pointer}
 @media(max-width:780px){.scanner-notification-controls,.scanner-alert-status,.scanner-alert-inbox{padding-left:13px;padding-right:13px}}
+
+/* Detached workspace layout: chart occupies full available content width. */
+.layout{grid-template-columns:minmax(0,1fr)!important;display:block!important}
+.layout>.chart-card{width:100%;min-height:calc(100dvh - 245px)}
+.layout>.chart-card .chart-wrap{min-height:clamp(470px,65dvh,1100px)}
+#rightPanel.detached-panel{
+ position:fixed!important;top:84px;right:22px;left:auto;bottom:auto;
+ display:flex!important;flex-direction:column!important;gap:10px!important;
+ width:min(650px,calc(100vw - 35px));height:min(780px,calc(100dvh - 105px));
+ min-height:105px;max-width:calc(100vw - 12px);max-height:calc(100dvh - 15px);
+ z-index:8000;resize:both;overflow:auto;overscroll-behavior:contain;
+ padding:0 9px 10px;border:1px solid #6f84b1;border-radius:14px;
+ background:linear-gradient(145deg,#122647,#08172e);box-shadow:0 22px 75px #000b;
+}
+#rightPanel.detached-panel.is-closed{display:none!important}
+#rightPanel.detached-panel.is-minimized{height:auto!important;min-height:0;resize:none;overflow:hidden;padding-bottom:0}
+#rightPanel.detached-panel.is-minimized>.card{display:none!important}
+#rightPanel.detached-panel>.card{flex:none!important;min-height:0!important;height:auto!important}
+#rightPanel.detached-panel>.card.window-inactive{display:none!important}
+.detached-heading{position:sticky;top:0;z-index:3;min-height:48px;display:flex;align-items:center;gap:8px;padding:7px 8px 8px;background:#142b4e;border-bottom:1px solid #435e89;margin:0 -9px 2px;cursor:move;user-select:none;touch-action:none}
+.detached-heading strong{font-size:13px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.detached-heading .btn{padding:5px 9px;font-size:11px}
+.detached-heading .window-chrome{min-width:27px;font-size:17px;padding:2px 7px}
+.window-section-switch{display:flex;gap:5px;flex-wrap:wrap}
+.window-section-switch .btn.active{background:#5034ae;border-color:#a38aef}
+.chart-window-action{padding:7px 10px!important;border-color:#8064df!important;color:#e9ddff!important}
+#rightPanel.detached-panel #aiCard{min-height:0!important}
+#rightPanel.detached-panel #aiCard .analysis-columns{grid-template-columns:minmax(0,1.1fr) minmax(0,1fr)}
+#rightPanel.detached-panel #riskCard .fields label:nth-child(n+3){display:grid}
+#rightPanel.detached-panel #riskCard .risk-grid-compact{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+@media(max-width:680px){
+ #rightPanel.detached-panel{top:62px;left:6px!important;right:6px!important;width:auto!important;height:min(80dvh,720px);max-width:none;resize:vertical}
+ #rightPanel.detached-panel .detached-heading{flex-wrap:wrap;touch-action:auto}
+ #rightPanel.detached-panel .window-section-switch{order:3;width:100%;justify-content:space-between}
+ #rightPanel.detached-panel .window-section-switch .btn{flex:1}
+ #rightPanel.detached-panel #aiCard .analysis-columns,#rightPanel.detached-panel #riskCard .risk-grid-compact{grid-template-columns:1fr}
+ .layout>.chart-card .chart-wrap{min-height:390px}
+}
 </style></head>
 <body><div class="app" id="app">
 <nav class="nav nav-reference" aria-label="Навігація">
@@ -875,11 +913,12 @@ body.real-account .help-info{visibility:hidden;pointer-events:none}
 </header>
 <div class="layout">
 <section class="card chart-card" id="chartCard"><div class="bar"><div class="market-selector-container"><button id="marketSelectButton" class="market-select-button" type="button" aria-expanded="false" aria-controls="marketDropdown" aria-label="Вибрати торгову пару"><span class="coin-icon" aria-hidden="true">₿</span><span id="marketSymbolText">BTCUSDT</span><span class="market-caret">⌄</span></button><button type="button" class="help-info" data-help="symbol" aria-label="Пояснення: Вибір торгової пари" title="Що це?">і</button><button id="marketFavorite" class="market-favorite-button" type="button" aria-label="Додати пару до обраних" title="Додати до обраних">☆</button><div class="market-dropdown hidden" id="marketDropdown"><div class="market-searchbox"><input id="marketSearch" type="search" placeholder="Пошук пари, наприклад ETHUSDT" autocomplete="off" aria-label="Пошук торгових пар"></div><div class="market-filter-tabs"><button id="marketAllTab" class="active" type="button">Усі USDT Perpetual</button><button id="marketFavTab" type="button">★ Обрані</button></div><div id="marketList" class="market-list" role="listbox" aria-label="Торгові пари"></div><div id="marketListStatus" class="market-list-status"></div></div></div><span class="chart-quote-group"><span id="quote" class="last">—</span><span id="quoteDelta" class="chart-delta"></span><span id="quoteMeta" class="detail"></span></span><button class="chart-collapse-button" id="maximizeChart" title="Розгорнути графік" aria-label="Розгорнути графік">»</button></div>
-<div class="chart-toolbar"><span class="draw-cross" aria-hidden="true">＋</span><div id="timeframes"><button class="btn" data-tf="1">1хв</button><button class="btn" data-tf="5">5хв</button><button class="btn" data-tf="15">15хв</button><button class="btn" data-tf="30">30хв</button><button class="btn" data-tf="60">1год</button><button class="btn" data-tf="240">4год</button><button class="btn active" data-tf="D">1Д</button><div class="long-tf-picker" id="longTfPicker"><button class="btn long-tf-toggle" id="longTfToggle" type="button" aria-haspopup="menu" aria-controls="longTfMenu" aria-expanded="false"><span id="longTfLabel">1Тиж</span><span class="long-tf-chevron" aria-hidden="true">⌄</span></button><div class="long-tf-menu hidden" id="longTfMenu" role="menu" aria-label="Довші часові інтервали"><button type="button" data-long-tf="W" role="menuitemradio" aria-checked="false"><span>1 тиждень</span><small>Одна свічка — 7 днів</small></button><button type="button" data-long-tf="M" role="menuitemradio" aria-checked="false"><span>1 місяць</span><small>Календарний місяць</small></button><button type="button" data-long-tf="3M" role="menuitemradio" aria-checked="false"><span>3 місяці</span><small>Календарний квартал</small></button></div></div></div><button type="button" class="help-info" data-help="timeframes" aria-label="Пояснення: Таймфрейми" title="Що це?">і</button><span class="grow"></span><div class="chart-toolbar-actions"><button class="chart-tool-action" id="indicatorsButton" type="button" title="Показники EMA, RSI, MACD"><span class="trend-glyph">⌁</span> Індикатори</button><button type="button" class="help-info" data-help="indicators" aria-label="Пояснення: Індикатори" title="Що це?">і</button><button class="chart-tool-icon" id="chartInfoButton" type="button" title="Інформація про графік">▤</button><button class="chart-tool-icon" id="chartFullscreenButton" type="button" title="На весь екран">⛶</button></div></div>
+<div class="chart-toolbar"><span class="draw-cross" aria-hidden="true">＋</span><div id="timeframes"><button class="btn" data-tf="1">1хв</button><button class="btn" data-tf="5">5хв</button><button class="btn" data-tf="15">15хв</button><button class="btn" data-tf="30">30хв</button><button class="btn" data-tf="60">1год</button><button class="btn" data-tf="240">4год</button><button class="btn active" data-tf="D">1Д</button><div class="long-tf-picker" id="longTfPicker"><button class="btn long-tf-toggle" id="longTfToggle" type="button" aria-haspopup="menu" aria-controls="longTfMenu" aria-expanded="false"><span id="longTfLabel">1Тиж</span><span class="long-tf-chevron" aria-hidden="true">⌄</span></button><div class="long-tf-menu hidden" id="longTfMenu" role="menu" aria-label="Довші часові інтервали"><button type="button" data-long-tf="W" role="menuitemradio" aria-checked="false"><span>1 тиждень</span><small>Одна свічка — 7 днів</small></button><button type="button" data-long-tf="M" role="menuitemradio" aria-checked="false"><span>1 місяць</span><small>Календарний місяць</small></button><button type="button" data-long-tf="3M" role="menuitemradio" aria-checked="false"><span>3 місяці</span><small>Календарний квартал</small></button></div></div></div><button type="button" class="help-info" data-help="timeframes" aria-label="Пояснення: Таймфрейми" title="Що це?">і</button><span class="grow"></span><div class="chart-toolbar-actions"><button class="btn chart-window-action" id="openAssistantWindow" type="button" aria-controls="rightPanel" aria-expanded="false">✧ AI Помічник</button><button class="btn chart-window-action" id="openRiskWindow" type="button" aria-controls="rightPanel">▣ Калькулятор</button><button class="btn chart-window-action" id="openOrderWindow" type="button" aria-controls="rightPanel">➤ Угода</button><button class="chart-tool-action" id="indicatorsButton" type="button" title="Показники EMA, RSI, MACD"><span class="trend-glyph">⌁</span> Індикатори</button><button type="button" class="help-info" data-help="indicators" aria-label="Пояснення: Індикатори" title="Що це?">і</button><button class="chart-tool-icon" id="chartInfoButton" type="button" title="Інформація про графік">▤</button><button class="chart-tool-icon" id="chartFullscreenButton" type="button" title="На весь екран">⛶</button></div></div>
 <div class="chart-wrap"><div class="drawing-tools" aria-label="Інструменти графіка"><button type="button" class="drawing-tool-button" data-chart-tool="pencil" title="Олівець" aria-label="Олівець" aria-pressed="false"><svg aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="m6 23 15-15 5 5-15 15-7 2 2-7ZM18 11l5 5M21 8l3-3a3 3 0 0 1 4 4l-2 3"/></svg></button><button type="button" class="drawing-tool-button" data-chart-tool="trend" title="Лінія тренду" aria-label="Лінія тренду" aria-pressed="false"><svg aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M7 25 25 7"/><circle cx="7" cy="25" r="2.5"/><circle cx="25" cy="7" r="2.5"/></svg></button><button type="button" class="drawing-tool-button" data-chart-tool="horizontal" title="Горизонтальні рівні" aria-label="Горизонтальні рівні" aria-pressed="false"><svg aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8h22M5 16h22M5 24h22"/><circle cx="20" cy="8" r="3" fill="#0c1d39"/><circle cx="11" cy="16" r="3" fill="#0c1d39"/><circle cx="23" cy="24" r="3" fill="#0c1d39"/></svg></button><button type="button" class="drawing-tool-button" data-chart-tool="polyline" title="З’єднані точки" aria-label="З’єднані точки" aria-pressed="false"><svg aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M6 24 14 8l12 10-8 9"/><circle cx="6" cy="24" r="2.4"/><circle cx="14" cy="8" r="2.4"/><circle cx="26" cy="18" r="2.4"/><circle cx="18" cy="27" r="2.4"/></svg></button><button type="button" class="drawing-tool-button" data-chart-tool="text" title="Текст" aria-label="Текст" aria-pressed="false"><svg aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8V5h22v3M16 5v22M11 27h10"/></svg></button><button type="button" class="drawing-tool-button" data-chart-tool="rectangle" title="Геометричні лінії" aria-label="Геометричні лінії" aria-pressed="false"><svg aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="m7 7 18 18M25 7 7 25M7 7v18h18V7H7"/><circle cx="7" cy="7" r="2"/><circle cx="25" cy="7" r="2"/><circle cx="7" cy="25" r="2"/><circle cx="25" cy="25" r="2"/></svg></button><button type="button" class="drawing-tool-button" data-chart-tool="levels" title="Налаштування рівнів" aria-label="Налаштування рівнів" aria-pressed="false"><svg aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h24M4 16h24M4 24h24"/><circle cx="11" cy="8" r="3.2" fill="#0c1d39"/><circle cx="22" cy="16" r="3.2" fill="#0c1d39"/><circle cx="13" cy="24" r="3.2" fill="#0c1d39"/></svg></button><button type="button" class="drawing-tool-button" data-chart-tool="eraser" title="Маркер" aria-label="Маркер" aria-pressed="false"><svg aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="13" width="20" height="8" rx="3" transform="rotate(-42 16 17)"/><path d="m8 24 4 3M20 9l4 4"/></svg></button><button type="button" class="drawing-tool-button" data-chart-tool="zoom" title="Збільшення" aria-label="Збільшення" aria-pressed="false"><svg aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><circle cx="14" cy="14" r="9"/><path d="M14 9v10M9 14h10M21 21l7 7"/></svg></button><span class="drawing-separator" aria-hidden="true"></span><button type="button" class="drawing-tool-button" data-chart-tool="home" title="Робоча область" aria-label="Робоча область" aria-pressed="false"><svg aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="m6 15 10-10 10 10v12H6V15Z"/></svg></button></div><canvas id="chart" aria-label="Графік BTCUSDT, свічки, EMA, RSI, MACD та рівні плану"></canvas><div id="chartNote" class="chart-note"></div><div id="chartDragTip" class="chart-drag-tip hidden"></div></div>
 <div class="chart-footerline" id="chartHint"><span class="legend-ema blue-line">EMA 50</span><span class="legend-ema gold-line">EMA 200</span><span class="legend-ema green-line">Take Profit</span><span class="legend-ema neutral-line">Вхід</span><span class="legend-ema red-line">Stop Loss</span><span class="drag-hint">↕ Перетягуйте рівні на графіку</span></div>
 </section>
-<div class="right" id="rightPanel">
+<div class="right detached-panel is-closed" id="rightPanel" role="dialog" aria-label="Робоче вікно трейдера" aria-modal="false">
+<div class="detached-heading" id="detachedDragHandle"><strong>✧ AI Помічник трейдера</strong><div class="window-section-switch" role="group" aria-label="Розділ вікна"><button type="button" class="btn active" data-window-section="ai">Помічник</button><button type="button" class="btn" data-window-section="risk">Калькулятор</button><button type="button" class="btn" data-window-section="order">Угода</button></div><button type="button" class="btn window-chrome" id="minimizeAssistantWindow" title="Згорнути вікно" aria-label="Згорнути вікно">−</button><button type="button" class="btn window-chrome" id="closeAssistantWindow" title="Закрити вікно" aria-label="Закрити вікно">×</button></div>
 <section class="card" id="aiCard"><div class="bar"><h2><span class="heading-icon assistant-mark" aria-hidden="true">✧</span> AI Помічник трейдера <button type="button" class="help-info" data-help="assistant" aria-label="Пояснення: AI Помічник трейдера" title="Що це?">і</button></h2><button id="openScanner" class="btn scanner-launch" type="button" title="Сканер ринку">◉ Торгові можливості <span id="scannerAlertCount" class="scanner-count hidden" aria-label="Кількість можливостей"></span></button><button id="foldAI" class="btn ghost" title="Згорнути панель">−</button></div><div class="foldable"><div class="tabs" id="analysisTabs"><button class="btn active" data-tab="plan">Аналіз угоди</button><button class="btn" data-tab="signal">Деталі сигналу</button><button class="btn" data-tab="context">Контекст</button><button class="btn" data-tab="risk">Ризики</button></div>
 <div class="panel-body"><div class="signal-line"><div class="signal" id="scenario">Аналіз ще не сформовано</div><div class="confidence-box">Перевірка умов <strong id="assistantCheckCount">—</strong></div></div><div class="analysis-columns"><div id="analysisFacts" class="fact"></div><div class="signal-metrics"><div class="breakdown-title">Показники аналізу <small id="assistantMetricsStatus">Перевірка</small></div><span>Тренди 1год / 4год <b id="assistantTrends">—</b></span><span>Обсяг (1год) <b id="assistantVolume">—</b></span><span>RSI / MACD <b id="assistantTechnical">—</b></span><span>Новини <b id="assistantNews">Не підключено</b></span></div></div><div id="explanation" class="explain"></div><div class="multi-analysis" id="multiAnalysis"><div class="multi-analysis-header"><div><strong>Багатотаймфреймовий аналіз</strong><small>12 інтервалів Bybit • незалежно від відкритого графіка</small></div><button id="refreshAllTimeframes" type="button" class="btn ghost">Оновити аналіз</button></div><div id="multiSummary" class="multi-summary" role="status" aria-live="polite">Ще не розраховано</div><section class="assistant-watch" id="assistantWatch"><div class="assistant-watch-head"><strong>На які пари звернути увагу</strong><button id="watchOpenScanner" class="btn ghost" type="button">Усі пари</button></div><div id="watchBrief" class="assistant-watch-brief" aria-live="polite">Отримання даних сканера…</div></section><section id="tradeOpportunity" class="trade-opportunity" aria-labelledby="opportunityTitle">
 <div class="opportunity-heading"><strong id="opportunityTitle">Найближча торгова можливість</strong><span id="opportunityState">Очікування аналізу</span></div>
@@ -2586,6 +2625,62 @@ const stopDrag=()=>{
 canvas.addEventListener('pointerup',stopDrag);
 canvas.addEventListener('pointercancel',stopDrag);
 canvas.addEventListener('dblclick',e=>{e.preventDefault();chartResetView()});
+
+/* Floating assistant workspace: keep existing cards and handlers mounted. */
+const tradeWindow=$('rightPanel');
+const windowSections={ai:'aiCard',risk:'riskCard',order:'orderCard'};
+const sectionNames={ai:'✧ AI Помічник трейдера',risk:'▣ Розрахунок позиції',order:'➤ Виконати угоду'};
+let currentWindowSection='ai';
+function refreshDetachedWindow(){
+ const isOpen=!tradeWindow.classList.contains('is-closed');
+ const minimized=tradeWindow.classList.contains('is-minimized');
+ Object.entries(windowSections).forEach(([section,id])=>$(id).classList.toggle('window-inactive',section!==currentWindowSection));
+ tradeWindow.querySelector('.detached-heading strong').textContent=sectionNames[currentWindowSection];
+ tradeWindow.querySelectorAll('[data-window-section]').forEach(btn=>btn.classList.toggle('active',btn.dataset.windowSection===currentWindowSection));
+ $('openAssistantWindow').setAttribute('aria-expanded',String(isOpen&&!minimized));
+ requestAnimationFrame(draw);
+}
+function openDetachedWindow(section='ai'){
+ currentWindowSection=section;
+ tradeWindow.classList.remove('is-closed','is-minimized');
+ refreshDetachedWindow();
+}
+$('openAssistantWindow').addEventListener('click',()=>openDetachedWindow('ai'));
+$('openRiskWindow').addEventListener('click',()=>openDetachedWindow('risk'));
+$('openOrderWindow').addEventListener('click',()=>openDetachedWindow('order'));
+tradeWindow.querySelectorAll('[data-window-section]').forEach(btn=>btn.addEventListener('click',()=>openDetachedWindow(btn.dataset.windowSection)));
+$('closeAssistantWindow').addEventListener('click',()=>{tradeWindow.classList.add('is-closed');refreshDetachedWindow()});
+$('minimizeAssistantWindow').addEventListener('click',()=>{
+ const isMinimized=tradeWindow.classList.toggle('is-minimized');
+ $('minimizeAssistantWindow').textContent=isMinimized?'□':'−';
+ $('minimizeAssistantWindow').title=isMinimized?'Відновити вікно':'Згорнути вікно';
+ refreshDetachedWindow();
+});
+const detachedDragHandle=$('detachedDragHandle');
+let movingDetached=null;
+detachedDragHandle.addEventListener('pointerdown',e=>{
+ if(e.button!==0||e.target.closest('button')||window.matchMedia('(max-width:680px)').matches)return;
+ const rect=tradeWindow.getBoundingClientRect();
+ tradeWindow.style.left=rect.left+'px';tradeWindow.style.top=rect.top+'px';tradeWindow.style.right='auto';
+ movingDetached={x:e.clientX,y:e.clientY,left:rect.left,top:rect.top};
+ detachedDragHandle.setPointerCapture(e.pointerId);
+});
+detachedDragHandle.addEventListener('pointermove',e=>{
+ if(!movingDetached)return;
+ const left=Math.min(window.innerWidth-100,Math.max(0,movingDetached.left+e.clientX-movingDetached.x));
+ const top=Math.min(window.innerHeight-55,Math.max(0,movingDetached.top+e.clientY-movingDetached.y));
+ tradeWindow.style.left=left+'px';tradeWindow.style.top=top+'px';
+});
+const finishDetachedDrag=()=>{movingDetached=null};
+detachedDragHandle.addEventListener('pointerup',finishDetachedDrag);
+detachedDragHandle.addEventListener('pointercancel',finishDetachedDrag);
+window.addEventListener('keydown',e=>{
+ if(e.key==='Escape'&&!tradeWindow.classList.contains('is-closed')&&!tradeWindow.classList.contains('is-minimized')){
+  tradeWindow.classList.add('is-closed');refreshDetachedWindow();
+ }
+});
+if(typeof ResizeObserver!=='undefined')new ResizeObserver(()=>requestAnimationFrame(draw)).observe($('chartCard'));
+refreshDetachedWindow();
 window.addEventListener('resize',draw);$('marketSymbolText').textContent=state.symbol;syncTimeframeButtons();applyMode();showBottom('positions');loadMarketList();if(localDemo())loadDemoAccountData();
 })();
 </script></body></html>
