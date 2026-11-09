@@ -1205,6 +1205,7 @@ function freshScannerCandidate(p){
 function maybePrepareAutoPlan(){
  if(scannerStandalone||!autoPlanEnabled)return;
  if(autoDraft||manualPlanLocked||!emptyPlan()){autoStatus(autoDraft?'Автоплан '+autoDraft.symbol+' підготовлено · рівні заблоковано від автозаміни':'Власний план захищено · автозаміна призупинена');return}
+ if((Array.isArray(demoAccount?.positions)&&demoAccount.positions.length)||(Array.isArray(demoAccount?.orders)&&demoAccount.orders.length)){autoStatus('Є активні позиції або ордери · автопідготовку призупинено');return}
  const snap=scannerSnapshot;
  if(snap?.status!=='ready'||!snap.updatedAt||Date.now()-Date.parse(snap.updatedAt)>600000){autoStatus('Очікуємо свіжий завершений аналіз');return}
  const list=(Array.isArray(snap.opportunities)?snap.opportunities:[]).filter(freshScannerCandidate).filter(p=>availableMarkets.includes(p.symbol));
