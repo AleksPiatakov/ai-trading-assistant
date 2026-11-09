@@ -1,0 +1,64 @@
+name: Browser layout regression
+on:
+  push:
+    branches: [redesign-approved-trading-ui]
+    paths:
+      - public/dashboard.html
+      - .github/workflows/browser-layout.yml
+      - .github/workflows/preview-pages.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  layout:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install browser test tools
+        run: |
+          npm install --no-save --ignore-scripts playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Produce static preview
+        run: |
+          mkdir -p _site
+          cp public/dashboard.html _site/index.html
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('_site/index.html')
+          text=p.read_text()
+          data="""
+          <script>
+          window.__ATA_VISUAL_PREVIEW__=true;
+          const originalFetch=window.fetch.bind(window);
+          window.fetch=async(input,init)=>{
+            if(String(input).startsWith('/api/market-data')){
+              const candles=Array.from({length:180},(_,i)=>{
+                const t=Date.UTC(2026,0,1)+i*86400000;
+                const baseline=83000+i*120+Math.sin(i*.16)*2400+Math.cos(i*.39)*850;
+                const o=baseline+Math.sin(i*2.3)*500,c=baseline+Math.cos(i*1.7)*600;
+                return {t,o,c,h:Math.max(o,c)+500,l:Math.min(o,c)-480,v:100+i*4};
+              });
+              return new Response(JSON.stringify({candles,updatedAt:Date.now()}),{status:200,headers:{'content-type':'application/json'}});
+            }
+            return originalFetch(input,init);
+          };
+          </script>
+          """
+          text=text.replace('<script>\n(function(){',data+'<script>\n(function(){',1)
+          p.write_text(text)
+          PY
+      - name: Start preview server
+        run: |
+          python3 -m http.server 8765 --directory _site > /tmp/ata-web.log 2>&1 &
+          sleep 2
+      - name: Inspect visible panel bounds at desktop sizes
+        run: node .github/scripts/check-layout.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: trading-ui-layout-screenshots
+          path: layout-screenshots
