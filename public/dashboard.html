@@ -825,6 +825,10 @@ body.real-account .help-info{visibility:hidden;pointer-events:none}
 #aiCard .assistant-watch-brief{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;font-size:10px;color:#a9bfde;line-height:1.4}
 #aiCard .watch-pair{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:7px;border-radius:7px;border:1px solid #405e89;background:#142e50;color:#b5cee9;cursor:pointer;text-align:left;min-width:0}
 #aiCard .watch-pair:hover{border-color:#9479df;background:#243769}
+#aiCard .watch-pair.selected{border-color:#a88bff;background:#342c67;box-shadow:inset 0 0 0 1px #9479df}
+#aiCard .watch-pair.selected strong{color:#f6eaff}
+#aiCard .assistant-watch-brief{grid-template-columns:repeat(auto-fill,minmax(175px,1fr));max-height:270px;overflow-y:auto;scrollbar-width:thin}
+#aiCard .assistant-watch-brief[data-error]::after{content:attr(data-error);grid-column:1/-1;color:#ffb6b6;font-size:11px}
 #aiCard .watch-pair strong{color:#fff;font-size:11px}
 #aiCard .watch-pair span{font-size:9px}
 .scanner-tabs{gap:4px}
@@ -1078,6 +1082,7 @@ function setMarketSymbol(symbol){
   state.levels={entry:null,stop:null,target:null};state.range=null;
   multiRun++;multiBusy=false;multiSnapshot=null;renderMultiAnalysis();
   calculate();loadCandles();refreshMultiAnalysis(true);
+  renderAssistantWatch();
 }
 function closeMarketDropdown(){
   $('marketDropdown').classList.add('hidden');
@@ -1113,6 +1118,8 @@ async function loadMarketList(){
     }
     $('marketSymbolText').textContent=state.symbol;
     $('quantityLabel').textContent='Кількість '+state.symbol.slice(0,-4);updateFavoriteIcon();renderMarketList();loadCandles();refreshMultiAnalysis(true);maybePrepareAutoPlan();
+    renderAssistantWatch();
+    if(workspaceStandalone&&workspaceChannel)workspaceChannel.postMessage({type:'request'});
   }catch(e){
     if(token!==marketListRequest)return;
     marketsFetched=false;availableMarkets=[];
@@ -1257,8 +1264,12 @@ $('autoPlanReset').onclick=()=>{
  autoDraft=null;calculate();autoStatus('Автоплан очищено · наступний план після нового сканування');
 };
 const scannerFormat=v=>Number(v).toLocaleString('en-US',{maximumFractionDigits:Math.abs(v)<1?7:Math.abs(v)<100?4:2});
-const scannerStandalone=new URLSearchParams(location.search).get('scanner')==='1';
 const workspaceStandalone=new URLSearchParams(location.search).get('workspace')==='1';
+const scannerStandalone=!workspaceStandalone&&new URLSearchParams(location.search).get('scanner')==='1';
+if(workspaceStandalone&&new URLSearchParams(location.search).has('scanner')){
+ const corrected=new URL(location.href);corrected.searchParams.delete('scanner');corrected.searchParams.delete('view');
+ history.replaceState(null,'',corrected.href);
+}
 if(workspaceStandalone)document.body.classList.add('workspace-standalone');
 let scannerPopup=null;
 if(scannerStandalone)document.body.classList.add('scanner-standalone');
@@ -1275,7 +1286,9 @@ function scannerOpenInline(){
 function scannerOpen(view='current'){
  if(scannerStandalone){scannerOpenInline();chooseScannerView(view);return}
  if(scannerPopup&&!scannerPopup.closed){scannerPopup.postMessage({type:'ata-scanner-view',view},location.origin);scannerPopup.focus();return}
- const url=new URL(location.href);url.searchParams.set('scanner','1');url.searchParams.set('view',view);
+ const url=new URL(location.href);
+ url.searchParams.delete('workspace');url.searchParams.delete('section');url.searchParams.delete('symbol');
+ url.searchParams.set('scanner','1');url.searchParams.set('view',view);
  scannerPopup=window.open(url.href,'ata-trading-opportunities','popup=yes,width=1190,height=920,resizable=yes,scrollbars=yes');
  if(!scannerPopup){scannerOpenInline();chooseScannerView(view)}
 }
@@ -1547,6 +1560,29 @@ async function fetchScannerSnapshot(){
  if(scannerIsOpen())renderScannerSnapshot();
 }
 
+function selectWatchedPair(symbol){
+ if(typeof symbol!=='string'||!/^[A-Z0-9]{3,30}USDT$/.test(symbol))return;
+ if(!availableMarkets.includes(symbol)){
+  $('watchBrief').setAttribute('data-error','Пара '+symbol+' не знайдена у списку Bybit');
+  return;
+ }
+ $('watchBrief').removeAttribute('data-error');
+ if(symbol!==state.symbol)setMarketSymbol(symbol);
+ renderAssistantWatch();
+ if(workspaceStandalone){
+  // Explicit navigation only: does not place an order or apply an unconfirmed setup.
+  if(window.opener&&!window.opener.closed)window.opener.postMessage({type:'ata-workspace-select-pair',symbol},location.origin);
+  if(workspaceChannel)workspaceChannel.postMessage({type:'navigate',source:'workspace',symbol});
+ }
+}
+window.addEventListener('message',e=>{
+ if(workspaceStandalone||e.origin!==location.origin||e.data?.type!=='ata-workspace-select-pair')return;
+ if(e.source!==workspacePopup)return;
+ const symbol=e.data.symbol;
+ if(typeof symbol==='string'&&/^[A-Z0-9]{3,30}USDT$/.test(symbol)&&availableMarkets.includes(symbol)&&symbol!==state.symbol){
+  setMarketSymbol(symbol);
+ }
+});
 function renderAssistantWatch(){
  const root=$('watchBrief');if(!root)return;
  root.replaceChildren();
@@ -1563,16 +1599,16 @@ function renderAssistantWatch(){
   root.textContent='Наразі немає пар із достатніми підтвердженнями. Перевірка повториться автоматично.';
   return;
  }
- for(const item of ranked.slice(0,3)){
+ for(const item of ranked){
   const button=document.createElement('button');button.type='button';button.className='watch-pair';
   const name=document.createElement('strong');name.textContent=item.symbol;
   const note=document.createElement('span');note.textContent=(item.side==='short'?'↓':'↑')+
      ' '+item.passed+'/'+item.total+' умов · '+(item.hasTradePlan?'є торговий план':'поки спостерігати');
   button.append(name,note);
-  button.title=item.reason;
-  button.onclick=()=>{
-    scannerOpen('attention');
-  };
+  button.title=(item.reason||'')+' · Натисніть для аналізу цієї пари';
+  button.setAttribute('aria-pressed',String(state.symbol===item.symbol));
+  button.classList.toggle('selected',state.symbol===item.symbol);
+  button.onclick=()=>selectWatchedPair(item.symbol);
   root.append(button);
  }
 }
@@ -3011,6 +3047,11 @@ if(typeof BroadcastChannel!=='undefined'){
  workspaceChannel=new BroadcastChannel('ata-trader-workspace-fields');
  workspaceChannel.onmessage=e=>{
   const msg=e.data;
+  if(msg?.type==='navigate'&&!workspaceStandalone&&msg.source==='workspace'){
+   const symbol=msg.symbol;
+   if(typeof symbol==='string'&&/^[A-Z0-9]{3,30}USDT$/.test(symbol)&&availableMarkets.includes(symbol)&&symbol!==state.symbol)setMarketSymbol(symbol);
+   return;
+  }
   if(msg?.type==='request'&&!workspaceStandalone){
    workspaceChannel.postMessage({
     type:'fields',source:'chart',symbol:state.symbol,tf:state.tf,dir:state.dir,
