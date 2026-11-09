@@ -57,6 +57,7 @@ export function createMultiYearResearch({dir,getKlinesPage,getInstruments,now=()
    if(!incoming.length)break;
    rows=clean([...rows,...incoming]).filter(c=>c.t>=fromTime-TFS[tf]*2);
    fetched+=incoming.length;
+   state.stage='Свічки '+tf+' · '+symbol+' · '+rows.length.toLocaleString('uk-UA')+' барів';
    if(page%5===0)await save();
    const oldest=Math.min(...incoming.map(c=>c.t));
    if(oldest<=fromTime||oldest>=end)break;
