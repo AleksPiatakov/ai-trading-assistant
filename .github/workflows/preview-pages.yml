@@ -27,7 +27,7 @@ jobs:
         run: |
           mkdir -p _site
           cp public/dashboard.html _site/index.html
-     - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: trading-assistant-browser-preview
           path: _site/index.html
