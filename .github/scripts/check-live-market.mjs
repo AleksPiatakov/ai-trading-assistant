@@ -29,6 +29,12 @@ await page.addInitScript(()=>{
 await page.route('**/api/market/instruments',route=>route.fulfill({
   status:200,contentType:'application/json',body:JSON.stringify({category:'linear',symbols:['BTCUSDT','ETHUSDT']})
 }));
+await page.route('**/api/scanner/history',route=>route.fulfill({
+ status:200,contentType:'application/json',body:JSON.stringify({history:[
+ {symbol:'BTCUSDT',side:'long',entry:90,stop:85,target:100,rr:2,
+  detectedAt:new Date(Date.now()-3600000).toISOString()}
+ ],ordersEnabled:false})
+}));
 await page.route('**/api/scanner/opportunities',route=>route.fulfill({
  status:200,contentType:'application/json',body:JSON.stringify({
   status:'ready',completed:2,total:2,updatedAt:new Date().toISOString(),errors:[],
@@ -140,6 +146,11 @@ if(!await page.locator('#scannerOverlay').isVisible())errors.push('Scanner modal
 await page.waitForFunction(()=>document.querySelectorAll('.scanner-result').length===2,{timeout:5000});
 await page.locator('#scannerFilter').selectOption('short');
 if(await page.locator('.scanner-result').count()!==1)errors.push('Scanner direction filter failed');
+await page.locator('#scannerHistoryTab').click();
+await page.waitForFunction(()=>document.querySelectorAll('.scanner-history-row').length===1,null,{timeout:5000});
+if(!await page.locator('#scannerResults').innerText().then(t=>t.includes('Архівний сигнал')))
+ errors.push('Scanner history did not show archived-signal caution');
+await page.locator('#scannerCurrentTab').click();
 await page.locator('#scannerFilter').selectOption('all');
 await page.locator('#scannerClose').click();
 if(await page.locator('#scannerOverlay').isVisible())errors.push('Scanner modal did not close');
