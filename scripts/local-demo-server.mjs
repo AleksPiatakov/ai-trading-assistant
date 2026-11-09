@@ -134,7 +134,7 @@ async function loadDemoAccount(){
   };
 }
 
-const intervals=new Set(['1','3','5','15','30','60','120','240','D','W']);
+const intervals=new Set(['1','3','5','15','30','60','120','240','D','W','M','3M']);
 let instrumentsCache=null,instrumentsFetched=0;
 async function publicBybit(path,params){
  const u=new URL('https://api.bybit.com'+path);
@@ -169,19 +169,38 @@ async function getInstruments(){
  instrumentsCache=symbols;instrumentsFetched=Date.now();
  return symbols;
 }
+// Exchange publishes monthly candles. Group them by UTC calendar quarter for 3M;
+ // don't invent prices: O=first month, H=max, L=min, C=last month, V=sum.
+function aggregateQuarterly(months){
+ const quarters=[];
+ for(const month of months){
+   const date=new Date(month.t),monthNum=date.getUTCMonth();
+   const start=Date.UTC(date.getUTCFullYear(),Math.floor(monthNum/3)*3,1);
+   const prev=quarters.at(-1);
+   if(!prev||prev.t!==start)quarters.push({...month,t:start});
+   else{
+     prev.h=Math.max(prev.h,month.h);
+     prev.l=Math.min(prev.l,month.l);
+     prev.c=month.c;
+     prev.v+=month.v;
+   }
+ }
+ return quarters;
+}
 async function getKlines(symbol,interval){
  if(!intervals.has(interval)||!(/^[A-Z0-9]{3,30}USDT$/).test(symbol))
    throw new Error('Некоректна пара або таймфрейм');
  const available=await getInstruments();
  if(!available.includes(symbol))throw new Error('Пара відсутня у списку активних USDT Perpetual');
- const result=await publicBybit('/v5/market/kline',{category:'linear',symbol,interval,limit:220});
+ const result=await publicBybit('/v5/market/kline',{category:'linear',symbol,interval:interval==='3M'?'M':interval,limit:220});
  const candles=(result.list||[]).map(row=>({
    t:Number(row[0]),o:Number(row[1]),h:Number(row[2]),l:Number(row[3]),
    c:Number(row[4]),v:Number(row[5])
  })).filter(c=>[c.t,c.o,c.h,c.l,c.c,c.v].every(Number.isFinite)&&c.t>0&&c.l<=c.h)
    .reverse();
  if(!candles.length)throw new Error('Bybit не повернув свічки для обраної пари');
- return {symbol,interval,source:'Bybit public market API',updatedAt:new Date().toISOString(),candles};
+ const aggregated=interval==='3M'?aggregateQuarterly(candles):candles;
+ return {symbol,interval,source:'Bybit public market API',updatedAt:new Date().toISOString(),candles:aggregated};
 }
 const server=http.createServer(async(req,res)=>{
   const hostHeader=String(req.headers.host||'');
