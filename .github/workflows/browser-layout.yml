@@ -11,6 +11,7 @@ on:
       - .github/scripts/check-live-market.mjs
       - .github/scripts/check-scanner-popup.mjs
       - .github/scripts/check-auto-plan.mjs
+      - .github/scripts/check-workspace-popup.mjs
       - .github/workflows/browser-layout.yml
       - .github/workflows/preview-pages.yml
   workflow_dispatch:
@@ -51,6 +52,8 @@ jobs:
         run: node .github/scripts/check-scanner-popup.mjs
       - name: Verify auto-prepared plan and manual lock
         run: node .github/scripts/check-auto-plan.mjs
+      - name: Verify standalone AI workspace and main chart isolation
+        run: node .github/scripts/check-workspace-popup.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
