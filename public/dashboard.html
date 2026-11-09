@@ -635,8 +635,13 @@ const ctx=canvas.getContext('2d');ctx.scale(dpr,dpr);
 const cs=state.candles.slice(-76),p={l:13,r:104,t:105,b:20},plotW=width-p.l-p.r,priceEnd=height*.65,rsiStart=height*.675,rsiEnd=height*.795,macdStart=height*.82,macdEnd=height*.965;
 ctx.fillStyle='#08172d';ctx.fillRect(0,0,width,height);
 if(!cs.length){ctx.fillStyle='#aab9d3';ctx.font='13px system-ui';ctx.fillText('Дані графіка недоступні',35,height/2);state.range=null;return}
-const overlay=[num('entry'),num('stop'),num('target')].filter(n=>n>0),lo=Math.min(...cs.map(c=>c.l),...overlay),hi=Math.max(...cs.map(c=>c.h),...overlay);
-const priceRange=Math.max(hi-lo,hi*.015),min=lo-priceRange*.07,max=hi+priceRange*.10;
+const overlay=[num('entry'),num('stop'),num('target')].filter(n=>n>0);
+const candleLo=Math.min(...cs.map(c=>c.l)),candleHi=Math.max(...cs.map(c=>c.h));
+const candleSpan=Math.max(candleHi-candleLo,candleHi*.0015);
+const limit=(['1','5','15','30','60'].includes(state.tf)?1.6:3)*candleSpan;
+const visibleLevels=overlay.filter(v=>v>=candleLo-limit&&v<=candleHi+limit);
+const lo=Math.min(candleLo,...visibleLevels),hi=Math.max(candleHi,...visibleLevels);
+const priceRange=Math.max(hi-lo,candleSpan),min=lo-priceRange*.07,max=hi+priceRange*.10;
 state.range={min,max,top:p.t,bottom:priceEnd,w:width,h:height};
 const y=v=>p.t+(max-v)/(max-min)*(priceEnd-p.t),x=i=>p.l+(i+.5)*plotW/cs.length,step=plotW/cs.length;
 const grid=(left,right,top,bottom,rows=4)=>{ctx.strokeStyle='#203c64';ctx.lineWidth=.7;for(let k=0;k<=rows;k++){const yy=top+(bottom-top)*k/rows;ctx.beginPath();ctx.moveTo(left,yy);ctx.lineTo(right,yy);ctx.stroke()}for(let k=0;k<=8;k++){const xx=left+(right-left)*k/8;ctx.beginPath();ctx.moveTo(xx,top);ctx.lineTo(xx,bottom);ctx.stroke()}};
@@ -668,7 +673,12 @@ if(a){
 ctx.restore();
 for(const [field,label,color] of [['target','TP','#29e49c'],['entry','Вхід','#e7efff'],['stop','SL','#ff6075']]){
  const v=num(field);if(!(v>0))continue;const yy=y(v);
- if(yy<p.t-3||yy>priceEnd+3)continue;
+ if(yy<p.t-3||yy>priceEnd+3){
+  const edgeY=yy<p.t?p.t+12:priceEnd-12;
+  ctx.fillStyle=color;ctx.font='bold 10px system-ui';
+  ctx.fillText(label+(yy<p.t?' ↑ ':' ↓ ')+money(v),p.l+12,edgeY,Math.max(90,plotW*.25));
+  continue;
+ }
  ctx.save();ctx.strokeStyle=color;ctx.setLineDash([6,4]);ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(p.l,yy);ctx.lineTo(width-p.r,yy);ctx.stroke();ctx.restore();
  const baseLabel=label+': '+money(v);
  const diff=num('entry')>0?(v/num('entry')-1)*100:0;
