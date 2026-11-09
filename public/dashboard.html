@@ -922,6 +922,20 @@ body.scanner-standalone .scanner-dialog{width:100%;height:100dvh;max-height:none
 body.scanner-standalone .scanner-results{flex:1}
 body.scanner-standalone .scanner-heading{padding:20px 26px}
 body.scanner-standalone .scanner-summary,body.scanner-standalone .scanner-results{padding-left:26px;padding-right:26px}
+
+.scanner-analysis{grid-column:1/-1;background:#0a1d38;border:1px solid #47648c;border-radius:9px;padding:12px;display:grid;gap:10px;color:#d7e5fa}
+.scanner-analysis[hidden]{display:none!important}
+.scanner-analysis h3{font-size:13px;color:#ecf3ff;margin:0}
+.scanner-metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:7px}
+.scanner-metric{padding:8px;background:#153051;border:1px solid #37577e;border-radius:7px}
+.scanner-metric span{display:block;font-size:10px;color:#a8c0df}
+.scanner-metric strong{font-size:12px;color:#f0f7ff}
+.scanner-frame-table{border-collapse:collapse;width:100%;font-size:11px}
+.scanner-frame-table td,.scanner-frame-table th{padding:7px 5px;border-bottom:1px solid #2e4668;text-align:left}
+.scanner-frame-table th{color:#9bb6d7}
+.scanner-row-actions{display:flex;gap:7px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.scanner-caution{font-size:11px;color:#d4bb8b;line-height:1.5}
+@media(max-width:700px){.scanner-row-actions{justify-content:stretch}.scanner-row-actions .btn{flex:1}}
 </style></head>
 <body><div class="app" id="app">
 <nav class="nav nav-reference" aria-label="Навігація">
@@ -1237,6 +1251,73 @@ window.addEventListener('message',e=>{
  if(item.withPlan&&(!item.scannedAt||Date.now()-Date.parse(item.scannedAt)>600000))return;
  applyScannerMarket(item,Boolean(item.withPlan));
 });
+function scannerDetailPanel(item,kind){
+ const panel=document.createElement('section');panel.className='scanner-analysis';panel.hidden=true;
+ const title=document.createElement('h3');title.textContent='Детальна аналітика · '+item.symbol;panel.append(title);
+ const stats=document.createElement('div');stats.className='scanner-metrics';
+ const metric=(name,value)=>{
+  const box=document.createElement('div');box.className='scanner-metric';
+  const caption=document.createElement('span');caption.textContent=name;
+  const number=document.createElement('strong');number.textContent=String(value);
+  box.append(caption,number);stats.append(box);
+ };
+ const num=(v,d=2)=>Number.isFinite(Number(v))&&v!==null?Number(v).toFixed(d):'—';
+ metric('Напрямок',item.side==='short'?'SHORT ↓':'LONG ↑');
+ metric('Статус',kind==='watch'?'Спостереження, не сигнал':kind==='plan'?'Перевірений план (не ордер)':'Архівний план');
+ if(kind==='watch'){
+  metric('Перевірено умов',num(item.passed,0)+' / '+num(item.total,0));
+  metric('RSI (1год)',num(item.rsi,1));
+  metric('Обсяг / середній (1год)',item.relativeVolume==null?'Немає даних':num(item.relativeVolume,2)+'×');
+  metric('ATR / ціна (1год)',item.atrPct==null?'Немає даних':num(item.atrPct,2)+'%');
+  metric('Таймфрейми вгору / вниз / змішано', [item.up,item.down,item.mixed].map(v=>num(v,0)).join(' / '));
+ }else{
+  metric('Вхід (USDT)',num(item.entry,5));
+  metric('Stop Loss (USDT)',num(item.stop,5));
+  metric('Take Profit (USDT)',num(item.target,5));
+  metric('R:R до комісій', '1 : '+num(item.rr,2));
+  metric('Підтверджені таймфрейми',num(item.confirmations,0)+' / '+num(item.checks??4,0));
+ }
+ panel.append(stats);
+ const reasons=document.createElement('div');reasons.className='scanner-reason';
+ const notes=kind==='watch'?[item.reason,...(Array.isArray(item.waitFor)?item.waitFor.map(x=>'Очікуємо: '+x):[])]:
+  [...(Array.isArray(item.reasons)?item.reasons:[]),item.warning||''];
+ reasons.textContent=notes.filter(Boolean).join(' • ');panel.append(reasons);
+ const frames=Array.isArray(item.timeframes)?item.timeframes:[];
+ if(frames.length){
+  const heading=document.createElement('h3');heading.textContent='Дані за таймфреймами';panel.append(heading);
+  const table=document.createElement('table');table.className='scanner-frame-table';
+  const thead=document.createElement('thead'),tr=document.createElement('tr');
+  for(const name of ['ТФ','EMA тренд','RSI','MACD','Обсяг','Підтримка','Опір']){
+   const th=document.createElement('th');th.textContent=name;tr.append(th);
+  }
+  thead.append(tr);table.append(thead);
+  const tbody=document.createElement('tbody');
+  for(const f of frames){
+   const row=document.createElement('tr');
+   const trend=f.direction==='up'?'Висхідний':f.direction==='down'?'Низхідний':'Змішаний';
+   const cells=[f.tf,trend,num(f.rsi,1),num(f.macd,4),f.relativeVolume==null?'—':num(f.relativeVolume,2)+'×',num(f.support,5),num(f.resistance,5)];
+   for(const value of cells){const td=document.createElement('td');td.textContent=value;row.append(td)}
+   tbody.append(row);
+  }
+  table.append(tbody);panel.append(table);
+ }
+ const updated=document.createElement('p');updated.className='scanner-caution';
+ const timestamp=item.checkedAt||item.scannedAt||item.detectedAt;
+ updated.textContent=(timestamp?'Дані станом на '+new Date(timestamp).toLocaleString('uk-UA')+'. ':'')+
+ (kind==='watch'?'Це список спостереження. Підтвердження не гарантують прибуток.':
+ 'Рівні розрахункові, не поточний ордер. Комісії, спред, ліквідність та прослизання не враховані.');
+ panel.append(updated);
+ return panel;
+}
+function scannerDetailButton(panel){
+ const btn=document.createElement('button');btn.type='button';btn.className='btn ghost';
+ btn.textContent='Детальна аналітика';btn.setAttribute('aria-expanded','false');
+ btn.onclick=()=>{
+  panel.hidden=!panel.hidden;btn.setAttribute('aria-expanded',String(!panel.hidden));
+  btn.textContent=panel.hidden?'Детальна аналітика':'Згорнути аналітику';
+ };
+ return btn;
+}
 function renderScannerSnapshot(){
  const snap=scannerSnapshot,results=$('scannerResults'),status=$('scannerState'),summary=$('scannerSummary');
  results.replaceChildren();
@@ -1281,7 +1362,10 @@ function renderScannerSnapshot(){
       }
       scannerOpenMarket(item,false);
     };
-    row.append(details,action);results.append(row);
+    const analysis=scannerDetailPanel(item,'watch');
+    const buttons=document.createElement('div');buttons.className='scanner-row-actions';
+    buttons.append(scannerDetailButton(analysis),action);
+    row.append(details,buttons,analysis);results.append(row);
   }
   return;
  }
@@ -1352,7 +1436,10 @@ function renderScannerSnapshot(){
    }
    scannerOpenMarket(item,true);
   };
-  card.append(info,action);results.append(card);
+  const analysis=scannerDetailPanel(item,'plan');
+  const buttons=document.createElement('div');buttons.className='scanner-row-actions';
+  buttons.append(scannerDetailButton(analysis),action);
+  card.append(info,buttons,analysis);results.append(card);
  }
  if(snap.errors?.length){
   const err=document.createElement('div');err.className='scanner-errors';
