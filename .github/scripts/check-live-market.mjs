@@ -35,6 +35,14 @@ await page.route('**/api/scanner/history',route=>route.fulfill({
   detectedAt:new Date(Date.now()-3600000).toISOString()}
  ],ordersEnabled:false})
 }));
+await page.route('**/api/scanner/notifications',route=>route.fulfill({
+ status:200,contentType:'application/json',
+ body:JSON.stringify({session:'mock-run',macNotifications:false,alerts:[],ordersEnabled:false})
+}));
+await page.route('**/api/scanner/notification-settings',route=>route.fulfill({
+ status:200,contentType:'application/json',
+ body:JSON.stringify({macNotifications:false,ordersEnabled:false})
+}));
 await page.route('**/api/scanner/opportunities',route=>route.fulfill({
  status:200,contentType:'application/json',body:JSON.stringify({
   status:'ready',completed:2,total:2,updatedAt:new Date().toISOString(),errors:[],
@@ -152,6 +160,11 @@ await page.locator('#scannerAttentionTab').click();
 if(await page.locator('.scanner-attention-row').count()!==2)errors.push('Watchlist pair recommendations not shown');
 const watchText=await page.locator('#scannerResults').innerText();
 if(!watchText.includes('Критерії уваги')||!watchText.includes('Очікувати'))errors.push('Watchlist lacks criteria or what to await');
+if(await page.locator('#scannerMacAlerts').isChecked())errors.push('macOS notifications must remain opt-in');
+if(await page.locator('#scannerBrowserAlerts').isChecked())errors.push('Browser notifications must remain opt-in');
+await page.locator('#scannerShowAlerts').click();
+if(!await page.locator('#scannerAlertInbox').isVisible())errors.push('Scanner notification inbox failed to open');
+await page.locator('#scannerShowAlerts').click();
 await page.locator('#scannerFilter').selectOption('short');
 if(await page.locator('.scanner-attention-row').count()!==1)errors.push('Watchlist direction filter failed');
 await page.locator('#scannerCurrentTab').click();
