@@ -206,6 +206,7 @@ async function getKlines(symbol,interval){
 }
 const scannerDataDir=join(homedir(),'Library','Application Support','AI Trading Assistant');
 const alertPreferencesPath=join(scannerDataDir,'notification-preferences.json');
+const scannerSession=String(Date.now());
 let alertPreferences={macNotifications:false};
 async function loadAlertPreferences(){
  try{
@@ -267,7 +268,7 @@ const server=http.createServer(async(req,res)=>{
     }catch(e){return json(res,503,{error:String(e.message||'Bybit market API недоступний'),candles:[]});}
   }
   if(req.method==='GET'&&path==='/api/scanner/notifications'){
-    return json(res,200,{alerts:opportunityScanner.getAlerts(),macNotifications:alertPreferences.macNotifications,ordersEnabled:false});
+    return json(res,200,{session:scannerSession,alerts:opportunityScanner.getAlerts(),macNotifications:alertPreferences.macNotifications,ordersEnabled:false});
   }
   if(req.method==='POST'&&path==='/api/scanner/notification-settings'){
     if(req.headers['x-ata-local']!=='1'||(req.headers['sec-fetch-site']&&req.headers['sec-fetch-site']!=='same-origin'))
