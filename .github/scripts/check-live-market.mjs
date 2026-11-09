@@ -82,6 +82,8 @@ await page.evaluate(()=>{
 });
 await page.waitForFunction(()=>document.querySelector('#quote')?.textContent==='102.25',{timeout:4000});
 await page.waitForFunction(()=>document.querySelectorAll('#skillMatrix .skill-tf').length===12,null,{timeout:20000});
+await page.locator('#openAssistantWindow').click();
+if(!await page.locator('#aiCard').isVisible())errors.push('Floating assistant did not open');
 const opportunity=await page.locator('#tradeOpportunity').innerText();
 if(!opportunity.includes('Найближча торгова можливість'))errors.push('Trade plan opportunity not rendered');
 const opportunityStatus=await page.locator('#opportunityState').innerText();
@@ -96,7 +98,9 @@ if(!await page.locator('#multiDetails').isVisible())errors.push('Detailed multi-
 if(await page.locator('#toggleMultiDetails').getAttribute('aria-expanded')!=='true')errors.push('Expanded state not announced');
 await page.locator('#toggleMultiDetails').click();
 if(await page.locator('#multiDetails').isVisible())errors.push('Detailed multi-timeframe section did not collapse');
-const firstSummary=await page.locator('#multiSummary').innerText();
+await page.locator('#closeAssistantWindow').click();
+if(await page.locator('#aiCard').isVisible())errors.push('Assistant did not close');
+const firstSummary=await page.locator('#multiSummary').textContent();
 if(!firstSummary.includes('12/12'))errors.push('Multi-timeframe coverage summary missing');
 const status=await page.locator('#quoteMeta').innerText();
 if(!status.includes('Потік Bybit'))errors.push('Live WebSocket status missing: '+status);
@@ -153,7 +157,7 @@ await page.evaluate(()=>{
   }});
 });
 await page.waitForFunction(()=>document.querySelector('#quote')?.textContent==='55.75',{timeout:4000});
-await page.locator('#openScanner').click();
+await page.locator('#marketsNav').click();
 if(!await page.locator('#scannerOverlay').isVisible())errors.push('Scanner modal did not open');
 await page.waitForFunction(()=>document.querySelectorAll('.scanner-result').length===2,{timeout:5000});
 await page.locator('#scannerAttentionTab').click();
@@ -190,7 +194,7 @@ if(!await page.locator('#longTfToggle').evaluate(el=>el.classList.contains('acti
 const persisted=await page.evaluate(()=>({symbol:localStorage.getItem('ata-market-symbol'),tf:localStorage.getItem('ata-market-timeframe')}));
 if(persisted.symbol!=='ETHUSDT'||persisted.tf!=='W')errors.push('Local preference storage does not match selections');
 // Explicit selection may populate a planning form but must never submit orders.
-await page.locator('#openScanner').click();
+await page.locator('#marketsNav').click();
 await page.waitForFunction(()=>document.querySelectorAll('.scanner-result').length===2,null,{timeout:5000});
 await page.locator('.scanner-result').filter({hasText:'ETHUSDT'}).locator('button').click();
 if(await page.locator('#scannerOverlay').isVisible())errors.push('Selecting a scanner plan did not close the dialog');
