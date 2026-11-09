@@ -1547,7 +1547,7 @@ document.addEventListener('keydown',event=>{
 });
 window.addEventListener('resize',closeLongTfMenu);
 syncTimeframeButtons();
-document.querySelectorAll('[data-bottom]').forEach(b=>b.onclick=()=>showBottom(b.dataset.bottom));
+document.querySelectorAll('[data-bottom]').forEach(b=>b.onclick=()=>{showBottom(b.dataset.bottom);setBottomExpanded(true)});
 function showBottom(which){if(which==='settings'){openSettingsModal();return}document.querySelectorAll('[data-bottom]').forEach(b=>b.classList.toggle('active',b.dataset.bottom===which));const s=$('bottomContent');if(which==='positions'||which==='orders'){renderDemoTradingTab(which);return}
 if(which==='journal'){s.innerHTML='<div style="padding:12px"><textarea id="journalText" rows="3" style="width:100%;background:#07162c;color:white;border:1px solid #395685;padding:8px" placeholder="Запишіть ідею або результат аналізу"></textarea><button id="saveNote" class="btn purple">Зберегти локально</button><div id="notes" style="padding-top:10px"></div></div>';$('saveNote').onclick=()=>{const t=$('journalText').value.trim();if(t){try{let a=JSON.parse(localStorage.getItem('ata-notes')||'[]');a.unshift({t,at:new Date().toLocaleString('uk-UA')});localStorage.setItem('ata-notes',JSON.stringify(a.slice(0,50)))}catch{}$('journalText').value='';renderNotes()}};renderNotes()}if(which==='settings'){openSettingsModal();return}s.classList.remove('hidden')}
 
