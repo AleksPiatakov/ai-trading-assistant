@@ -5,6 +5,7 @@ const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
 let failed=false;
 for(const [w,h] of [[1525,900],[1525,740],[1280,740],[980,800]]){
  const page=await browser.newPage({viewport:{width:w,height:h},deviceScaleFactor:1});
+ await page.addInitScript(()=>{window.open=()=>null}); // Test the popup-blocked in-page fallback.
  const errors=[];
  page.on('pageerror',e=>errors.push(e.message));
  await page.goto('http://127.0.0.1:8765',{waitUntil:'load'});
