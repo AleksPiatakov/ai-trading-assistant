@@ -574,6 +574,7 @@ if(entry>0&&stop>0&&target>0){
 }
 const volumeMax=Math.max(1,...cs.map(c=>c.v));
 for(let i=0;i<cs.length;i++){const c=cs[i],barH=(c.v/volumeMax)*Math.max(22,(priceEnd-p.t)*.15);ctx.fillStyle=c.c>=c.o?'#1aa98680':'#dc586a80';ctx.fillRect(x(i)-step*.34,priceEnd-barH,Math.max(2,step*.68),barH)}
+const a=state.analysis;
 const candleW=Math.max(2,Math.min(9,step*.7));
 for(let i=0;i<cs.length;i++){const c=cs[i],col=c.c>=c.o?'#20dfaa':'#f25d73';ctx.strokeStyle=col;ctx.fillStyle=col;ctx.lineWidth=1.1;ctx.beginPath();ctx.moveTo(x(i),y(c.h));ctx.lineTo(x(i),y(c.l));ctx.stroke();ctx.fillRect(x(i)-candleW/2,Math.min(y(c.o),y(c.c)),candleW,Math.max(1,Math.abs(y(c.o)-y(c.c))))}
 if(a){
@@ -612,7 +613,6 @@ ctx.fillStyle='#f0f5ff';ctx.font='bold 14px system-ui';ctx.fillText('BTCUSDT · 
 ctx.font='bold 11px system-ui';
 let pos=tx;const segments=[['O '+money(last.o),'#dceaff'],['H '+money(last.h),'#2ae594'],['L '+money(last.l),'#2ae594'],['C '+money(last.c),'#2ae594'],[(periodChange>=0?'+':'−')+money(Math.abs(periodChange))+' ('+(periodPct>=0?'+':'')+periodPct.toFixed(2)+'%)',periodChange>=0?'#2ae594':'#ff6b84']];
 for(const [label,col] of segments){ctx.fillStyle=col;ctx.fillText(label,pos,44);pos+=ctx.measureText(label).width+11;if(pos>width-p.r-95)break}
-const a=state.analysis;
 ctx.font='bold 11px system-ui';ctx.fillStyle='#e8f0ff';ctx.fillText('EMA 50',tx+10,66);ctx.fillStyle='#35b1ff';ctx.fillText(a?money(a.e50.at(-1)):'—',tx+74,66);
 ctx.fillStyle='#e8f0ff';ctx.fillText('EMA 200',tx+10,86);ctx.fillStyle='#f6b642';ctx.fillText(a?money(a.e200.at(-1)):'—',tx+74,86);
 ctx.strokeStyle='#35527d';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(p.l,rsiStart-7);ctx.lineTo(width-p.r,rsiStart-7);ctx.moveTo(p.l,macdStart-7);ctx.lineTo(width-p.r,macdStart-7);ctx.stroke();
