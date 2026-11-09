@@ -702,6 +702,22 @@ body.real-account .help-info{visibility:hidden;pointer-events:none}
 .chart-config-grid input{height:35px;border-radius:7px;border:1px solid #5673a1;background:#0c203e;color:#fff;padding:7px;min-width:0}
 #chartSettingsStatus{color:#a5e6c4;margin-left:10px;font-size:11px}
 @media(max-width:600px){.chart-config-grid{grid-template-columns:1fr}}
+
+/* Keep the candle chart a compact terminal panel, independent of tall right-side cards. */
+@media(min-width:1051px){
+ .layout{align-items:start}
+ #chartCard.chart-card{height:700px;min-height:0;max-height:700px;align-self:start}
+ #chartCard .chart-wrap{height:auto;min-height:0;flex:1 1 0;overflow:visible}
+ #chartCard .chart-wrap canvas{height:100%}
+}
+@media(min-width:681px) and (max-width:1050px){
+ #chartCard.chart-card{height:660px;min-height:0;max-height:660px}
+ #chartCard .chart-wrap{height:auto;min-height:0;flex:1 1 0}
+}
+@media(max-width:680px){
+ #chartCard.chart-card{height:560px;min-height:0;max-height:560px}
+ #chartCard .chart-wrap{height:auto;min-height:0;flex:1 1 0}
+}
 </style></head>
 <body><div class="app" id="app">
 <nav class="nav nav-reference" aria-label="Навігація">
