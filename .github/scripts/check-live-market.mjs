@@ -126,6 +126,14 @@ await page.evaluate(()=>{
 await page.waitForFunction(()=>document.querySelector('#quote')?.textContent==='55.75',{timeout:4000});
 const selected=await page.locator('#marketSymbolText').innerText();
 if(selected!=='ETHUSDT')errors.push('Symbol switching failed');
+// The market and timeframe are user preferences and must survive a full page reload.
+await page.reload({waitUntil:'load'});
+await page.waitForFunction(()=>document.querySelector('#marketSymbolText')?.textContent==='ETHUSDT',null,{timeout:10000});
+if(await page.locator('#marketSymbolText').innerText()!=='ETHUSDT')errors.push('Saved symbol did not survive reload');
+if(await page.locator('#longTfLabel').innerText()!=='1Тиж')errors.push('Saved weekly timeframe did not survive reload');
+if(!await page.locator('#longTfToggle').evaluate(el=>el.classList.contains('active')))errors.push('Saved timeframe button is not active after reload');
+const persisted=await page.evaluate(()=>({symbol:localStorage.getItem('ata-market-symbol'),tf:localStorage.getItem('ata-market-timeframe')}));
+if(persisted.symbol!=='ETHUSDT'||persisted.tf!=='W')errors.push('Local preference storage does not match selections');
 if(errors.length)throw Error('Live market smoke test failed: '+errors.join(' | '));
 console.log('Live WebSocket ticker/kline and BTC→ETH switching: success');
 await browser.close();
