@@ -997,6 +997,18 @@ body.research-standalone .app,body.research-standalone .scanner-toast{display:no
 body.research-standalone .strategy-research-overlay{display:flex!important;padding:0;background:#081831}
 body.research-standalone .strategy-research-panel{width:100vw;height:100dvh;max-width:none;border:none;border-radius:0;box-shadow:none}
 @media(max-width:850px){.strategy-research-content{grid-template-columns:1fr}.strategy-research-head{padding:14px}.strategy-research-controls{padding:10px}}
+
+.strategy-all-markets{border-top:1px solid #426088;background:#102744;padding:16px 22px;display:flex;flex-direction:column;gap:10px;max-height:360px;overflow:auto}
+.strategy-all-markets>header{display:flex;justify-content:space-between;align-items:center;gap:14px}
+.strategy-all-markets h3{font-size:15px;margin:0 0 5px}.strategy-all-markets p{font-size:11px;color:#a9bfd9}
+#researchAllStatus{font-size:11px;color:#c5d7f0}
+.research-all-progress{height:5px;background:#243e64;border-radius:6px;overflow:hidden}
+#researchAllProgressBar{height:100%;width:0;background:#8665de;transition:width .2s}
+.strategy-all-markets .research-metrics{grid-template-columns:repeat(4,minmax(0,1fr))}
+.strategy-all-markets .research-metric{min-height:50px;padding:6px 10px}
+.strategy-all-markets .research-metric strong{font-size:17px}
+.strategy-all-markets .research-table-container{max-height:180px}
+@media(max-width:850px){.strategy-all-markets .research-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
 </style></head>
 <body><div class="app" id="app">
 <nav class="nav nav-reference" aria-label="Навігація">
@@ -1065,6 +1077,8 @@ body.research-standalone .strategy-research-panel{width:100vw;height:100dvh;max-
    <label>Пара <select id="researchSymbol"><option value="BTCUSDT">BTCUSDT</option><option value="ETHUSDT">ETHUSDT</option><option value="SOLUSDT">SOLUSDT</option><option value="XRPUSDT">XRPUSDT</option><option value="BNBUSDT">BNBUSDT</option><option value="DOGEUSDT">DOGEUSDT</option><option value="ADAUSDT">ADAUSDT</option><option value="LINKUSDT">LINKUSDT</option><option value="AVAXUSDT">AVAXUSDT</option><option value="DOTUSDT">DOTUSDT</option></select></label>
    <button id="researchRunBacktest" class="btn purple" type="button">Запустити історичний тест</button>
    <button id="researchRefreshPaper" class="btn" type="button">Оновити paper trading</button>
+   <label>Історія <select id="researchYears"><option value="1">1 рік</option><option value="2">2 роки</option><option value="3">3 роки</option></select></label>
+   <button id="researchAllMarkets" class="btn" type="button">Аналіз усіх 10 пар</button>
   </div>
   <div class="strategy-research-content">
    <section class="strategy-research-card"><header><h3>Історична перевірка (Backtest)</h3><small id="backtestPeriod">Тест ще не запускався</small></header>
@@ -1078,6 +1092,16 @@ body.research-standalone .strategy-research-panel{width:100vw;height:100dvh;max-
     <div class="research-table-container"><table><thead><tr><th>Виявлено</th><th>Пара</th><th>Напрямок</th><th>Статус</th><th>Net R</th></tr></thead><tbody id="paperTrades"></tbody></table></div>
    </section>
   </div>
+  <section class="strategy-all-markets" id="researchAllMarketsSection">
+   <header><div><h3>Порівняння 10 пар · історична перевірка</h3>
+    <p>Фіксовані правила та суворіший варіант 4/4. Перші 70% — навчальний відрізок, останні 30% — поза вибіркою (OOS).</p></div>
+    <small id="researchAllStatus">Не запущено</small></header>
+   <div class="research-all-progress"><div id="researchAllProgressBar"></div></div>
+   <div id="researchAllMetrics" class="research-metrics"></div>
+   <p id="researchVariantText" class="research-disclaimer">Вибір варіанта можливий лише за достатньої кількості угод у train. OOS не використовується для вибору.</p>
+   <div class="research-table-container"><table><thead><tr><th>Пара</th><th>Train угод</th><th>Train Win %</th><th>Train середнє R</th><th>OOS угод</th><th>OOS Win %</th><th>OOS середнє R</th><th>Причини збитків</th></tr></thead><tbody id="researchAllRows"></tbody></table></div>
+   <div id="researchVariantComparison" class="research-disclaimer"></div>
+  </section>
   <footer class="strategy-research-foot">Комісія та прослизання моделюються. При одночасному досягненні SL і TP обирається SL. Історичні результати не гарантують майбутніх. Ордери не надсилаються.</footer>
  </section>
 </div>
@@ -3021,6 +3045,7 @@ function researchDisplay(){
  const chosen=availableMarkets.includes(state.symbol)&&[...$('researchSymbol').options].some(o=>o.value===state.symbol)?state.symbol:'BTCUSDT';
  $('researchSymbol').value=chosen;
  fetchPaperResults();
+ refreshAllMarketsResearch();
 }
 function openStrategyResearch(){
  if(researchStandalone){researchDisplay();return}
@@ -3114,6 +3139,72 @@ $('researchRunBacktest').onclick=runStrategyVerification;
 $('researchRefreshPaper').onclick=fetchPaperResults;
 setInterval(()=>{if(researchIsVisible())fetchPaperResults()},60000);
 if(researchStandalone)researchDisplay();
+
+
+let researchAllPoll=null,researchAllState=null;
+const researchAllFmt=(value,d=2)=>Number.isFinite(value)?Number(value).toFixed(d):'—';
+function researchAllSummaryMetric(name,value){
+ const item=document.createElement('div');item.className='research-metric';
+ const label=document.createElement('span');label.textContent=name;
+ const strong=document.createElement('strong');strong.textContent=value;
+ item.append(label,strong);return item;
+}
+function renderAllMarkets(data){
+ researchAllState=data;
+ const completed=Number(data.completed)||0,total=Number(data.total)||10;
+ const status=data.status==='running'?'Працює: '+(data.symbol||'завантаження')+' · '+String(data.stage||'')+' · '+completed+'/'+total:
+  data.status==='complete'?'Завершено '+completed+'/'+total:
+  data.status==='partial'?'Частково завершено · '+completed+'/'+total:
+  data.status==='error'?'Помилка завантаження':'Тест не запускався';
+ $('researchAllStatus').textContent=status;
+ $('researchAllProgressBar').style.width=Math.max(0,Math.min(100,Number(data.progress)||0))+'%';
+ const metricRoot=$('researchAllMetrics');metricRoot.replaceChildren();
+ const add=(name,value)=>metricRoot.append(researchAllSummaryMetric(name,value));
+ const tr=data.train||{},out=data.test||{};
+ add('Train: завершено',Number.isFinite(tr.closed)?String(tr.closed):'—');
+ add('Train: середнє R',tr.closed?researchAllFmt(tr.expectancyR,3):'—');
+ add('OOS: завершено',Number.isFinite(out.closed)?String(out.closed):'—');
+ add('OOS: середнє R',out.closed?researchAllFmt(out.expectancyR,3):'—');
+ const rows=$('researchAllRows');rows.replaceChildren();
+ for(const item of data.results||[]){
+  const row=document.createElement('tr');
+  const reasons=item.losses||{},r=Object.entries(reasons).map(([k,v])=>k+': '+v).join(', ')||'—';
+  const cells=[item.symbol,item.train?.closed||0,
+    item.train?.closed?researchAllFmt(item.train.winRate,1)+'%':'—',
+    item.train?.closed?researchAllFmt(item.train.expectancyR,3):'—',
+    item.test?.closed||0,item.test?.closed?researchAllFmt(item.test.winRate,1)+'%':'—',
+    item.test?.closed?researchAllFmt(item.test.expectancyR,3):'—',r];
+  for(const cell of cells){const td=document.createElement('td');td.textContent=String(cell);row.append(td)}
+  rows.append(row);
+ }
+ const vars=data.variants||{},base=vars.baseline||{},strict=vars.strict||{};
+ $('researchVariantComparison').textContent='Порівняння: поточна стратегія (train '+(base.train?.closed||0)+' / OOS '+(base.test?.closed||0)+
+  ') · підтвердження 4/4 (train '+(strict.train?.closed||0)+' / OOS '+(strict.test?.closed||0)+
+  '). Вибрано тільки за train: '+(data.selectedOnTrain==='baseline'?'поточна':data.selectedOnTrain==='strict'?'суворіша':'жоден варіант')+'.';
+ $('researchVariantText').textContent=(data.warning||'')+
+  (data.errors?.length?' · Помилки: '+data.errors.join(' | ').slice(0,300):'')+
+  ' · Історичні котирування кешуються локально; угоди не відкриваються.';
+ $('researchAllMarkets').disabled=data.status==='running';
+}
+async function refreshAllMarketsResearch(){
+ try{
+  const response=await fetch('/api/strategy/multi-year',{cache:'no-store',signal:AbortSignal.timeout(10000)});
+  if(!response.ok)throw Error('HTTP '+response.status);
+  renderAllMarkets(await response.json());
+ }catch(e){$('researchAllStatus').textContent='Модуль доступний тільки через локальний сервер: '+String(e.message||e)}
+}
+$('researchAllMarkets').onclick=async()=>{
+ $('researchAllMarkets').disabled=true;
+ $('researchAllStatus').textContent='Запускаємо завантаження історії…';
+ try{
+  const response=await fetch('/api/strategy/multi-year',{method:'POST',headers:{'content-type':'application/json','x-ata-local':'1'},
+   body:JSON.stringify({years:Number($('researchYears').value)}),signal:AbortSignal.timeout(10000)});
+  const payload=await response.json();
+  if(!response.ok||!payload.started)throw Error(payload.error||'Тест уже працює');
+  await refreshAllMarketsResearch();
+ }catch(e){$('researchAllStatus').textContent='Не вдалося запустити: '+String(e.message||e);$('researchAllMarkets').disabled=false}
+};
+setInterval(()=>{if(researchIsVisible())refreshAllMarketsResearch()},10000);
 
 /* Floating assistant workspace: keep existing cards and handlers mounted. */
 const tradeWindow=$('rightPanel');
