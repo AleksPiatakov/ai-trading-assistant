@@ -55,6 +55,12 @@ await page.waitForFunction(()=>document.querySelector('#quote')?.textContent==='
 await page.waitForFunction(()=>document.querySelectorAll('#skillMatrix .skill-tf').length===12,null,{timeout:20000});
 const intervals=await page.locator('#skillMatrix .skill-tf').count();
 if(intervals!==12)errors.push('Multi-timeframe analysis did not cover all 12 intervals');
+if(await page.locator('#multiDetails').isVisible())errors.push('Detailed multi-timeframe section expanded by default');
+await page.locator('#toggleMultiDetails').click();
+if(!await page.locator('#multiDetails').isVisible())errors.push('Detailed multi-timeframe section did not expand');
+if(await page.locator('#toggleMultiDetails').getAttribute('aria-expanded')!=='true')errors.push('Expanded state not announced');
+await page.locator('#toggleMultiDetails').click();
+if(await page.locator('#multiDetails').isVisible())errors.push('Detailed multi-timeframe section did not collapse');
 const firstSummary=await page.locator('#multiSummary').innerText();
 if(!firstSummary.includes('12/12'))errors.push('Multi-timeframe coverage summary missing');
 const status=await page.locator('#quoteMeta').innerText();
