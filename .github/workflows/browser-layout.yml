@@ -1,0 +1,76 @@
+name: Browser layout regression
+on:
+  push:
+    branches: [redesign-approved-trading-ui]
+    paths:
+      - public/dashboard.html
+      - scripts/local-demo-server.mjs
+      - scripts/market-scanner.mjs
+      - scripts/multi-year-research.mjs
+      - scripts/strategy-verification.mjs
+      - scripts/paper-ledger.mjs
+      - .github/scripts/check-multi-year-research.mjs
+      - .github/scripts/check-strategy-verification.mjs
+      - .github/scripts/check-research-ui.mjs
+      - .github/scripts/check-market-scanner.mjs
+      - .github/scripts/check-layout.mjs
+      - .github/scripts/check-live-market.mjs
+      - .github/scripts/check-scanner-popup.mjs
+      - .github/scripts/check-auto-plan.mjs
+      - .github/scripts/check-workspace-popup.mjs
+      - .github/workflows/browser-layout.yml
+      - .github/workflows/preview-pages.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  layout:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install browser test tools
+        run: |
+          npm install --no-save --ignore-scripts playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Verify local Demo bridge JavaScript syntax
+        run: node --check scripts/local-demo-server.mjs
+      - name: Verify scanner module and read-only mock workflow
+        run: |
+          node --check scripts/market-scanner.mjs
+          node .github/scripts/check-market-scanner.mjs
+      - name: Verify read-only strategy validation and persisted paper ledger
+        run: |
+          node --check scripts/strategy-verification.mjs
+          node --check scripts/paper-ledger.mjs
+          node .github/scripts/check-strategy-verification.mjs
+          node --check scripts/multi-year-research.mjs
+          node .github/scripts/check-multi-year-research.mjs
+      - name: Produce static preview
+        run: |
+          mkdir -p _site
+          cp public/dashboard.html _site/index.html
+      - name: Start preview server
+        run: |
+          python3 -m http.server 8765 --directory _site > /tmp/ata-web.log 2>&1 &
+          sleep 2
+      - name: Inspect visible panel bounds at desktop sizes
+        run: node .github/scripts/check-layout.mjs
+      - name: Verify streaming and symbol navigation
+        run: node .github/scripts/check-live-market.mjs
+      - name: Verify separate scanner window, analytics and chart handoff
+        run: node .github/scripts/check-scanner-popup.mjs
+      - name: Verify auto-prepared plan and manual lock
+        run: node .github/scripts/check-auto-plan.mjs
+      - name: Verify standalone AI workspace and main chart isolation
+        run: node .github/scripts/check-workspace-popup.mjs
+      - name: Verify history and paper statistics window
+        run: node .github/scripts/check-research-ui.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: trading-ui-layout-screenshots
+          path: layout-screenshots

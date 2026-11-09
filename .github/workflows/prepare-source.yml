@@ -1,0 +1,36 @@
+name: Prepare source for redesign
+on:
+  push:
+    branches: [redesign-approved-trading-ui]
+    paths: ['.github/workflows/prepare-source.yml']
+permissions:
+  contents: write
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Unpack existing source archive
+        run: |
+          python3 - <<'PY'
+          import zipfile, pathlib
+          root = pathlib.Path.cwd().resolve()
+          with zipfile.ZipFile('ai-trading-assistant-source.zip') as z:
+              for item in z.infolist():
+                  dest = (root / item.filename).resolve()
+                  if not dest.is_relative_to(root): raise ValueError('Invalid archive path')
+                  if item.is_dir(): dest.mkdir(parents=True, exist_ok=True); continue
+                  dest.parent.mkdir(parents=True, exist_ok=True)
+                  with z.open(item) as src, open(dest,'wb') as out:
+                      import shutil
+                      shutil.copyfileobj(src,out)
+          PY
+      - name: Commit extracted application source
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "chore: expose existing app source for UI redesign" || exit 0
+          git push

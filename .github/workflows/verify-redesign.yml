@@ -1,0 +1,31 @@
+name: Verify approved trading redesign
+on:
+  push:
+    branches: [redesign-approved-trading-ui]
+    paths: ['.github/workflows/verify-redesign.yml', 'public/dashboard.html', 'app/api/market-data/route.ts', 'db/schema.ts']
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Validate dashboard JavaScript syntax
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const html=fs.readFileSync('public/dashboard.html','utf8');
+          const js=html.match(/<script>([\s\S]*?)<\/script>/)?.[1];
+          if (!js) throw new Error('No dashboard script found');
+          new Function(js);
+          for(const fragment of ['id="chart"','id="demoMode"','id="realMode"','id="riskMessage"','id="executeButton"']) {
+            if(!html.includes(fragment)) throw new Error('Missing UI: '+fragment);
+          }
+          console.log('Dashboard script and required controls are valid');
+          NODE
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npx tsc --noEmit
