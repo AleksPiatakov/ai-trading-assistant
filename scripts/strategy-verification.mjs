@@ -26,7 +26,7 @@ export function scoreTrades(trades){
   profitFactor:loss===0?null:profit/loss,maxDrawdownR:drawdown,
   expectancyR:equity/finished.length,totalNetR:equity};
 }
-export function verifyStrategy({symbol,series,costs=COST,maxHoldBars=48,maxSignals=20000}){
+export function verifyStrategy({symbol,series,costs=COST,maxHoldBars=48,maxSignals=20000,minConfirmations=0}){
  if(!/^[A-Z0-9]{3,30}USDT$/.test(symbol))throw Error('Invalid market symbol');
  const frames=Object.fromEntries(Object.keys(MS).map(tf=>[tf,completedCandles(series[tf]||[],tf)]));
  const hours=frames['60'];if(hours.length<220)throw Error('Not enough completed 1h candles for EMA200 warm-up');
@@ -44,7 +44,7 @@ export function verifyStrategy({symbol,series,costs=COST,maxHoldBars=48,maxSigna
   }
   if(!enough){skipped++;continue}
   const plan=evaluateTradeSetup(symbol,history,signalAt);
-  if(!plan){noSignal++;continue}
+  if(!plan||Number(plan.confirmations)<minConfirmations){noSignal++;continue}
   const next=hours[i+1];
   const adverse=plan.side==='long'?1:-1;
   const entry=next.o*(1+adverse*costs.slippagePerSide);
@@ -74,7 +74,7 @@ export function verifyStrategy({symbol,series,costs=COST,maxHoldBars=48,maxSigna
   if(!done){skipped++;break}
   const gross=direction*(done.exit-entry)/risk;
   const fees=costs.feePerSide*(entry+done.exit)/risk;
-  trades.push({symbol,side:plan.side,signalAt:new Date(signalAt).toISOString(),
+  trades.push({symbol,side:plan.side,confirmations:plan.confirmations,planRR:plan.rr,signalAt:new Date(signalAt).toISOString(),
    entryAt:new Date(next.t).toISOString(),exitAt:new Date(hours[exitIndex].t+MS['60']).toISOString(),
    entry,stop,target,exit:done.exit,reason:done.reason,ambiguous:done.ambiguous,
    grossR:gross,feesR:fees,netR:gross-fees,status:'closed'});
@@ -82,7 +82,7 @@ export function verifyStrategy({symbol,series,costs=COST,maxHoldBars=48,maxSigna
  }
  const metrics=scoreTrades(trades);
  return {symbol,method:'walk-forward-closed-candles-next-open-stop-first',source:'Bybit public OHLCV',
-  costs:{...costs},timeframes:['15','60','240','D'],ordersEnabled:false,
+  costs:{...costs},timeframes:['15','60','240','D'],minConfirmations,ordersEnabled:false,
   period:{from:hours[0]&&new Date(hours[0].t).toISOString(),to:hours.at(-1)&&new Date(hours.at(-1).t+MS['60']).toISOString()},
   bars:{h1:hours.length,m15:frames['15'].length,h4:frames['240'].length,daily:frames.D.length},
   skipped,noSignal,metrics,trades:trades.slice(-5000),warning:trades.length<30?
