@@ -57,7 +57,9 @@ export function verifyStrategy({symbol,series,costs=COST,maxHoldBars=48,maxSigna
    const hitStop=plan.side==='long'?candle.l<=stop:candle.h>=stop;
    const hitTarget=plan.side==='long'?candle.h>=target:candle.l<=target;
    if(hitStop||hitTarget){
-    const level=hitStop?stop:target;
+    // A stop-market fill can be worse than the stop after an adverse opening gap.
+    const worstStop=plan.side==='long'?Math.min(stop,candle.o):Math.max(stop,candle.o);
+    const level=hitStop?worstStop:target;
     const exit=level*(1-direction*costs.slippagePerSide);
     done={exit,reason:hitStop?'stop':'target',ambiguous:hitStop&&hitTarget};
     exitIndex=j;break;
