@@ -27,7 +27,7 @@ jobs:
         run: |
           mkdir -p _site
           cp public/dashboard.html _site/index.html
-     - name: Start preview server
+      - name: Start preview server
         run: |
           python3 -m http.server 8765 --directory _site > /tmp/ata-web.log 2>&1 &
           sleep 2
