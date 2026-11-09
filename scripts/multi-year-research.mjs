@@ -51,7 +51,7 @@ export function createMultiYearResearch({dir,getKlinesPage,getInstruments,now=()
    await rename(temp,path);
   };
   // Bound memory and requests, permit checkpoints after partial progress.
-  for(let page=0;page<Math.ceil((3*YEAR/TFS[tf])/1000)+8;page++){
+  for(let page=0;page<Math.ceil((4*YEAR/TFS[tf])/1000)+8;page++){
    const response=await getKlinesPage(symbol,tf,end,1000);
    const incoming=(response||[]).map(x=>({t:Number(x.t),o:Number(x.o),h:Number(x.h),l:Number(x.l),c:Number(x.c),v:Number(x.v)})).filter(good);
    if(!incoming.length)break;
@@ -108,8 +108,7 @@ export function createMultiYearResearch({dir,getKlinesPage,getInstruments,now=()
   const sum=(items,key)=>items.reduce((a,v)=>a+(Number(v?.[key])||0),0);
   const metrics=items=>{
    const closed=sum(items,'closed'),wins=sum(items,'wins'),totalNetR=sum(items,'totalNetR');
-   const gain=items.reduce((a,r)=>a+(r?.profitFactor==null?Math.max(0,r?.totalNetR||0):Math.max(0,r.totalNetR)+Math.max(0,-r.totalNetR)/(Math.max(r.profitFactor,0.000001))),0);
-   // Aggregate raw profit/loss are added below by the verification engine; use neutral values otherwise.
+   // Portfolio aggregate is intentionally limited to count / win-rate / mean R.
    return {closed,wins,winRate:closed?100*wins/closed:null,expectancyR:closed?totalNetR/closed:null,totalNetR};
   };
   return {...status(),train:metrics(trainResults),test:metrics(testResults),
