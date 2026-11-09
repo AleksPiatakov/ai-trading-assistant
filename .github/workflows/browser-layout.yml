@@ -6,6 +6,9 @@ on:
       - public/dashboard.html
       - scripts/local-demo-server.mjs
       - scripts/market-scanner.mjs
+      - scripts/strategy-verification.mjs
+      - scripts/paper-ledger.mjs
+      - .github/scripts/check-strategy-verification.mjs
       - .github/scripts/check-market-scanner.mjs
       - .github/scripts/check-layout.mjs
       - .github/scripts/check-live-market.mjs
@@ -36,6 +39,11 @@ jobs:
         run: |
           node --check scripts/market-scanner.mjs
           node .github/scripts/check-market-scanner.mjs
+      - name: Verify read-only strategy validation and persisted paper ledger
+        run: |
+          node --check scripts/strategy-verification.mjs
+          node --check scripts/paper-ledger.mjs
+          node .github/scripts/check-strategy-verification.mjs
       - name: Produce static preview
         run: |
           mkdir -p _site
