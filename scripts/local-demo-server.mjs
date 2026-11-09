@@ -14,6 +14,8 @@ import { homedir } from 'node:os';
 import { spawn } from 'node:child_process';
 import { createHmac } from 'node:crypto';
 import { createMarketScanner } from './market-scanner.mjs';
+import { verifyStrategy } from './strategy-verification.mjs';
+import { createPaperLedger } from './paper-ledger.mjs';
 
 const host = '127.0.0.1';
 const port = Number(process.env.ATA_LOCAL_PORT || 4177);
@@ -205,6 +207,43 @@ async function getKlines(symbol,interval){
  return {symbol,interval,source:'Bybit public market API',updatedAt:new Date().toISOString(),candles:aggregated};
 }
 const scannerDataDir=join(homedir(),'Library','Application Support','AI Trading Assistant');
+const MAX_HISTORY={'15':2800,'60':660,'240':360,D:255};
+async function loadStrategyHistory(symbol){
+ const available=await getInstruments();
+ if(!available.includes(symbol))throw Error('Пара відсутня у списку Bybit');
+ const output={};
+ for(const [tf,count] of Object.entries(MAX_HISTORY)){
+  let end=Date.now(),rows=[],seen=new Set();
+  for(let page=0;page<Math.ceil(count/1000);page++){
+   const data=await publicBybit('/v5/market/kline',{
+    category:'linear',symbol,interval:tf,end,limit:Math.min(1000,count-rows.length)
+   });
+   const fetched=(data.list||[]).map(row=>({
+    t:Number(row[0]),o:Number(row[1]),h:Number(row[2]),l:Number(row[3]),c:Number(row[4]),v:Number(row[5])
+   })).filter(c=>[c.t,c.o,c.h,c.l,c.c,c.v].every(Number.isFinite)&&c.t>0&&c.o>0&&c.l<=c.h);
+   if(!fetched.length)break;
+   for(const c of fetched)if(!seen.has(c.t)){seen.add(c.t);rows.push(c)}
+   const oldest=Math.min(...fetched.map(c=>c.t));
+   if(oldest>=end||rows.length>=count)break;
+   end=oldest-1;
+  }
+  output[tf]=rows.sort((a,b)=>a.t-b.t).slice(-count);
+ }
+ return output;
+}
+let backtestBusy=false,backtestCache=new Map();
+async function runStrategyBacktest(symbol){
+ const saved=backtestCache.get(symbol);
+ if(saved&&Date.now()-saved.at<10*60*1000)return saved.result;
+ if(backtestBusy)throw Object.assign(new Error('Історична перевірка вже виконується'),{status:429});
+ backtestBusy=true;
+ try{
+  const series=await loadStrategyHistory(symbol);
+  const result=verifyStrategy({symbol,series});
+  backtestCache.set(symbol,{at:Date.now(),result});
+  return result;
+ }finally{backtestBusy=false}
+}
 const alertPreferencesPath=join(scannerDataDir,'notification-preferences.json');
 const scannerSession=String(Date.now());
 let alertPreferences={macNotifications:false};
@@ -233,9 +272,13 @@ function notifyMacOfOpportunity(alert){
  child.on('error',()=>clearTimeout(kill));
  child.on('close',()=>clearTimeout(kill));
 }
+const paperLedger=createPaperLedger({
+ path:join(scannerDataDir,'paper-ledger.json'),loadCandles:getKlines
+});
 const opportunityScanner=createMarketScanner({getKlines,getInstruments,
  historyPath:join(scannerDataDir,'scanner-history.json'),
- onPromotion:notifyMacOfOpportunity});
+ onPromotion:notifyMacOfOpportunity,
+ onCycle:cycle=>paperLedger.refresh(cycle)});
 
 const server=http.createServer(async(req,res)=>{
   const hostHeader=String(req.headers.host||'');
@@ -290,6 +333,17 @@ const server=http.createServer(async(req,res)=>{
   }
   if(req.method==='GET'&&path==='/api/scanner/opportunities'){
     return json(res,200,opportunityScanner.getSnapshot());
+  }
+  if(req.method==='GET'&&path==='/api/strategy/paper'){
+    try{return json(res,200,await paperLedger.report())}
+    catch(e){return json(res,503,{error:String(e.message||e),ordersEnabled:false})}
+  }
+  if(req.method==='GET'&&path==='/api/strategy/backtest'){
+    const query=new URL(req.url,'http://127.0.0.1:'+port).searchParams;
+    const symbol=query.get('symbol')||'BTCUSDT';
+    if(!/^[A-Z0-9]{3,30}USDT$/.test(symbol))return json(res,400,{error:'Некоректна пара'});
+    try{return json(res,200,await runStrategyBacktest(symbol))}
+    catch(e){return json(res,e.status||503,{error:String(e.message||e),ordersEnabled:false})}
   }
   if(req.method==='GET'&&path==='/api/demo/account'){
     try{
