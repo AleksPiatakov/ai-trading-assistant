@@ -669,6 +669,11 @@ body.real-account .help-info{visibility:hidden;pointer-events:none}
 #orderCard #executeButton:disabled:after{content:" • вимкнено";font-size:10px;font-weight:450}
 @media(max-width:1300px){#aiCard #analysisTabs .btn{font-size:10px}#riskCard .risk-grid-compact{gap:6px;padding:8px}#riskCard .fields label{font-size:10px;grid-template-columns:minmax(0,1fr) 74px}}
 @media(max-width:680px){#aiCard .analysis-columns,#riskCard .risk-grid-compact{grid-template-columns:1fr}#aiCard #analysisTabs{grid-template-columns:repeat(2,minmax(0,1fr))}#aiCard .signal-line{grid-template-columns:1fr}#orderCard .order-position-line,#orderCard .order-sl-tp{grid-template-columns:1fr}}
+
+#aiCard #analysisFacts .analysis-fact-row{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;padding:5px 1px;border-bottom:1px solid #2d49705b;font-size:11px;line-height:1.3}
+#aiCard #analysisFacts .analysis-fact-row:last-child{border-bottom:none}
+#aiCard #analysisFacts .analysis-fact-row span{color:#a5bddd;min-width:0}
+#aiCard #analysisFacts .analysis-fact-row strong{font-size:11px;font-weight:650;color:#e7f2ff;text-align:right;overflow-wrap:anywhere}
 </style></head>
 <body><div class="app" id="app">
 <nav class="nav nav-reference" aria-label="Навігація">
@@ -1096,7 +1101,57 @@ function renderNotes(){let items=[];try{items=JSON.parse(localStorage.getItem('a
 function ema(arr,period){const out=[];let prev=null;const alpha=2/(period+1);for(const x of arr){prev=prev===null?x:prev+alpha*(x-prev);out.push(prev)}return out}
 function rsi(close,period=14){const out=new Array(close.length).fill(null);if(close.length<=period)return out;let gain=0,loss=0;for(let i=1;i<=period;i++){const d=close[i]-close[i-1];gain+=Math.max(0,d);loss+=Math.max(0,-d)}gain/=period;loss/=period;for(let i=period;i<close.length;i++){if(i>period){const d=close[i]-close[i-1];gain=(gain*(period-1)+Math.max(0,d))/period;loss=(loss*(period-1)+Math.max(0,-d))/period}out[i]=loss===0?100:100-100/(1+gain/loss)}return out}
 function prepareAnalysis(){const cs=state.candles;if(cs.length<30)return;const close=cs.map(c=>c.c),e50=ema(close,50),e200=ema(close,200),e12=ema(close,12),e26=ema(close,26),macd=e12.map((v,i)=>v-e26[i]),signal=ema(macd,9),rs=rsi(close),last=close.length-1;state.analysis={price:close[last],above50:close[last]>e50[last],above200:close[last]>e200[last],rsi:rs[last],macd:macd[last],macdSignal:signal[last],e50,e200,macdLine:macd,signalLine:signal,rsiLine:rs};analysisView()}
-function analysisView(){setText('scenario','—');$('analysisFacts').textContent='';$('explanation').textContent='';}
+function analysisView(){
+ const a=state.analysis,tab=state.tab||'plan';
+ const title=$('scenario'),facts=$('analysisFacts'),explain=$('explanation');
+ facts.replaceChildren();
+ const addFact=(label,value)=>{
+   const item=document.createElement('div');
+   item.className='analysis-fact-row';
+   const left=document.createElement('span'),right=document.createElement('strong');
+   left.textContent=label;right.textContent=value;
+   item.append(left,right);facts.append(item);
+ };
+ if(!a||!state.marketOk){
+   title.textContent='Очікування ринкових даних';
+   addFact('Стан','Немає підтверджених показників');
+   explain.textContent='Після отримання свічок Bybit тут з’являться технічні дані. Автоматична рекомендація та оцінка впевненості поки не реалізовані.';
+   return;
+ }
+ const price=a.price,ema50=a.e50.at(-1),ema200=a.e200.at(-1);
+ const fmt=v=>Number.isFinite(v)?v.toLocaleString('en-US',{maximumFractionDigits:v<1?7:2}):'—';
+ const above50=price>ema50,above200=price>ema200;
+ const trend=above50&&above200?'Ціна вище EMA 50 та EMA 200':
+   !above50&&!above200?'Ціна нижче EMA 50 та EMA 200':'Змішане положення відносно EMA';
+ title.textContent=trend+' • не торговий сигнал';
+ if(tab==='plan'){
+   addFact('Пара',state.symbol);
+   addFact('Період',timeframeLabel(state.tf));
+   addFact('Поточна свічка',fmt(price));
+   addFact('EMA 50 / EMA 200',fmt(ema50)+' / '+fmt(ema200));
+   explain.textContent='Це фактичні технічні показники обраного інструмента, а не готовий сигнал для купівлі чи продажу.';
+ }else if(tab==='signal'){
+   addFact('EMA 50',fmt(ema50));
+   addFact('EMA 200',fmt(ema200));
+   addFact('RSI (14)',Number.isFinite(a.rsi)?a.rsi.toFixed(1):'—');
+   addFact('MACD / Signal',fmt(a.macd)+' / '+fmt(a.macdSignal));
+   explain.textContent='Індикатори описують минулі та поточні цінові дані; вони не гарантують майбутній рух.';
+ }else if(tab==='risk'){
+   const fields=['balance','riskPct','entry','stop','target','fee'];
+   const complete=fields.every(id=>$(id).value.trim()!=='');
+   addFact('Сценарій',state.dir==='long'?'Лонг':'Шорт');
+   addFact('Допустимий ризик',complete&&Number.isFinite(num('balance')*num('riskPct'))?money(num('balance')*num('riskPct')/100)+' USDT':'Не заповнено');
+   addFact('Розмір позиції',$('quantity').textContent);
+   addFact('Net R:R',$('rr').textContent);
+   explain.textContent='Розрахунок попередній, без точних біржових лімітів, фінансування та прослизання. Відправлення ордерів вимкнено.';
+ }else{
+   addFact('Ринок','Bybit USDT Perpetual');
+   addFact('Таймфрейм',timeframeLabel(state.tf));
+   addFact('Кількість свічок',String(state.candles.length));
+   addFact('Джерело','Публічні дані Bybit');
+   explain.textContent='Новини, економічні події й фундаментальні фактори поки не підключені та не входять у цю оцінку.';
+ }
+}
 function calculate(){
  const ids=['quantity','notional','loss','rr','orderEntry','orderQuantity','orderSL','orderTP'];
  ids.forEach(id=>setText(id,'—'));
