@@ -133,6 +133,56 @@ async function loadDemoAccount(){
     ordersEnabled:false
   };
 }
+
+const intervals=new Set(['1','3','5','15','30','60','120','240','D','W']);
+let instrumentsCache=null,instrumentsFetched=0;
+async function publicBybit(path,params){
+ const u=new URL('https://api.bybit.com'+path);
+ for(const [key,value] of Object.entries(params))u.searchParams.set(key,String(value));
+ const response=await fetch(u,{
+   headers:{Accept:'application/json'},signal:AbortSignal.timeout(12000),cache:'no-store'
+ });
+ if(!response.ok)throw new Error('Bybit market HTTP '+response.status);
+ const body=await response.json();
+ if(body?.retCode!==0)throw new Error('Bybit market: '+String(body?.retMsg||body?.retCode).slice(0,130));
+ return body.result||{};
+}
+async function getInstruments(){
+ if(instrumentsCache&&Date.now()-instrumentsFetched<300000)return instrumentsCache;
+ const symbols=[],seen=new Set();let cursor='';
+ for(let page=0;page<15;page++){
+   const params={category:'linear',status:'Trading',limit:'1000'};
+   if(cursor)params.cursor=cursor;
+   const result=await publicBybit('/v5/market/instruments-info',params);
+   for(const item of result.list||[]){
+     const symbol=String(item.symbol||'');
+     if(item.quoteCoin!=='USDT'||item.settleCoin!=='USDT'||item.contractType!=='LinearPerpetual'
+        ||item.status!=='Trading'||!(/^[A-Z0-9]{3,30}USDT$/).test(symbol)||seen.has(symbol))continue;
+     seen.add(symbol);symbols.push(symbol);
+   }
+   if(!result.nextPageCursor)break;
+   if(result.nextPageCursor===cursor)throw new Error('Bybit pagination cursor stalled');
+   cursor=result.nextPageCursor;
+ }
+ if(!symbols.length)throw new Error('Bybit не повернув торгові пари USDT Perpetual');
+ symbols.sort((a,b)=>a.localeCompare(b,'en'));
+ instrumentsCache=symbols;instrumentsFetched=Date.now();
+ return symbols;
+}
+async function getKlines(symbol,interval){
+ if(!intervals.has(interval)||!(/^[A-Z0-9]{3,30}USDT$/).test(symbol))
+   throw new Error('Некоректна пара або таймфрейм');
+ const available=await getInstruments();
+ if(!available.includes(symbol))throw new Error('Пара відсутня у списку активних USDT Perpetual');
+ const result=await publicBybit('/v5/market/kline',{category:'linear',symbol,interval,limit:220});
+ const candles=(result.list||[]).map(row=>({
+   t:Number(row[0]),o:Number(row[1]),h:Number(row[2]),l:Number(row[3]),
+   c:Number(row[4]),v:Number(row[5])
+ })).filter(c=>[c.t,c.o,c.h,c.l,c.c,c.v].every(Number.isFinite)&&c.t>0&&c.l<=c.h)
+   .reverse();
+ if(!candles.length)throw new Error('Bybit не повернув свічки для обраної пари');
+ return {symbol,interval,source:'Bybit public market API',updatedAt:new Date().toISOString(),candles};
+}
 const server=http.createServer(async(req,res)=>{
   const hostHeader=String(req.headers.host||'');
   if(!['127.0.0.1:'+port,'localhost:'+port].includes(hostHeader)){
@@ -152,6 +202,16 @@ const server=http.createServer(async(req,res)=>{
   if(req.method==='GET'&&path==='/api/demo/status'){
     const configured=await keychainRead(services.key).then(Boolean).catch(()=>false);
     return json(res,200,{configured,mode:'demo',ordersEnabled:false});
+  }
+  if(req.method==='GET'&&path==='/api/market/instruments'){
+    try{return json(res,200,{category:'linear',symbols:await getInstruments()});}
+    catch(e){return json(res,503,{error:String(e.message||'Bybit market API недоступний')});}
+  }
+  if(req.method==='GET'&&path==='/api/market/candles'){
+    try{
+      const query=new URL(req.url,'http://127.0.0.1:'+port).searchParams;
+      return json(res,200,await getKlines(query.get('symbol')||'BTCUSDT',query.get('interval')||'D'));
+    }catch(e){return json(res,503,{error:String(e.message||'Bybit market API недоступний'),candles:[]});}
   }
   if(req.method==='GET'&&path==='/api/demo/account'){
     try{
