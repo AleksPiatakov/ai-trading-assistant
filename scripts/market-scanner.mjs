@@ -71,13 +71,48 @@ function proposal(symbol,data,asOf){
   }
   return out.sort((a,b)=>b.confirmations-a.confirmations||b.rr-a.rr)[0]||null;
 }
+// Observation ranking is not a probability or a trade recommendation.
+function attentionCandidate(symbol,frames,asOf){
+ const rows=REQUIRED.map(tf=>frames[tf]).filter(Boolean);
+ if(rows.length<3)return null;
+ const h1=frames['60'],h4=frames['240'],day=frames.D,short=frames['15'];
+ if(!h1||!h4)return null;
+ const up=rows.filter(x=>x.direction==='up').length;
+ const down=rows.filter(x=>x.direction==='down').length;
+ const side=up>=down?'long':'short',matching=Math.max(up,down);
+ const aligned=h1.direction===h4.direction&&h1.direction!=='mixed';
+ const rsiNormal=finite(h1.rsi)&&h1.rsi>=30&&h1.rsi<=70;
+ const macdAligned=(side==='long'&&h1.macd>0)||(side==='short'&&h1.macd<0);
+ const volumePresent=h1.relVolume!==null&&finite(h1.relVolume);
+ const volumeActive=volumePresent&&h1.relVolume>=1;
+ const dailySupport=day?.direction=== (side==='long'?'up':'down');
+ // Weighted qualitative criteria for ranking only; not confidence or success chance.
+ const checks=[
+  {label:'1год/4год підтверджують напрямок',ok:aligned},
+  {label:'Щонайменше 3 таймфрейми в одному напрямку',ok:matching>=3},
+  {label:'RSI не в крайній зоні',ok:rsiNormal},
+  {label:'MACD підтверджує напрямок',ok:macdAligned},
+  {label:'Обсяг не нижче середнього',ok:volumeActive}
+ ];
+ const passed=checks.filter(c=>c.ok).length;
+ if(passed<2)return null;
+ const pending=checks.filter(c=>!c.ok).map(c=>c.label);
+ return {symbol,side,passed,total:checks.length,aligned,frames:rows.length,
+  up,down,mixed:rows.length-up-down,rsi:h1.rsi,relativeVolume:volumePresent?h1.relVolume:null,
+  atrPct:finite(h1.atr)&&h1.price>0?100*h1.atr/h1.price:null,
+  checkedAt:asOf,hasTradePlan:false,
+  reason:aligned?'1год і 4год показують узгоджений напрямок EMA.':
+   'Є рух або ознаки імпульсу, але 1год і 4год поки не узгоджені.',
+  waitFor:pending.length?pending.slice(0,2):['Підтвердити актуальний вхід, SL/TP, R:R і ліквідність'],
+  disclosure:'Рейтинг уваги за 5 перевірками, не ймовірність прибутку. Це не сигнал до входу.'};
+}
 export function createMarketScanner({getKlines,getInstruments,historyPath=null}){
   let snapshot={status:'starting',updatedAt:null,startedAt:null,completed:0,total:0,watchlist:WATCHLIST.slice(),
-    opportunities:[],errors:[],mode:'local-background',ordersEnabled:false};
+    opportunities:[],attention:[],errors:[],mode:'local-background',ordersEnabled:false};
   let scanning=false,closed=false,history=[];
   async function scan(){
     if(scanning||closed)return;
-    scanning=true;const start=new Date().toISOString(),found=[],errors=[];
+    scanning=true;const start=new Date().toISOString(),found=[],attention=[],errors=[];
     const allowed=await getInstruments().catch(e=>{errors.push('Список пар: '+String(e.message).slice(0,90));return []});
     const list=WATCHLIST.filter(x=>ALLOWED.has(x)&&allowed.includes(x));
     snapshot={...snapshot,status:'scanning',startedAt:start,completed:0,total:list.length,errors:[],watchlist:list};
@@ -90,12 +125,16 @@ export function createMarketScanner({getKlines,getInstruments,historyPath=null})
           const data=await getKlines(symbol,tf);
           frames[tf]=analyze(data.candles,tf);
         }
-        const item=proposal(symbol,frames,new Date().toISOString());
+        const scannedAt=new Date().toISOString();
+        const item=proposal(symbol,frames,scannedAt);
         if(item)found.push(item);
+        const watch=attentionCandidate(symbol,frames,scannedAt);
+        if(watch)attention.push({...watch,hasTradePlan:Boolean(item)});
       }catch(e){errors.push(symbol+': '+String(e.message||e).slice(0,90))}
       snapshot={...snapshot,completed:snapshot.completed+1};
     }
     found.sort((a,b)=>b.confirmations-a.confirmations||b.rr-a.rr);
+    attention.sort((a,b)=>b.passed-a.passed||Number(b.aligned)-Number(a.aligned)||a.symbol.localeCompare(b.symbol));
     const prior=new Set(snapshot.opportunities.map(x=>x.symbol+'|'+x.side));
     for(const item of found){
       if(!prior.has(item.symbol+'|'+item.side)){
@@ -110,7 +149,7 @@ export function createMarketScanner({getKlines,getInstruments,historyPath=null})
       }catch(e){errors.push('Не вдалося зберегти історію сканування')}
     }
     snapshot={...snapshot,status:errors.length&&errors.length===list.length?'error':'ready',updatedAt:new Date().toISOString(),
-      opportunities:found.slice(0,15),errors,completed:list.length,total:list.length};
+      opportunities:found.slice(0,15),attention:attention.slice(0,10),errors,completed:list.length,total:list.length};
     scanning=false;
   }
   let timer=null;
@@ -128,7 +167,7 @@ export function createMarketScanner({getKlines,getInstruments,historyPath=null})
     timer.unref?.();
   };
   const stop=()=>{closed=true;clearInterval(timer)};
-  const getSnapshot=()=>({...snapshot,opportunities:snapshot.opportunities.filter(x=>Date.now()-Date.parse(x.scannedAt)<REFRESH_MS*2)});
+  const getSnapshot=()=>({...snapshot,opportunities:snapshot.opportunities.filter(x=>Date.now()-Date.parse(x.scannedAt)<REFRESH_MS*2),attention:snapshot.attention.filter(x=>Date.now()-Date.parse(x.checkedAt)<REFRESH_MS*2)});
   const getHistory=()=>history.slice(0,100).map(x=>({...x}));
   return {start,stop,getSnapshot,getHistory,refresh:scan};
 }
