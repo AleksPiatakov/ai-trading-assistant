@@ -57,13 +57,19 @@ export function createPaperLedger({path,loadCandles,now=()=>Date.now(),costs=tra
     if(!(direction*(entry-row.stop)>0&&direction*(row.target-entry)>0)){
      row.status='rejected';row.reason='gap invalidated plan';continue;
     }
-    row.entry=entry;row.entryAt=new Date(first.t).toISOString();row.status='open';
+    row.entry=entry;row.entryAt=new Date(first.t).toISOString();row.lastCheckedAt=row.entryAt;row.status='open';
    }
    const entryAt=Date.parse(row.entryAt),direction=row.side==='long'?1:-1;
-   for(const candle of future.filter(c=>c.t>=entryAt)){
+   const lastChecked=Number.isFinite(Date.parse(row.lastCheckedAt))?Date.parse(row.lastCheckedAt):entryAt;
+   const unread=future.filter(c=>c.t>=entryAt&&c.t+BAR>lastChecked);
+   if(unread.length&&unread[0].t>lastChecked+BAR){
+    row.status='unverifiable';row.reason='missing 15m candles after disconnection';continue;
+   }
+   for(const candle of unread){
     const stopHit=row.side==='long'?candle.l<=row.stop:candle.h>=row.stop;
     const targetHit=row.side==='long'?candle.h>=row.target:candle.l<=row.target;
     const timed=candle.t-entryAt>=HOLD;
+    row.lastCheckedAt=new Date(candle.t+BAR).toISOString();
     if(!stopHit&&!targetHit&&!timed)continue;
     // Stop orders through an opening gap use the worse of stop and open.
     const worstStop=row.side==='long'?Math.min(row.stop,candle.o):Math.max(row.stop,candle.o);
@@ -87,7 +93,7 @@ export function createPaperLedger({path,loadCandles,now=()=>Date.now(),costs=tra
   return {mode:'paper',ordersEnabled:false,source:'Bybit public closed 15m candles',costs:{...costs},
    warning:'Симуляція майбутніх сигналів, не реальні угоди. Старт після виявлення сигналу, SL має пріоритет при неоднозначній свічці.',
    totals:{waiting:rows.filter(x=>x.status==='waiting-fill').length,open:rows.filter(x=>x.status==='open').length,
-    rejected:rows.filter(x=>x.status==='rejected').length,closed:closed.length},
+    rejected:rows.filter(x=>x.status==='rejected'||x.status==='unverifiable').length,closed:closed.length},
    metrics:scoreTrades(closed),trades:rows.slice(-100).reverse(),error};
  }
  return {refresh,report};
