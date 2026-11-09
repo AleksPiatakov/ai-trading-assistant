@@ -8,7 +8,7 @@ Open the application with `node scripts/local-demo-server.mjs` and visit `http:/
 ## Historical verification (Backtesting)
 - On-demand only, one concurrent test, cached by symbol for 10 minutes.
 - Reads historical Bybit USDT perpetual OHLCV for 15m (up to 2,800 candles), 1h (660), 4h (360), and 1D (255). The practical usable test range depends on available exchange history, around several weeks rather than a multi-year track record.
-- The 15m/1h/4h/1D signal is evaluated only after each timeframe candle has **closed**. It uses exactly `evaluateTradeSetup()`, shared with the background scanner, not a second, easier set of rules.
+- Signals require **at least 200 completed candles on every timeframe** (EMA200 warm-up), preventing a test with less indicator history than the live scanner. The 15m/1h/4h/1D signal is evaluated only after each timeframe candle has **closed**. It uses exactly `evaluateTradeSetup()`, shared with the background scanner, not a second, easier set of rules.
 - Simulated fill at the **next 1-hour candle's open**. No overlapping positions on a symbol. Maximum holding period 48 1-hour candles.
 - Entry and exit have assumed adverse slippage of 0.05% per side. Fees assume 0.055% per side; these are **configurable in code, not actual exchange account fees**. Funding, spread variation, partial fills, liquidation, market impact, leverage, slippage tails, and taxes are not modeled.
 - SL beats TP when both are touched in one OHLC candle. Opening gaps through stops use the more adverse of the open or SL price.
