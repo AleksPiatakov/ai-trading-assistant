@@ -543,6 +543,16 @@ body.real-account .help-info{visibility:hidden;pointer-events:none}
 .help-modal p{font-size:13px;line-height:1.7;color:#c5d4ef;margin:0;white-space:pre-line}
 .help-understood{margin-top:22px;padding:9px 20px}
 @media(max-width:780px){.help-info{width:16px;height:16px;font-size:11px;margin-left:2px}.help-modal{padding:18px}.help-modal h2{font-size:18px}}
+
+/* Compact left-navigation glyphs — preserve button hit areas and active glow. */
+.nav.nav-reference .nav-action .ico{width:24px;height:24px}
+.nav.nav-reference .nav-action .ico svg{width:21px;height:21px}
+.nav.nav-reference #sidebarToggle .ico svg{width:21px;height:21px}
+@media(max-width:680px){
+ .nav.nav-reference .nav-action .ico{width:21px;height:21px}
+ .nav.nav-reference .nav-action .ico svg{width:19px;height:19px}
+ .nav.nav-reference #sidebarToggle .ico svg{width:19px;height:19px}
+}
 </style></head>
 <body><div class="app" id="app">
 <nav class="nav nav-reference" aria-label="Навігація">
