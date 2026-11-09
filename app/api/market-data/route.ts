@@ -1,5 +1,5 @@
 // Public, unauthenticated Bybit market candles. Never accepts API keys or order requests.
-const intervals = new Set(["1", "3", "5", "15", "30", "60", "120", "240", "D", "W"]);
+const intervals = new Set(["1", "3", "5", "15", "30", "60", "120", "240", "D", "W", "M", "3M"]);
 const symbols = new Set(["BTCUSDT", "ETHUSDT", "SOLUSDT"]);
 export async function GET(request: Request) {
   const params = new URL(request.url).searchParams;
@@ -12,7 +12,7 @@ export async function GET(request: Request) {
     const url = new URL("https://api.bybit.com/v5/market/kline");
     url.searchParams.set("category", "linear");
     url.searchParams.set("symbol", symbol);
-    url.searchParams.set("interval", interval);
+    url.searchParams.set("interval", interval === "3M" ? "M" : interval);
     url.searchParams.set("limit", "220");
     const response = await fetch(url.toString(), {
       headers: { Accept: "application/json" },
@@ -35,8 +35,21 @@ export async function GET(request: Request) {
       }))
       .filter((x) => Object.values(x).every(Number.isFinite))
       .reverse();
+    const result = interval === "3M" ? candles.reduce<(typeof candles)>((quarters, candle) => {
+      const date = new Date(candle.t);
+      const start = Date.UTC(date.getUTCFullYear(), Math.floor(date.getUTCMonth() / 3) * 3, 1);
+      const last = quarters[quarters.length - 1];
+      if (!last || last.t !== start) quarters.push({ ...candle, t: start });
+      else {
+        last.h = Math.max(last.h, candle.h);
+        last.l = Math.min(last.l, candle.l);
+        last.c = candle.c;
+        last.v += candle.v;
+      }
+      return quarters;
+    }, []) : candles;
     return Response.json(
-      { source: "Bybit public market API", category: "linear", symbol, interval, candles, updatedAt: Date.now() },
+      { source: "Bybit public market API", category: "linear", symbol, interval, candles: result, updatedAt: Date.now() },
       { headers: { "Cache-Control": "no-store" } },
     );
   } catch {
