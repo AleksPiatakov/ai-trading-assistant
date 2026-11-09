@@ -466,6 +466,12 @@ button:focus-visible,input:focus-visible{outline:2px solid #9d88ff;outline-offse
  #chartCard>.bar .last{font-size:18px}
  #chartCard>.bar .chart-quote-group{gap:5px}
 }
+/* UI shell: no invented metrics or output banners until connected API. */
+#chartCard .chart-quote-group .last{color:#aec0d9;text-shadow:none}
+#chartCard .chart-quote-group .chart-delta:empty,#chartCard .chart-quote-group .detail:empty,#chartCard .chart-note:empty,
+#aiCard .explain:empty,#aiCard #analysisFacts:empty,#riskCard #riskMessage:empty,#orderCard #executionStatus:empty{display:none}
+#aiCard .signal{background:#0d2540;border-color:#37527a;color:#b9cae5}
+#chartCard .chart-wrap canvas{display:block}
 </style></head>
 <body><div class="app" id="app">
 <nav class="nav nav-reference" aria-label="Навігація">
@@ -496,26 +502,26 @@ button:focus-visible,input:focus-visible{outline:2px solid #9d88ff;outline-offse
 <div id="headerPopover" class="header-popover hidden" role="status" aria-live="polite"></div>
 </header>
 <div class="layout">
-<section class="card chart-card" id="chartCard"><div class="bar"><h2><span class="coin-icon" aria-hidden="true">₿</span> BTCUSDT <span class="star-icon" aria-hidden="true">☆</span></h2><span class="chart-quote-group"><span id="quote" class="last">—</span><span id="quoteDelta" class="chart-delta">—</span><span id="quoteMeta" class="detail">Очікування даних</span></span><button class="chart-collapse-button" id="maximizeChart" title="Розгорнути графік" aria-label="Розгорнути графік">»</button></div>
+<section class="card chart-card" id="chartCard"><div class="bar"><h2><span class="coin-icon" aria-hidden="true">₿</span> BTCUSDT <span class="star-icon" aria-hidden="true">☆</span></h2><span class="chart-quote-group"><span id="quote" class="last">—</span><span id="quoteDelta" class="chart-delta"></span><span id="quoteMeta" class="detail"></span></span><button class="chart-collapse-button" id="maximizeChart" title="Розгорнути графік" aria-label="Розгорнути графік">»</button></div>
 <div class="chart-toolbar"><span class="draw-cross" aria-hidden="true">＋</span><div id="timeframes"><button class="btn" data-tf="1">1хв</button><button class="btn" data-tf="5">5хв</button><button class="btn" data-tf="15">15хв</button><button class="btn" data-tf="30">30хв</button><button class="btn" data-tf="60">1год</button><button class="btn" data-tf="240">4год</button><button class="btn active" data-tf="D">1Д</button><button class="btn" data-tf="W">1Тиж ⌄</button></div><span class="grow"></span><div class="chart-toolbar-actions"><button class="chart-tool-action" id="indicatorsButton" type="button" title="Показники EMA, RSI, MACD"><span class="trend-glyph">⌁</span> Індикатори</button><button class="chart-tool-icon" id="chartInfoButton" type="button" title="Інформація про графік">▤</button><button class="chart-tool-icon" id="chartFullscreenButton" type="button" title="На весь екран">⛶</button></div></div>
-<div class="chart-wrap"><div class="drawing-tools" aria-label="Інструменти графіка"><span title="Олівець"><svg aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="m6 23 15-15 5 5-15 15-7 2 2-7ZM18 11l5 5M21 8l3-3a3 3 0 0 1 4 4l-2 3"/></svg></span><span title="Лінія тренду"><svg aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M7 25 25 7"/><circle cx="7" cy="25" r="2.5"/><circle cx="25" cy="7" r="2.5"/></svg></span><span title="Горизонтальні рівні"><svg aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8h22M5 16h22M5 24h22"/><circle cx="20" cy="8" r="3" fill="#0c1d39"/><circle cx="11" cy="16" r="3" fill="#0c1d39"/><circle cx="23" cy="24" r="3" fill="#0c1d39"/></svg></span><span title="З’єднані точки"><svg aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M6 24 14 8l12 10-8 9"/><circle cx="6" cy="24" r="2.4"/><circle cx="14" cy="8" r="2.4"/><circle cx="26" cy="18" r="2.4"/><circle cx="18" cy="27" r="2.4"/></svg></span><span title="Текст"><svg aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8V5h22v3M16 5v22M11 27h10"/></svg></span><span title="Геометричні лінії"><svg aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="m7 7 18 18M25 7 7 25M7 7v18h18V7H7"/><circle cx="7" cy="7" r="2"/><circle cx="25" cy="7" r="2"/><circle cx="7" cy="25" r="2"/><circle cx="25" cy="25" r="2"/></svg></span><span title="Налаштування рівнів"><svg aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h24M4 16h24M4 24h24"/><circle cx="11" cy="8" r="3.2" fill="#0c1d39"/><circle cx="22" cy="16" r="3.2" fill="#0c1d39"/><circle cx="13" cy="24" r="3.2" fill="#0c1d39"/></svg></span><span title="Маркер"><svg aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="13" width="20" height="8" rx="3" transform="rotate(-42 16 17)"/><path d="m8 24 4 3M20 9l4 4"/></svg></span><span title="Збільшення"><svg aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><circle cx="14" cy="14" r="9"/><path d="M14 9v10M9 14h10M21 21l7 7"/></svg></span><span class="drawing-separator" aria-hidden="true"></span><span title="Робоча область"><svg aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="m6 15 10-10 10 10v12H6V15Z"/></svg></span></div><canvas id="chart" aria-label="Графік BTCUSDT, свічки, EMA, RSI, MACD та рівні плану"></canvas><div id="chartNote" class="chart-note">Завантаження свічок Bybit…</div><div id="chartDragTip" class="chart-drag-tip hidden">Перетягніть, щоб змінити TP</div></div>
+<div class="chart-wrap"><div class="drawing-tools" aria-label="Інструменти графіка"><span title="Олівець"><svg aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="m6 23 15-15 5 5-15 15-7 2 2-7ZM18 11l5 5M21 8l3-3a3 3 0 0 1 4 4l-2 3"/></svg></span><span title="Лінія тренду"><svg aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M7 25 25 7"/><circle cx="7" cy="25" r="2.5"/><circle cx="25" cy="7" r="2.5"/></svg></span><span title="Горизонтальні рівні"><svg aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8h22M5 16h22M5 24h22"/><circle cx="20" cy="8" r="3" fill="#0c1d39"/><circle cx="11" cy="16" r="3" fill="#0c1d39"/><circle cx="23" cy="24" r="3" fill="#0c1d39"/></svg></span><span title="З’єднані точки"><svg aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M6 24 14 8l12 10-8 9"/><circle cx="6" cy="24" r="2.4"/><circle cx="14" cy="8" r="2.4"/><circle cx="26" cy="18" r="2.4"/><circle cx="18" cy="27" r="2.4"/></svg></span><span title="Текст"><svg aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8V5h22v3M16 5v22M11 27h10"/></svg></span><span title="Геометричні лінії"><svg aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="m7 7 18 18M25 7 7 25M7 7v18h18V7H7"/><circle cx="7" cy="7" r="2"/><circle cx="25" cy="7" r="2"/><circle cx="7" cy="25" r="2"/><circle cx="25" cy="25" r="2"/></svg></span><span title="Налаштування рівнів"><svg aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h24M4 16h24M4 24h24"/><circle cx="11" cy="8" r="3.2" fill="#0c1d39"/><circle cx="22" cy="16" r="3.2" fill="#0c1d39"/><circle cx="13" cy="24" r="3.2" fill="#0c1d39"/></svg></span><span title="Маркер"><svg aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="13" width="20" height="8" rx="3" transform="rotate(-42 16 17)"/><path d="m8 24 4 3M20 9l4 4"/></svg></span><span title="Збільшення"><svg aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><circle cx="14" cy="14" r="9"/><path d="M14 9v10M9 14h10M21 21l7 7"/></svg></span><span class="drawing-separator" aria-hidden="true"></span><span title="Робоча область"><svg aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="m6 15 10-10 10 10v12H6V15Z"/></svg></span></div><canvas id="chart" aria-label="Графік BTCUSDT, свічки, EMA, RSI, MACD та рівні плану"></canvas><div id="chartNote" class="chart-note"></div><div id="chartDragTip" class="chart-drag-tip hidden"></div></div>
 <div class="chart-footerline" id="chartHint"><span class="legend-ema blue-line">EMA 50</span><span class="legend-ema gold-line">EMA 200</span><span class="legend-ema green-line">Take Profit</span><span class="legend-ema neutral-line">Вхід</span><span class="legend-ema red-line">Stop Loss</span><span class="drag-hint">↕ Перетягуйте рівні на графіку</span></div>
 </section>
 <div class="right" id="rightPanel">
 <section class="card" id="aiCard"><div class="bar"><h2><span class="heading-icon assistant-mark" aria-hidden="true">✧</span> AI Помічник трейдера</h2><button id="foldAI" class="btn ghost" title="Згорнути панель">−</button></div><div class="foldable"><div class="tabs" id="analysisTabs"><button class="btn active" data-tab="plan">Аналіз угоди</button><button class="btn" data-tab="signal">Деталі</button><button class="btn" data-tab="risk">Ризики</button><button class="btn" data-tab="context">Контекст</button></div>
-<div class="panel-body"><div class="signal-line"><div class="signal" id="scenario">Очікуємо ринкові дані</div><div class="confidence-box">Оцінка сигналу<strong>—</strong></div></div><div class="analysis-columns"><div id="analysisFacts" class="fact">Після завантаження свічок покажемо об'єктивні технічні умови.</div><div class="signal-metrics"><div class="breakdown-title">Оцінка сигналу (деталі)</div><span>Узгодженість трендів <b>—</b></span><span>Реакція на обсяг <b>—</b></span><span>Технічні індикатори <b>—</b></span><span>Новинний фон <b>Н/Д</b></span></div></div><div id="explanation" class="explain">Це алгоритмічний технічний огляд, а не підтверджений AI-прогноз або рекомендація відкрити позицію.</div></div></div></section>
+<div class="panel-body"><div class="signal-line"><div class="signal" id="scenario">—</div><div class="confidence-box">Оцінка сигналу<strong>—</strong></div></div><div class="analysis-columns"><div id="analysisFacts" class="fact"></div><div class="signal-metrics"><div class="breakdown-title">Оцінка сигналу (деталі)</div><span>Узгодженість трендів <b>—</b></span><span>Реакція на обсяг <b>—</b></span><span>Технічні індикатори <b>—</b></span><span>Новинний фон <b>Н/Д</b></span></div></div><div id="explanation" class="explain"></div></div></div></section>
 <section class="card" id="riskCard"><div class="bar"><h2><span class="heading-icon" aria-hidden="true">▣</span> Розрахунок позиції <span class="subtle-heading">(ризик-менеджмент)</span></h2><button class="btn ghost" id="foldRisk" title="Приховати калькулятор">−</button></div><div id="riskContent"><div class="risk-grid-compact"><div class="fields">
 <label>Баланс, USDT (ввести вручну)<input id="balance" type="number" min="0" step="any" placeholder="Ваш баланс"></label>
-<label>Ризик на угоду, %<input id="riskPct" type="number" min="0.01" max="100" step="any" value="1"></label>
+<label>Ризик на угоду, %<input id="riskPct" type="number" min="0.01" max="100" step="any" placeholder="—"></label>
 <label>Ціна входу, USDT<input id="entry" type="number" min="0.0001" step="any" placeholder="Вхід"></label>
 <label>Stop Loss, USDT<input id="stop" type="number" min="0.0001" step="any" placeholder="SL"></label>
 <label>Take Profit, USDT<input id="target" type="number" min="0.0001" step="any" placeholder="TP"></label>
-<label>Комісія за сторону, % (оцінка)<input id="fee" type="number" min="0" step="any" value=".06"></label>
-</div><div class="metrics" style="padding:0 12px 10px"><div class="metric"><span>Кількість BTC</span><b id="quantity">—</b></div><div class="metric"><span>Номінал позиції</span><b id="notional">—</b></div><div class="metric"><span>Ризик за стопом</span><b id="loss">—</b></div><div class="metric"><span>Net R:R</span><b id="rr">—</b></div></div></div><div class="risk-footer"><button class="btn risk-edit-btn" id="riskAdvancedButton" type="button">⚙ Рівні та комісії</button><div class="banner" id="riskMessage">Введіть баланс та рівні, щоб розрахувати ризик.</div></div></div></section>
+<label>Комісія за сторону, % (оцінка)<input id="fee" type="number" min="0" step="any" placeholder="—"></label>
+</div><div class="metrics" style="padding:0 12px 10px"><div class="metric"><span>Кількість BTC</span><b id="quantity">—</b></div><div class="metric"><span>Номінал позиції</span><b id="notional">—</b></div><div class="metric"><span>Ризик за стопом</span><b id="loss">—</b></div><div class="metric"><span>Net R:R</span><b id="rr">—</b></div></div></div><div class="risk-footer"><button class="btn risk-edit-btn" id="riskAdvancedButton" type="button">⚙ Рівні та комісії</button><div class="banner" id="riskMessage"></div></div></div></section>
 <section class="card" id="orderCard"><div class="bar"><h2><span class="heading-icon" aria-hidden="true">➤</span> Виконати угоду <span class="subtle-heading">(Bybit)</span></h2><button id="foldOrder" class="btn ghost" title="Згорнути панель">−</button></div><div id="orderContent"><div class="tabs order-tabs" id="orderTypes"><button class="btn active" data-type="Limit">Limit</button><button class="btn" data-type="Market">Market</button><button class="btn" data-type="Trigger">Trigger</button></div><div class="actions side-actions" style="padding-top:10px"><button id="longButton" class="btn green">Лонг</button><button id="shortButton" class="btn">Шорт</button></div><div class="order-position-line"><span>Ціна <b id="orderEntry">—</b></span><span>Кількість <b id="orderQuantity">—</b></span></div><div class="order-sl-tp"><span>☑ Stop Loss <b id="orderSL">—</b></span><span>☑ Take Profit <b id="orderTP">—</b></span></div><div class="banner" id="executionStatus">Демо- й реальні ордери недоступні, поки не налаштовано захищене API-підключення. Публічні ринкові дані працюють окремо.</div><div class="actions"><button id="executeButton" class="btn green" disabled>Відкрити позицію · підключення потрібне</button></div></div></section>
 </div>
 </div>
-<section class="card bottom" id="positions"><div class="bar"><button class="btn active" data-bottom="positions">Відкриті позиції</button><button class="btn" data-bottom="orders">Поточні ордери</button><button class="btn" data-bottom="journal">Журнал</button><button class="btn" data-bottom="settings">Налаштування</button><span class="grow"></span><button class="btn ghost" id="hideBottom">−</button></div><div id="bottomContent" class="table-scroll"><table class="position-table"><thead><tr><th>Пара</th><th>Напрямок</th><th>Обсяг</th><th>Вхід</th><th>SL</th><th>TP</th><th>P&L (USDT)</th><th>P&L (%)</th><th>Дії</th></tr></thead><tbody><tr class="empty-position"><td>BTCUSDT</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td><button class="btn" disabled>Закрити 25%</button> <button class="btn" disabled>Закрити 50%</button> <button class="btn" disabled>SL → BE</button></td></tr></tbody></table><div class="position-warning">Рахунок Bybit не підключений · Реальні позиції не завантажені</div></div></section>
+<section class="card bottom" id="positions"><div class="bar"><button class="btn active" data-bottom="positions">Відкриті позиції</button><button class="btn" data-bottom="orders">Поточні ордери</button><button class="btn" data-bottom="journal">Журнал</button><button class="btn" data-bottom="settings">Налаштування</button><span class="grow"></span><button class="btn ghost" id="hideBottom">−</button></div><div id="bottomContent" class="table-scroll"><table class="position-table"><thead><tr><th>Пара</th><th>Напрямок</th><th>Обсяг</th><th>Вхід</th><th>SL</th><th>TP</th><th>P&L (USDT)</th><th>P&L (%)</th><th>Дії</th></tr></thead><tbody><tr class="empty-position"><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td><button class="btn" disabled>Закрити 25%</button> <button class="btn" disabled>Закрити 50%</button> <button class="btn" disabled>SL → BE</button></td></tr></tbody></table></div></section>
 <footer class="foot"><span id="footerMarket"><span class="dot"></span> Ринкові дані: очікування</span><span id="footerMode">Режим: Навчання (Demo), ордери недоступні</span><span><strong>Не є фінансовою рекомендацією.</strong> Дані рахунку не вигадуються.</span></footer>
 </div></div>
 <script>
@@ -535,7 +541,7 @@ $('headerSettings').onclick=()=>{$('settingsNav').click();$('positions').scrollI
 $('headerAccount').onclick=()=>showHeaderPopover('Рахунок Bybit не підключений. Баланс та позиції недоступні. Для безпечного підключення потрібна окрема інтеграція.');
 function saveLayout(){try{localStorage.setItem('ata-layout',JSON.stringify({mode:state.mode,sidebar:state.sidebar}))}catch{}}
 try{const old=JSON.parse(localStorage.getItem('ata-layout')||'{}');if(old.mode==='real')state.mode='real';if(old.sidebar)state.sidebar=true}catch{}
-function applyMode(){const demo=state.mode==='demo';$('demoMode').classList.toggle('active',demo);$('realMode').classList.toggle('active',!demo);setText('footerMode','Режим: '+(demo?'Навчання (Bybit Demo)':'Торгівля (Bybit Real)')+' · торгівля через API поки вимкнена');setText('executionStatus',demo?'Bybit Demo API ще не налаштований. Це не тестове виконання ордерів: кнопка заблокована до безпечного підключення.':'Bybit Real API не налаштований. Реальні ордери заблоковано до окремого підтвердження і підключення.');saveLayout()}
+function applyMode(){const demo=state.mode==='demo';$('demoMode').classList.toggle('active',demo);$('realMode').classList.toggle('active',!demo);setText('footerMode','');setText('executionStatus','');saveLayout()}
 $('demoMode').onclick=()=>{state.mode='demo';applyMode()};$('realMode').onclick=()=>{state.mode='real';applyMode()};
 $('navToggle').onclick=()=>{state.sidebar=!state.sidebar;$('app').classList.toggle('expanded',state.sidebar);saveLayout()};$('sidebarToggle').onclick=()=>$('navToggle').click();
 const navDestinations=['homeNav','marketsNav','analysisNav','journalNav','riskNav','learnNav','settingsNav'];
@@ -560,59 +566,20 @@ document.querySelectorAll('#orderTypes button').forEach(b=>b.onclick=()=>{state.
 document.querySelectorAll('#analysisTabs button').forEach(b=>b.onclick=()=>{state.tab=b.dataset.tab;document.querySelectorAll('#analysisTabs button').forEach(x=>x.classList.toggle('active',x===b));analysisView()});
 document.querySelectorAll('#timeframes button').forEach(b=>b.onclick=()=>{state.tf=b.dataset.tf;document.querySelectorAll('#timeframes button').forEach(x=>x.classList.toggle('active',x===b));loadCandles()});
 document.querySelectorAll('[data-bottom]').forEach(b=>b.onclick=()=>showBottom(b.dataset.bottom));
-function showBottom(which){document.querySelectorAll('[data-bottom]').forEach(b=>b.classList.toggle('active',b.dataset.bottom===which));const s=$('bottomContent');if(which==='positions')s.innerHTML='<table class="position-table"><thead><tr><th>Пара</th><th>Напрямок</th><th>Обсяг</th><th>Вхід</th><th>SL</th><th>TP</th><th>P&L (USDT)</th><th>P&L (%)</th><th>Дії</th></tr></thead><tbody><tr class="empty-position"><td>BTCUSDT</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td><button class="btn" disabled>Закрити 25%</button> <button class="btn" disabled>Закрити 50%</button> <button class="btn" disabled>SL → BE</button></td></tr></tbody></table><div class="position-warning">Bybit API не підключено · Дані позицій недоступні, ордери заблоковано</div>';if(which==='orders')s.innerHTML='<div class="notice">Ордери не завантажені. Біржовий рахунок не підключений.</div>';if(which==='journal'){s.innerHTML='<div style="padding:12px"><textarea id="journalText" rows="3" style="width:100%;background:#07162c;color:white;border:1px solid #395685;padding:8px" placeholder="Запишіть ідею або результат аналізу"></textarea><button id="saveNote" class="btn purple">Зберегти локально</button><div id="notes" style="padding-top:10px"></div></div>';$('saveNote').onclick=()=>{const t=$('journalText').value.trim();if(t){try{let a=JSON.parse(localStorage.getItem('ata-notes')||'[]');a.unshift({t,at:new Date().toLocaleString('uk-UA')});localStorage.setItem('ata-notes',JSON.stringify(a.slice(0,50)))}catch{}$('journalText').value='';renderNotes()}};renderNotes()}if(which==='settings')s.innerHTML='<div class="notice">Джерело графіка: публічні свічки Bybit · категорія linear. Біржові API-ключі не вводяться у браузер. Для Demo/Real виконання потрібен захищений серверний модуль.</div>';s.classList.remove('hidden')}
+function showBottom(which){document.querySelectorAll('[data-bottom]').forEach(b=>b.classList.toggle('active',b.dataset.bottom===which));const s=$('bottomContent');if(which==='positions')s.innerHTML='<table class="position-table"><thead><tr><th>Пара</th><th>Напрямок</th><th>Обсяг</th><th>Вхід</th><th>SL</th><th>TP</th><th>P&L (USDT)</th><th>P&L (%)</th><th>Дії</th></tr></thead><tbody><tr class="empty-position"><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td><button class="btn" disabled>Закрити 25%</button> <button class="btn" disabled>Закрити 50%</button> <button class="btn" disabled>SL → BE</button></td></tr></tbody></table>';if(which==='orders')s.innerHTML='';if(which==='journal'){s.innerHTML='<div style="padding:12px"><textarea id="journalText" rows="3" style="width:100%;background:#07162c;color:white;border:1px solid #395685;padding:8px" placeholder="Запишіть ідею або результат аналізу"></textarea><button id="saveNote" class="btn purple">Зберегти локально</button><div id="notes" style="padding-top:10px"></div></div>';$('saveNote').onclick=()=>{const t=$('journalText').value.trim();if(t){try{let a=JSON.parse(localStorage.getItem('ata-notes')||'[]');a.unshift({t,at:new Date().toLocaleString('uk-UA')});localStorage.setItem('ata-notes',JSON.stringify(a.slice(0,50)))}catch{}$('journalText').value='';renderNotes()}};renderNotes()}if(which==='settings')s.innerHTML='';s.classList.remove('hidden')}
 function renderNotes(){let items=[];try{items=JSON.parse(localStorage.getItem('ata-notes')||'[]')}catch{}const n=$('notes');if(n){n.textContent='';for(const item of items){const div=document.createElement('div');div.className='fact';div.textContent=item.at+' — '+item.t;n.appendChild(div)}}}
 function ema(arr,period){const out=[];let prev=null;const alpha=2/(period+1);for(const x of arr){prev=prev===null?x:prev+alpha*(x-prev);out.push(prev)}return out}
 function rsi(close,period=14){const out=new Array(close.length).fill(null);if(close.length<=period)return out;let gain=0,loss=0;for(let i=1;i<=period;i++){const d=close[i]-close[i-1];gain+=Math.max(0,d);loss+=Math.max(0,-d)}gain/=period;loss/=period;for(let i=period;i<close.length;i++){if(i>period){const d=close[i]-close[i-1];gain=(gain*(period-1)+Math.max(0,d))/period;loss=(loss*(period-1)+Math.max(0,-d))/period}out[i]=loss===0?100:100-100/(1+gain/loss)}return out}
 function prepareAnalysis(){const cs=state.candles;if(cs.length<30)return;const close=cs.map(c=>c.c),e50=ema(close,50),e200=ema(close,200),e12=ema(close,12),e26=ema(close,26),macd=e12.map((v,i)=>v-e26[i]),signal=ema(macd,9),rs=rsi(close),last=close.length-1;state.analysis={price:close[last],above50:close[last]>e50[last],above200:close[last]>e200[last],rsi:rs[last],macd:macd[last],macdSignal:signal[last],e50,e200,macdLine:macd,signalLine:signal,rsiLine:rs};analysisView()}
-function analysisView(){const a=state.analysis;if(!a){setText('scenario','Ринок: дані недоступні');setText('analysisFacts','Немає підтверджених свічок, аналіз неможливий.');return}const up=a.above50&&a.above200,down=!a.above50&&!a.above200;setText('scenario',up?'↗ Ціна вище обох EMA':down?'↘ Ціна нижче обох EMA':'↔ Змішаний технічний контекст');const facts=$('analysisFacts');facts.textContent='';const rows=state.tab==='plan'?['Ціна щодо EMA50: '+(a.above50?'вище':'нижче'),'Ціна щодо EMA200: '+(a.above200?'вище':'нижче'),'RSI(14): '+(Number.isFinite(a.rsi)?a.rsi.toFixed(1):'—'),'MACD щодо сигналу: '+(a.macd>a.macdSignal?'вище':'нижче')]:state.tab==='signal'?['EMA50: '+money(a.e50.at(-1)),'EMA200: '+money(a.e200.at(-1)),'RSI(14): '+(a.rsi?.toFixed(1)||'—'),'MACD: '+a.macd.toFixed(2),'Оцінка ймовірності: не розрахована']:state.tab==='risk'?['Ліміт збитку залежить від вашого введеного балансу','План не може усунути прослизання й ліквідаційний ризик','Перевірте комісії, маржу, розмір і SL']:['Дані: публічні свічки Bybit','Таймфрейм: '+state.tf,'Індикатори: розраховані локально','AI-прогноз і новинний фон: не підключені'];for(const row of rows){const p=document.createElement('div');p.className='fact';p.textContent='✓ '+row;facts.appendChild(p)}setText('explanation',state.mode==='demo'?'Навчання: індикатори описують минулий рух, але не гарантують майбутню ціну. Побудуйте SL і TP, перевірте R:R та відстань до стопа.':'Торгівля: стислий огляд індикаторів без заяв про «впевненість AI». Перед угодою перевірте SL, розмір позиції та ризик.')}
-function calculate(){const b=num('balance'),risk=num('riskPct'),entry=num('entry'),stop=num('stop'),target=num('target'),fee=num('fee')/100;const ok=Number.isFinite(b)&&b>0&&risk>0&&risk<=100&&entry>0&&stop>0&&target>0&&fee>=0&&(state.dir==='long'?stop<entry&&target>entry:stop>entry&&target<entry);if(!ok){['quantity','notional','loss','rr','orderEntry','orderQuantity','orderSL','orderTP'].forEach(x=>setText(x,'—'));setText('riskMessage','Вкажіть баланс і коректні рівні: для Long SL нижче входу та TP вище, для Short навпаки.');$('riskMessage').className='banner error';draw();return}const perLoss=Math.abs(entry-stop)+(entry+stop)*fee;const qty=Math.floor((b*risk/100/perLoss)*10000)/10000;const loss=qty*perLoss;const profit=qty*(Math.abs(target-entry)-(entry+target)*fee);setText('quantity',qty.toFixed(4)+' BTC');setText('notional',money(qty*entry)+' USDT');setText('loss',money(loss)+' USDT');setText('rr',loss>0?'1 : '+(profit/loss).toFixed(2):'—');setText('orderEntry',money(entry));setText('orderQuantity',qty.toFixed(4)+' BTC');setText('orderSL',money(stop));setText('orderTP',money(target));const good=qty>0&&profit>0&&profit/loss>=1.5&&risk<=2;$('riskMessage').className='banner '+(good?'ok':'error');setText('riskMessage',qty<=0?'Баланс або ризик недостатній для кроку 0.0001 BTC.':profit<=0?'Після комісій ціль не дає додатного результату.':profit/loss<1.5?'R:R нижче орієнтира 1:1.5 — перегляньте план.':risk>2?'Ризик понад 2% балансу — підвищена небезпека.':'✓ Формальні параметри розрахунку перевірено. Це не рекомендація відкривати угоду.');draw()}
+function analysisView(){setText('scenario','—');$('analysisFacts').textContent='';$('explanation').textContent='';}
+function calculate(){['quantity','notional','loss','rr','orderEntry','orderQuantity','orderSL','orderTP'].forEach(id=>setText(id,'—'));setText('riskMessage','');draw();}
 ['balance','riskPct','entry','stop','target','fee'].forEach(id=>$(id).addEventListener('input',()=>{if(['entry','stop','target'].includes(id))state.levels[id]=num(id)||null;calculate()}));
 let currentCandleRequest=0;
 const timeframeLabel=tf=>({'1':'1хв','5':'5хв','15':'15хв','30':'30хв','60':'1год','240':'4год',D:'1Д',W:'1Тиж'}[tf]||tf);
-async function loadCandles(){
- const request=++currentCandleRequest,tf=state.tf;
- state.marketOk=false;
- setText('chartNote',window.__ATA_VISUAL_PREVIEW__?'ДЕМО · ЗМІНА ЧАСУ…':'Завантаження свічок…');
- try{
-  const res=await fetch('/api/market-data?symbol=BTCUSDT&interval='+encodeURIComponent(tf),{cache:'no-store'});
-  if(!res.ok)throw Error('HTTP '+res.status);
-  const data=await res.json();
-  if(request!==currentCandleRequest)return;
-  if(!data.candles?.length)throw Error(data.error||'Порожня відповідь');
-  if(window.__ATA_VISUAL_PREVIEW__&&data.interval&&data.interval!==tf)throw Error('Не той таймфрейм');
-  state.candles=data.candles;state.marketOk=true;state.loadedTf=tf;
-  const last=state.candles.at(-1);
-  setText('quote',money(last.c));
-  const prevC=state.candles.length>1?state.candles.at(-2).c:last.o;
-  const move=last.c-prevC,movePct=prevC?move/prevC*100:0;
-  setText('quoteDelta',(move>=0?'+':'−')+money(Math.abs(move))+' ('+(movePct>=0?'+':'')+movePct.toFixed(2)+'%)');
-  $('quoteDelta').classList.toggle('negative',move<0);
-  setText('quoteMeta',window.__ATA_VISUAL_PREVIEW__?'':'USDT · '+new Date(data.updatedAt).toLocaleTimeString('uk-UA'));
-  setText('chartNote',window.__ATA_VISUAL_PREVIEW__?'ДЕМО · НЕ КОТИРУВАННЯ':'Публічні свічки Bybit');
-  setText('footerMarket',window.__ATA_VISUAL_PREVIEW__?'● ДЕМО · синтетичні дані':'● Ринкові дані Bybit · '+new Date(data.updatedAt).toLocaleTimeString('uk-UA'));
-  $('footerMarket').style.color='#38da9e';
-  if(!state.levels.entry){state.levels.entry=last.c;$('entry').value=last.c.toFixed(2)}
-  if(window.__ATA_VISUAL_PREVIEW__&&!state.previewDefaultsApplied){
-   const entry=last.c,stop=entry-3800,target=entry+7200;
-   $('balance').value='100000';$('riskPct').value='1';
-   $('entry').value=entry.toFixed(2);$('stop').value=stop.toFixed(2);$('target').value=target.toFixed(2);
-   state.levels={entry,stop,target};state.previewDefaultsApplied=true;
-  }
-  prepareAnalysis();calculate();draw();
- }catch(e){
-  if(request!==currentCandleRequest)return;
-  state.candles=[];state.analysis=null;state.marketOk=false;
-  setText('chartNote','Дані графіка недоступні');
-  setText('quote','—');setText('quoteDelta','—');
-  setText('footerMarket','● Помилка завантаження свічок');
-  setText('explanation','Неможливо завантажити дані для '+timeframeLabel(tf)+'. Спробуйте інший таймфрейм.');
-  draw();
- }
-}
+async function loadCandles(){state.candles=[];state.analysis=null;state.marketOk=false;setText('quote','—');setText('quoteDelta','');setText('quoteMeta','');setText('chartNote','');setText('footerMarket','');analysisView();draw()}
 $('chartFullscreenButton').onclick=()=>$('maximizeChart').click();
-$('indicatorsButton').onclick=()=>{const a=state.analysis;const msg=a?'EMA 50: '+money(a.e50.at(-1))+' | EMA 200: '+money(a.e200.at(-1))+' | RSI: '+(a.rsi?.toFixed(1)||'—'):'Індикатори недоступні без ринкових даних';$('chartDragTip').textContent=msg;$('chartDragTip').classList.toggle('hidden');};
-$('chartInfoButton').onclick=()=>{$('chartDragTip').textContent=window.__ATA_VISUAL_PREVIEW__?'Демонстраційні свічки. Немає підключення до рахунку Bybit.':'Публічні свічки Bybit. Позиції та ордери не підключені.';$('chartDragTip').classList.toggle('hidden');};
+$('indicatorsButton').onclick=()=>{};
+$('chartInfoButton').onclick=()=>{};
 
 const chartTip=$('chartDragTip');
 $('chart').addEventListener('pointermove',e=>{
@@ -628,115 +595,21 @@ $('chart').addEventListener('pointermove',e=>{
 $('chart').addEventListener('pointerleave',()=>{if(chartTip.textContent==='Перетягніть, щоб змінити TP')chartTip.classList.add('hidden')});
 let dragInfo=null;
 function draw(){
-const canvas=$('chart');if(!canvas)return;
-const rect=canvas.getBoundingClientRect(),width=Math.round(rect.width)||900,height=Math.round(rect.height)||540,dpr=Math.min(3,window.devicePixelRatio||1);
-canvas.width=Math.round(width*dpr);canvas.height=Math.round(height*dpr);
-const ctx=canvas.getContext('2d');ctx.scale(dpr,dpr);
-const cs=state.candles.slice(-76),p={l:13,r:104,t:105,b:20},plotW=width-p.l-p.r,priceEnd=height*.65,rsiStart=height*.675,rsiEnd=height*.795,macdStart=height*.82,macdEnd=height*.965;
-ctx.fillStyle='#08172d';ctx.fillRect(0,0,width,height);
-if(!cs.length){ctx.fillStyle='#aab9d3';ctx.font='13px system-ui';ctx.fillText('Дані графіка недоступні',35,height/2);state.range=null;return}
-const overlay=[num('entry'),num('stop'),num('target')].filter(n=>n>0);
-const candleLo=Math.min(...cs.map(c=>c.l)),candleHi=Math.max(...cs.map(c=>c.h));
-const candleSpan=Math.max(candleHi-candleLo,candleHi*.0015);
-const limit=(['1','5','15','30','60'].includes(state.tf)?1.6:3)*candleSpan;
-const visibleLevels=overlay.filter(v=>v>=candleLo-limit&&v<=candleHi+limit);
-const lo=Math.min(candleLo,...visibleLevels),hi=Math.max(candleHi,...visibleLevels);
-const priceRange=Math.max(hi-lo,candleSpan),min=lo-priceRange*.07,max=hi+priceRange*.10;
-state.range={min,max,top:p.t,bottom:priceEnd,w:width,h:height};
-const y=v=>p.t+(max-v)/(max-min)*(priceEnd-p.t),x=i=>p.l+(i+.5)*plotW/cs.length,step=plotW/cs.length;
-const grid=(left,right,top,bottom,rows=4)=>{ctx.strokeStyle='#203c64';ctx.lineWidth=.7;for(let k=0;k<=rows;k++){const yy=top+(bottom-top)*k/rows;ctx.beginPath();ctx.moveTo(left,yy);ctx.lineTo(right,yy);ctx.stroke()}for(let k=0;k<=8;k++){const xx=left+(right-left)*k/8;ctx.beginPath();ctx.moveTo(xx,top);ctx.lineTo(xx,bottom);ctx.stroke()}};
-grid(p.l,width-p.r,p.t,priceEnd,5);
-ctx.font='10px system-ui';ctx.fillStyle='#a8b9d8';ctx.textAlign='left';
-for(let i=0;i<=5;i++){const price=max-(max-min)*i/5;ctx.fillText(money(price),width-p.r+8,p.t+(priceEnd-p.t)*i/5+3)}
-ctx.save();ctx.beginPath();ctx.rect(p.l,p.t,plotW,priceEnd-p.t);ctx.clip();
-const entry=num('entry'),stop=num('stop'),target=num('target');
-if(entry>0&&stop>0&&target>0){
-  const left=p.l+plotW*.74,zoneWidth=plotW*.26;
-  ctx.fillStyle=state.dir==='long'?'#1cbd7950':'#f0557650';
-  ctx.fillRect(left,Math.min(y(entry),y(target)),zoneWidth,Math.abs(y(entry)-y(target)));
-  ctx.fillStyle=state.dir==='long'?'#ef50645a':'#24b9865a';
-  ctx.fillRect(left,Math.min(y(entry),y(stop)),zoneWidth,Math.abs(y(entry)-y(stop)));
+ const canvas=$('chart');if(!canvas)return;
+ const box=canvas.getBoundingClientRect(),width=Math.max(320,Math.round(box.width)),height=Math.max(280,Math.round(box.height)),dpr=Math.min(2,devicePixelRatio||1);
+ canvas.width=width*dpr;canvas.height=height*dpr;
+ const c=canvas.getContext('2d');c.scale(dpr,dpr);
+ c.fillStyle='#07172f';c.fillRect(0,0,width,height);
+ const right=width-89,priceTop=55,priceBottom=height*.66,rsiTop=height*.68,rsiBottom=height*.81,macdTop=height*.83,macdBottom=height*.965;
+ c.lineWidth=1;
+ const grid=(top,bottom,rows)=>{c.strokeStyle='#21395f';for(let i=0;i<=8;i++){const x=10+(right-10)*i/8;c.beginPath();c.moveTo(x,top);c.lineTo(x,bottom);c.stroke()}for(let i=0;i<=rows;i++){const y=top+(bottom-top)*i/rows;c.beginPath();c.moveTo(10,y);c.lineTo(right,y);c.stroke()}};
+ grid(priceTop,priceBottom,5);grid(rsiTop,rsiBottom,2);grid(macdTop,macdBottom,2);
+ c.strokeStyle='#355580';c.beginPath();c.moveTo(10,rsiTop-8);c.lineTo(right,rsiTop-8);c.moveTo(10,macdTop-8);c.lineTo(right,macdTop-8);c.stroke();
+ c.font='11px system-ui';c.fillStyle='#aebfdf';c.fillText('BTCUSDT · '+timeframeLabel(state.tf),21,26);
+ c.fillStyle='#9eadd0';c.fillText('EMA 50',22,44);
+ c.fillText('RSI (14)',22,rsiTop+14);c.fillText('MACD (12, 26, 9)',22,macdTop+14);
+ state.range=null;
 }
-const volumeMax=Math.max(1,...cs.map(c=>c.v));
-for(let i=0;i<cs.length;i++){const c=cs[i],barH=(c.v/volumeMax)*Math.max(22,(priceEnd-p.t)*.15);ctx.fillStyle=c.c>=c.o?'#1aa98680':'#dc586a80';ctx.fillRect(x(i)-step*.34,priceEnd-barH,Math.max(2,step*.68),barH)}
-const a=state.analysis;
-const candleW=Math.max(2,Math.min(9,step*.7));
-for(let i=0;i<cs.length;i++){const c=cs[i],col=c.c>=c.o?'#20dfaa':'#f25d73';ctx.strokeStyle=col;ctx.fillStyle=col;ctx.lineWidth=1.1;ctx.beginPath();ctx.moveTo(x(i),y(c.h));ctx.lineTo(x(i),y(c.l));ctx.stroke();ctx.fillRect(x(i)-candleW/2,Math.min(y(c.o),y(c.c)),candleW,Math.max(1,Math.abs(y(c.o)-y(c.c))))}
-if(a){
-  const offset=state.candles.length-cs.length;
-  for(const [series,col] of [[a.e50,'#2e97ff'],[a.e200,'#f2a92f']]){
-    ctx.beginPath();ctx.strokeStyle=col;ctx.lineWidth=1.8;
-    series.slice(offset).forEach((price,i)=>{if(i===0)ctx.moveTo(x(i),y(price));else ctx.lineTo(x(i),y(price))});
-    ctx.stroke()
-  }
-}
-ctx.restore();
-for(const [field,label,color] of [['target','TP','#29e49c'],['entry','Вхід','#e7efff'],['stop','SL','#ff6075']]){
- const v=num(field);if(!(v>0))continue;const yy=y(v);
- if(yy<p.t-3||yy>priceEnd+3){
-  const edgeY=yy<p.t?p.t+12:priceEnd-12;
-  ctx.fillStyle=color;ctx.font='bold 10px system-ui';
-  ctx.fillText(label+(yy<p.t?' ↑ ':' ↓ ')+money(v),p.l+12,edgeY,Math.max(90,plotW*.25));
-  continue;
- }
- ctx.save();ctx.strokeStyle=color;ctx.setLineDash([6,4]);ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(p.l,yy);ctx.lineTo(width-p.r,yy);ctx.stroke();ctx.restore();
- const baseLabel=label+': '+money(v);
- const diff=num('entry')>0?(v/num('entry')-1)*100:0;
- const fullLabel=field==='entry'?baseLabel:baseLabel+' ('+(diff>0?'+':'')+diff.toFixed(1)+'%)';
- const maxBadgeWidth=Math.max(110,Math.min(238,plotW*.34));
- ctx.font='bold 12px system-ui';
- const labelText=ctx.measureText(fullLabel).width+22<=maxBadgeWidth?fullLabel:baseLabel;
- const boxWidth=Math.min(maxBadgeWidth,Math.max(102,Math.ceil(ctx.measureText(labelText).width+22)));
- ctx.fillStyle='#08192e';ctx.strokeStyle=color;ctx.lineWidth=1.6;
- ctx.beginPath();ctx.roundRect(p.l+7,yy-16,boxWidth,28,7);ctx.fill();ctx.stroke();
- ctx.fillStyle=color;ctx.fillText(labelText,p.l+16,yy+3,boxWidth-18);
- const handleX=width-p.r-12;
- ctx.fillStyle=color;ctx.strokeStyle='#e6ecfc';ctx.lineWidth=field==='entry'?2.8:1;
- ctx.beginPath();ctx.arc(handleX,yy,7,0,Math.PI*2);ctx.fill();ctx.stroke();
-}
-if(num('entry')>0&&num('stop')>0&&num('target')>0){
- const rr=Math.abs(num('target')-num('entry'))/Math.max(.00001,Math.abs(num('entry')-num('stop')));
- const label='R:R 1 : '+rr.toFixed(1),px=width-p.r-110,py=priceEnd-20;
- ctx.fillStyle='#071f21';ctx.strokeStyle='#14d777';ctx.lineWidth=1.5;
- ctx.beginPath();ctx.roundRect(px,py-25,103,27,6);ctx.fill();ctx.stroke();
- ctx.font='bold 13px system-ui';ctx.fillStyle='#31ef9e';ctx.fillText(label,px+9,py-7);
-}
-const last=cs.at(-1),prev=cs.length>1?cs.at(-2):last,periodChange=last.c-prev.c,periodPct=prev.c?periodChange/prev.c*100:0;
-const tx=p.l+11;ctx.textAlign='left';
-ctx.fillStyle='#f0f5ff';ctx.font='bold 14px system-ui';ctx.fillText('BTCUSDT · '+timeframeLabel(state.tf),tx,23,Math.max(100,plotW-220));
-ctx.font='bold 11px system-ui';
-let pos=tx;const segments=[['O '+money(last.o),'#dceaff'],['H '+money(last.h),'#2ae594'],['L '+money(last.l),'#2ae594'],['C '+money(last.c),'#2ae594'],[(periodChange>=0?'+':'−')+money(Math.abs(periodChange))+' ('+(periodPct>=0?'+':'')+periodPct.toFixed(2)+'%)',periodChange>=0?'#2ae594':'#ff6b84']];
-for(const [label,col] of segments){const available=width-p.r-18-pos;if(available<60)break;const w=ctx.measureText(label).width;if(w>available)break;ctx.fillStyle=col;ctx.fillText(label,pos,44);pos+=w+10}
-ctx.font='bold 11px system-ui';ctx.fillStyle='#e8f0ff';ctx.fillText('EMA 50',tx+10,66);ctx.fillStyle='#35b1ff';ctx.fillText(a?money(a.e50.at(-1)):'—',tx+74,66);
-ctx.fillStyle='#e8f0ff';ctx.fillText('EMA 200',tx+10,86);ctx.fillStyle='#f6b642';ctx.fillText(a?money(a.e200.at(-1)):'—',tx+74,86);
-ctx.strokeStyle='#35527d';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(p.l,rsiStart-7);ctx.lineTo(width-p.r,rsiStart-7);ctx.moveTo(p.l,macdStart-7);ctx.lineTo(width-p.r,macdStart-7);ctx.stroke();
-grid(p.l,width-p.r,rsiStart,rsiEnd,2);grid(p.l,width-p.r,macdStart,macdEnd,2);
-ctx.fillStyle='#bbd1ee';ctx.font='10px system-ui';ctx.fillText('RSI (14)',p.l+10,rsiStart+12);
-ctx.fillStyle='#d793ff';ctx.font='bold 11px system-ui';ctx.fillText(state.analysis?.rsi?.toFixed(1)||'—',p.l+61,rsiStart+12);
-ctx.fillStyle='#e5edf9';ctx.font='11px system-ui';ctx.fillText('MACD (12, 26, 9)',p.l+10,macdStart+13);
-const ry=v=>rsiStart+6+(100-v)/100*(rsiEnd-rsiStart-12);
-ctx.fillStyle='#743bb338';ctx.fillRect(p.l,ry(70),plotW,ry(30)-ry(70));
-ctx.save();ctx.setLineDash([4,4]);ctx.strokeStyle='#ad4de777';ctx.lineWidth=1;
-for(const v of [30,70]){ctx.beginPath();ctx.moveTo(p.l,ry(v));ctx.lineTo(width-p.r,ry(v));ctx.stroke()}ctx.restore();
-ctx.font='10px system-ui';ctx.fillStyle='#c7d3e9';
-for(const v of [70,50,30])ctx.fillText(v.toFixed(1),width-p.r+10,ry(v)+3);
-if(a){
- const offset=state.candles.length-cs.length;
- ctx.save();ctx.beginPath();ctx.rect(p.l,rsiStart,plotW,rsiEnd-rsiStart);ctx.clip();
- const rsiY=ry;
- ctx.strokeStyle='#a875ff';ctx.lineWidth=1.6;ctx.beginPath();let started=false;
- a.rsiLine.slice(offset).forEach((val,i)=>{if(val===null||!Number.isFinite(val))return;if(!started){ctx.moveTo(x(i),rsiY(val));started=true}else ctx.lineTo(x(i),rsiY(val))});
- ctx.stroke();ctx.restore();
- const m=a.macdLine.slice(offset),sig=a.signalLine.slice(offset),maxAbs=Math.max(1,...m.map(Math.abs),...sig.map(Math.abs)),zero=(macdStart+macdEnd)/2;
- ctx.save();ctx.beginPath();ctx.rect(p.l,macdStart,plotW,macdEnd-macdStart);ctx.clip();
- for(let i=0;i<m.length;i++){const hist=m[i]-sig[i],bar=(hist/maxAbs)*(macdEnd-macdStart)*.35;ctx.fillStyle=hist>=0?'#25d4b2':'#ef647a';ctx.fillRect(x(i)-step*.3,zero-bar,Math.max(1,step*.6),Math.max(1,Math.abs(bar)))}
- for(const [line,color] of [[m,'#2d9bff'],[sig,'#f0a43b']]){ctx.strokeStyle=color;ctx.lineWidth=1.3;ctx.beginPath();line.forEach((v,i)=>{const yy=zero-v/maxAbs*(macdEnd-macdStart)*.35;if(!i)ctx.moveTo(x(i),yy);else ctx.lineTo(x(i),yy)});ctx.stroke()}
- ctx.restore();
-}
-if(a){const mv=Math.max(1,...a.macdLine.slice(-76).map(v=>Math.abs(v)));ctx.fillStyle='#c7d3e9';ctx.font='10px system-ui';const z=(macdStart+macdEnd)/2;ctx.fillText(money(mv),width-p.r+10,macdStart+9);ctx.fillText('0.0',width-p.r+10,z+4);ctx.fillText('−'+money(mv),width-p.r+10,macdEnd-3);}
-if(cs.length){const lp=cs.at(-1).c,py=y(lp);if(py>p.t+2&&py<priceEnd-2){ctx.fillStyle='#19b96f';ctx.beginPath();ctx.roundRect(width-p.r+2,py-12,p.r-8,24,7);ctx.fill();ctx.font='bold 11px system-ui';ctx.fillStyle='#edfff8';ctx.fillText(money(lp),width-p.r+7,py+4)}}
-ctx.fillStyle='#8fa5c8';ctx.font='10px system-ui';const leap=Math.max(1,Math.ceil(cs.length/7));for(let i=0;i<cs.length;i+=leap){ctx.fillText(['1','5','15','30','60'].includes(state.tf)?new Date(cs[i].t).toLocaleTimeString('uk-UA',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/Ljubljana'}):state.tf==='240'?new Date(cs[i].t).toLocaleDateString('uk-UA',{day:'numeric',month:'short',timeZone:'Europe/Ljubljana'}):new Date(cs[i].t).toLocaleDateString('uk-UA',{day:'numeric',month:'short',timeZone:'Europe/Ljubljana'}),x(i)-12,height-3)}
-}
-const canvas=$('chart');canvas.addEventListener('pointerdown',e=>{if(!state.range)return;const r=canvas.getBoundingClientRect(),yy=e.clientY-r.top;for(const f of ['entry','stop','target']){const v=num(f);const target=state.range.top+(state.range.max-v)/(state.range.max-state.range.min)*(state.range.bottom-state.range.top);if(v>0&&Math.abs(target-yy)<13){state.drag=f;canvas.setPointerCapture(e.pointerId);canvas.style.cursor='ns-resize';return}}});canvas.addEventListener('pointermove',e=>{if(!state.drag||!state.range)return;const r=canvas.getBoundingClientRect(),yy=e.clientY-r.top,rg=state.range;const bounded=Math.min(rg.bottom,Math.max(rg.top,yy)),price=rg.max-(bounded-rg.top)/(rg.bottom-rg.top)*(rg.max-rg.min);$(state.drag).value=price.toFixed(2);state.levels[state.drag]=price;calculate()});const stopDrag=()=>{state.drag=null;canvas.style.cursor='crosshair'};canvas.addEventListener('pointerup',stopDrag);canvas.addEventListener('pointercancel',stopDrag);window.addEventListener('resize',draw);applyMode();showBottom('positions');loadCandles();setInterval(loadCandles,60000);
+const canvas=$('chart');canvas.addEventListener('pointerdown',e=>{if(!state.range)return;const r=canvas.getBoundingClientRect(),yy=e.clientY-r.top;for(const f of ['entry','stop','target']){const v=num(f);const target=state.range.top+(state.range.max-v)/(state.range.max-state.range.min)*(state.range.bottom-state.range.top);if(v>0&&Math.abs(target-yy)<13){state.drag=f;canvas.setPointerCapture(e.pointerId);canvas.style.cursor='ns-resize';return}}});canvas.addEventListener('pointermove',e=>{if(!state.drag||!state.range)return;const r=canvas.getBoundingClientRect(),yy=e.clientY-r.top,rg=state.range;const bounded=Math.min(rg.bottom,Math.max(rg.top,yy)),price=rg.max-(bounded-rg.top)/(rg.bottom-rg.top)*(rg.max-rg.min);$(state.drag).value=price.toFixed(2);state.levels[state.drag]=price;calculate()});const stopDrag=()=>{state.drag=null;canvas.style.cursor='crosshair'};canvas.addEventListener('pointerup',stopDrag);canvas.addEventListener('pointercancel',stopDrag);window.addEventListener('resize',draw);applyMode();showBottom('positions');loadCandles();
 })();
 </script></body></html>
