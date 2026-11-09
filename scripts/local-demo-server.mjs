@@ -16,6 +16,7 @@ import { createHmac } from 'node:crypto';
 import { createMarketScanner } from './market-scanner.mjs';
 import { verifyStrategy } from './strategy-verification.mjs';
 import { createPaperLedger } from './paper-ledger.mjs';
+import { createMultiYearResearch } from './multi-year-research.mjs';
 
 const host = '127.0.0.1';
 const port = Number(process.env.ATA_LOCAL_PORT || 4177);
@@ -244,6 +245,16 @@ async function runStrategyBacktest(symbol){
   return result;
  }finally{backtestBusy=false}
 }
+const multiYearResearch=createMultiYearResearch({
+ dir:join(scannerDataDir,'historical-research'),
+ getInstruments,
+ getKlinesPage:async(symbol,tf,end,limit)=>{
+  const result=await publicBybit('/v5/market/kline',{category:'linear',symbol,interval:tf,end,limit});
+  return (result.list||[]).map(row=>({
+   t:Number(row[0]),o:Number(row[1]),h:Number(row[2]),l:Number(row[3]),c:Number(row[4]),v:Number(row[5])
+  }));
+ }
+});
 const alertPreferencesPath=join(scannerDataDir,'notification-preferences.json');
 const scannerSession=String(Date.now());
 let alertPreferences={macNotifications:false};
@@ -333,6 +344,20 @@ const server=http.createServer(async(req,res)=>{
   }
   if(req.method==='GET'&&path==='/api/scanner/opportunities'){
     return json(res,200,opportunityScanner.getSnapshot());
+  }
+  if(req.method==='GET'&&path==='/api/strategy/multi-year'){
+    return json(res,200,multiYearResearch.status());
+  }
+  if(req.method==='POST'&&path==='/api/strategy/multi-year'){
+    if(req.headers['x-ata-local']!=='1'||(req.headers['sec-fetch-site']&&req.headers['sec-fetch-site']!=='same-origin'))
+      return json(res,403,{error:'Лише локальний інтерфейс може запускати тест'});
+    if(!String(req.headers['content-type']||'').startsWith('application/json'))return json(res,415,{error:'Очікується JSON'});
+    try{
+      const request=await readJson(req);
+      const years=Number(request.years);
+      const outcome=await multiYearResearch.start(years);
+      return json(res,outcome.started?202:409,outcome);
+    }catch(e){return json(res,400,{error:String(e.message||e).slice(0,150)})}
   }
   if(req.method==='GET'&&path==='/api/strategy/paper'){
     try{return json(res,200,await paperLedger.report())}
