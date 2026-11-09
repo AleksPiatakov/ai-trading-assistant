@@ -136,17 +136,34 @@ button:focus-visible,input:focus-visible{outline:2px solid #9d88ff;outline-offse
 .chart-card.maxed{position:fixed;inset:10px;z-index:10;background:#0b1a32}
 .chart-card.maxed .chart-wrap canvas{height:100%}
 @media(min-width:1051px){
- .workspace{height:100vh;min-height:750px;overflow:hidden;gap:8px}
- .layout{height:calc(100vh - 225px);min-height:520px}
- .right{height:100%}
- .bottom{height:114px;flex-shrink:0}
- .bottom .table-scroll{max-height:76px}
- .foot{min-height:21px}
+ /* Panels own their natural height; never force them underneath the positions table. */
+ .workspace{height:auto;min-height:100dvh;overflow:visible;gap:8px}
+ .layout{height:auto;min-height:0;align-items:stretch}
+ .chart-card{height:auto;min-height:660px}
+ .chart-wrap{height:540px;min-height:540px;flex:1 1 auto}
+ .right{height:auto;min-height:660px;display:flex;flex-direction:column;gap:8px}
+ .right>.card{flex:none;min-height:0;height:auto}
+ #aiCard{min-height:240px}
+ #riskCard{min-height:154px}
+ #orderCard{min-height:225px}
+ #riskCard.advanced{overflow:visible}
+ #riskCard.advanced #riskContent{position:relative}
+ #orderCard #orderContent{display:flex;flex-direction:column}
+ #orderCard .actions:last-child{margin-top:auto}
+ #orderCard .banner{max-height:none;overflow:visible;white-space:normal}
+ .bottom{height:auto;min-height:115px;flex:none;position:relative;z-index:0}
+ .bottom .table-scroll{max-height:none;min-height:74px}
+ .foot{min-height:24px}
 }
-@media(min-width:1051px) and (max-height:750px){
- .workspace{height:auto;min-height:750px;overflow:visible}
- .layout{height:520px}
+@media(min-width:1051px) and (max-height:800px){
+ .chart-card{min-height:610px}
+ .chart-wrap{height:475px;min-height:475px}
+ .right{min-height:610px}
+ #aiCard{min-height:230px}
+ #riskCard{min-height:150px}
+ #orderCard{min-height:220px}
 }
+
 @media(max-width:1300px) and (min-width:1051px){
  .layout{grid-template-columns:minmax(0,1.2fr) minmax(430px,1fr)}
  .top h1{font-size:15px}
@@ -235,6 +252,19 @@ button:focus-visible,input:focus-visible{outline:2px solid #9d88ff;outline-offse
 @media(max-width:1300px){.top h1{gap:5px}.brand-candles{width:25px;margin-right:1px}.subtle-heading{font-size:10px}}
 @media(max-width:1150px){.top h1 small{font-size:12px}.clock-status{display:none}}
 @media(max-width:680px){.top h1{display:block}.brand-candles{display:none}.coin-icon{height:23px;width:23px;font-size:15px}}
+/* Avoid accidental overlay and truncation in short desktop viewports. */
+#riskCard .risk-footer{align-items:flex-start}
+#riskCard .risk-footer .banner{white-space:normal;overflow:visible;text-overflow:clip;min-width:0;line-height:1.3}
+#orderCard .order-position-line,#orderCard .order-sl-tp{min-height:19px}
+#orderCard .actions:last-child button{white-space:normal;line-height:1.3;min-height:30px}
+.bottom .table-scroll{scrollbar-width:thin;scrollbar-color:#46649d transparent}
+#aiCard .panel-body{min-height:0}
+@media(min-width:1051px){
+ #riskCard{position:relative;overflow:hidden}
+ #riskCard.advanced{overflow:visible;z-index:2}
+ #riskCard.advanced~#orderCard{margin-top:0}
+ .bottom{clear:both}
+}
 </style></head>
 <body><div class="app" id="app">
 <nav class="nav" aria-label="Навігація">
