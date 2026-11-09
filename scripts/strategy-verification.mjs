@@ -26,19 +26,21 @@ export function scoreTrades(trades){
   profitFactor:loss===0?null:profit/loss,maxDrawdownR:drawdown,
   expectancyR:equity/finished.length,totalNetR:equity};
 }
-export function verifyStrategy({symbol,series,costs=COST,maxHoldBars=48,maxSignals=250}){
+export function verifyStrategy({symbol,series,costs=COST,maxHoldBars=48,maxSignals=20000}){
  if(!/^[A-Z0-9]{3,30}USDT$/.test(symbol))throw Error('Invalid market symbol');
  const frames=Object.fromEntries(Object.keys(MS).map(tf=>[tf,completedCandles(series[tf]||[],tf)]));
  const hours=frames['60'];if(hours.length<220)throw Error('Not enough completed 1h candles for EMA200 warm-up');
  const trades=[];let noSignal=0,skipped=0;
- // Start after indicators have warmed up; every candidate only sees historical bars.
+ // Advancing cursors avoid scanning the full history for EVERY hourly decision.
+ const cursors=Object.fromEntries(Object.keys(MS).map(tf=>[tf,0]));
  for(let i=219;i<hours.length-1&&trades.length<maxSignals;i++){
   const signalAt=hours[i].t+MS['60'];
   const history={};let enough=true;
   for(const tf of Object.keys(MS)){
-   const sample=frames[tf].filter(c=>c.t+MS[tf]<=signalAt);
-   if(sample.length<200){enough=false;break}
-   history[tf]=sample.slice(-220);
+   const data=frames[tf];
+   while(cursors[tf]<data.length&&data[cursors[tf]].t+MS[tf]<=signalAt)cursors[tf]++;
+   if(cursors[tf]<200){enough=false;break}
+   history[tf]=data.slice(Math.max(0,cursors[tf]-220),cursors[tf]);
   }
   if(!enough){skipped++;continue}
   const plan=evaluateTradeSetup(symbol,history,signalAt);
@@ -83,7 +85,7 @@ export function verifyStrategy({symbol,series,costs=COST,maxHoldBars=48,maxSigna
   costs:{...costs},timeframes:['15','60','240','D'],ordersEnabled:false,
   period:{from:hours[0]&&new Date(hours[0].t).toISOString(),to:hours.at(-1)&&new Date(hours.at(-1).t+MS['60']).toISOString()},
   bars:{h1:hours.length,m15:frames['15'].length,h4:frames['240'].length,daily:frames.D.length},
-  skipped,noSignal,metrics,trades:trades.slice(-100),warning:trades.length<30?
+  skipped,noSignal,metrics,trades:trades.slice(-5000),warning:trades.length<30?
    'Замало угод для статистично стійкого висновку. Минулі результати не прогнозують майбутнє.':
    'Історичний результат не гарантує прибутковості. Перевір на даних поза періодом тесту.'};
 }
