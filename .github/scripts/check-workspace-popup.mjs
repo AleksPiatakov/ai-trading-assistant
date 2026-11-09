@@ -11,8 +11,12 @@ await context.addInitScript(()=>{
  window.WebSocket=MockWebSocket;
 });
 const json=(route,data)=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(data)});
-await context.route('**/api/market/instruments',route=>json(route,{category:'linear',symbols:['BTCUSDT','ETHUSDT']}));
-await context.route('**/api/scanner/opportunities',route=>json(route,{status:'ready',total:2,completed:2,updatedAt:new Date().toISOString(),opportunities:[],attention:[],errors:[]}));
+await context.route('**/api/market/instruments',route=>json(route,{category:'linear',symbols:['BTCUSDT','ETHUSDT','SOLUSDT','DOTUSDT','DOGEUSDT','XRPUSDT']}));
+await context.route('**/api/scanner/opportunities',route=>json(route,{status:'ready',total:6,completed:6,updatedAt:new Date().toISOString(),opportunities:[],
+ attention:['ETHUSDT','SOLUSDT','DOTUSDT','DOGEUSDT','XRPUSDT'].map(symbol=>({
+  symbol,side:'long',passed:3,total:5,rsi:48,relativeVolume:.9,hasTradePlan:false,
+  reason:'Тренд потребує підтвердження',waitFor:['MACD'],checkedAt:new Date().toISOString()
+ })),errors:[]}));
 await context.route('**/api/scanner/notifications',route=>json(route,{session:'test',macNotifications:false,alerts:[],ordersEnabled:false}));
 await context.route('**/api/scanner/notification-settings',route=>json(route,{macNotifications:false,ordersEnabled:false}));
 await context.route('**/api/market/candles?*',route=>json(route,{symbol:'BTCUSDT',interval:'D',candles:Array.from({length:80},(_,i)=>({t:Date.now()-(80-i)*86400000,o:100,h:102,l:98,c:100,v:10}))}));
@@ -25,6 +29,13 @@ const popup=await newWindow;
 popup.on('pageerror',e=>errors.push('popup: '+e.message));
 await popup.waitForLoadState('load');
 await popup.locator('#aiCard').waitFor({state:'visible',timeout:10000});
+await popup.waitForFunction(()=>document.querySelectorAll('#watchBrief .watch-pair').length===5,null,{timeout:10000});
+if(await popup.locator('#watchBrief .watch-pair').count()!==5)errors.push('Watchlist truncated');
+await popup.locator('#watchBrief .watch-pair').filter({hasText:'DOTUSDT'}).click();
+await popup.waitForFunction(()=>document.querySelector('#marketSymbolText')?.textContent==='DOTUSDT',null,{timeout:12000});
+await page.waitForFunction(()=>document.querySelector('#marketSymbolText')?.textContent==='DOTUSDT',null,{timeout:12000});
+if(!await popup.locator('#watchBrief .watch-pair').filter({hasText:'DOTUSDT'}).evaluate(el=>el.classList.contains('selected')))errors.push('Selected pair not highlighted');
+if(await popup.locator('#watchBrief .watch-pair').filter({hasText:'DOTUSDT'}).getAttribute('aria-pressed')!=='true')errors.push('Selected pair not accessible');
 if(!new URL(popup.url()).searchParams.has('workspace'))errors.push('Popup missing workspace mode');
 if(!await page.locator('#rightPanel').evaluate(el=>el.classList.contains('is-closed')))errors.push('Main chart obstructed by floating assistant');
 if(await popup.locator('#chartCard').isVisible())errors.push('Chart rendered in helper window');
