@@ -1332,7 +1332,7 @@ async function syncScannerNotifications(){
     alertInbox=[...fresh.reverse(),...alertInbox].slice(0,30);
     renderScannerAlertInbox();
     showScannerToast(fresh[0]);
-    if(browserAlertsEnabled&&typeof Notification!=='undefined'&&Notification.permission==='granted'&&!document.hidden){
+    if(browserAlertsEnabled&&typeof Notification!=='undefined'&&Notification.permission==='granted'){
       // The in-app toast is shown regardless of notification permission.
       try{new Notification('AI Trading Assistant',{body:fresh[0].symbol+' · новий кандидат на угоду. Перевір графік.'})}catch{}
     }
