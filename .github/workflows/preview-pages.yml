@@ -39,14 +39,31 @@ jobs:
             const originalFetch = window.fetch.bind(window);
             window.fetch = async (input, init) => {
               if (String(input).startsWith('/api/market-data')) {
-                const candles = Array.from({length:180}, (_, i) => {
-                  const t=Date.UTC(2026,0,1)+i*86400000;
-                  const baseline=83000+i*120+Math.sin(i*.16)*2400+Math.cos(i*.39)*850;
-                  const open=baseline + Math.sin(i*2.3)*500;
-                  const close=baseline + Math.cos(i*1.7)*600;
-                  return {t,o:open,h:Math.max(open,close)+500,l:Math.min(open,close)-480,c:close,v:100+i*4};
+                const interval=new URL(String(input),location.origin).searchParams.get('interval')||'D';
+                const intervals={'1':60000,'5':300000,'15':900000,'30':1800000,'60':3600000,'240':14400000,D:86400000,W:604800000};
+                const units=intervals[interval]||intervals.D;
+                const config={
+                  '1':[1.6,190,85,0.28],
+                  '5':[5.0,360,140,0.22],
+                  '15':[9,570,180,0.19],
+                  '30':[14,780,220,0.18],
+                  '60':[23,1100,290,0.16],
+                  '240':[38,1750,420,0.14],
+                  D:[62,2850,520,0.12],
+                  W:[85,4000,760,0.10]
+                }[interval]||[62,2850,520,0.12];
+                const [slope,amplitude,noise,frequency]=config;
+                const lastTime=Date.UTC(2026,10,9,8,0);
+                const baselineAt=i=>103730.44+(i-179)*slope+
+                  amplitude*(Math.sin(i*frequency+interval.length)-Math.sin(179*frequency+interval.length))+
+                  amplitude*.46*(Math.sin(i*frequency*.43+2)-Math.sin(179*frequency*.43+2));
+                const candles=Array.from({length:180},(_,i)=>{
+                  const t=lastTime-(179-i)*units;
+                  const c=baselineAt(i),o=i===0?c-noise:baselineAt(i-1)+Math.sin(i*1.9)*noise;
+                  const wick=80+noise*(.35+.65*Math.abs(Math.sin(i*.77+interval.length)));
+                  return {t,o,c,h:Math.max(o,c)+wick,l:Math.min(o,c)-wick*.88,v:140+(i%13)*20+Math.round(Math.abs(Math.sin(i*.31+interval.length))*260)};
                 });
-                return new Response(JSON.stringify({candles,updatedAt:Date.now(),source:'STATIC_VISUAL_PREVIEW'}),{status:200,headers:{'content-type':'application/json'}});
+                return new Response(JSON.stringify({candles,interval,updatedAt:Date.now(),source:'STATIC_VISUAL_PREVIEW'}),{status:200,headers:{'content-type':'application/json'}});
               }
               return originalFetch(input, init);
             };
