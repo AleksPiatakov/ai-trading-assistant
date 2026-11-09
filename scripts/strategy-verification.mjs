@@ -29,15 +29,15 @@ export function scoreTrades(trades){
 export function verifyStrategy({symbol,series,costs=COST,maxHoldBars=48,maxSignals=250}){
  if(!/^[A-Z0-9]{3,30}USDT$/.test(symbol))throw Error('Invalid market symbol');
  const frames=Object.fromEntries(Object.keys(MS).map(tf=>[tf,completedCandles(series[tf]||[],tf)]));
- const hours=frames['60'];if(hours.length<120)throw Error('Not enough completed 1h candles');
+ const hours=frames['60'];if(hours.length<220)throw Error('Not enough completed 1h candles for EMA200 warm-up');
  const trades=[];let noSignal=0,skipped=0;
  // Start after indicators have warmed up; every candidate only sees historical bars.
- for(let i=55;i<hours.length-1&&trades.length<maxSignals;i++){
+ for(let i=219;i<hours.length-1&&trades.length<maxSignals;i++){
   const signalAt=hours[i].t+MS['60'];
   const history={};let enough=true;
   for(const tf of Object.keys(MS)){
    const sample=frames[tf].filter(c=>c.t+MS[tf]<=signalAt);
-   if(sample.length<55){enough=false;break}
+   if(sample.length<200){enough=false;break}
    history[tf]=sample.slice(-220);
   }
   if(!enough){skipped++;continue}
