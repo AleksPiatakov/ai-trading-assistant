@@ -999,38 +999,71 @@ function calculate(){
 }
 ['balance','riskPct','entry','stop','target','fee'].forEach(id=>$(id).addEventListener('input',()=>{if(['entry','stop','target'].includes(id))state.levels[id]=num(id)||null;calculate()}));
 let currentCandleRequest=0;
+let candleFetching=false,lastCandleSuccess=0,lastMarketUpdateError='';
+const CANDLE_POLL_MS=15000;
 const timeframeLabel=tf=>({'1':'1хв','5':'5хв','15':'15хв','30':'30хв','60':'1год','240':'4год',D:'1Д',W:'1Тиж'}[tf]||tf);
-async function loadCandles(){
- const requestId=++currentCandleRequest;
- state.candles=[];state.analysis=null;state.marketOk=false;
- setText('quote','—');setText('quoteDelta','');setText('quoteMeta','');setText('chartNote','');
- setText('footerMarket','');analysisView();draw();
- if(!availableMarkets.includes(state.symbol))return;
- try{
-   const url=new URL(marketApi('/api/market/candles'),location.origin);
-   url.searchParams.set('symbol',state.symbol);url.searchParams.set('interval',state.tf);
-   const response=await fetch(url,{cache:'no-store'});
-   const data=await response.json();
-   if(requestId!==currentCandleRequest)return;
-   if(!response.ok||!Array.isArray(data.candles)||!data.candles.length)throw Error(data.error||'Свічки відсутні');
-   state.candles=data.candles.filter(v=>Number.isFinite(v.c)&&Number.isFinite(v.o)&&Number.isFinite(v.h)&&Number.isFinite(v.l)&&Number.isFinite(v.t));
-   state.marketOk=state.candles.length>0;
-   const latest=state.candles.at(-1),previous=state.candles.at(-2);
-   if(latest){
-     setText('quote',latest.c.toLocaleString('en-US',{maximumFractionDigits:8}));
-     const delta=previous&&previous.c?100*(latest.c-previous.c)/previous.c:null;
-     setText('quoteDelta',Number.isFinite(delta)?(delta>0?'+':'')+delta.toFixed(2)+'%':'');
-     $('quoteDelta').classList.toggle('negative',delta<0);
-   }
-   setText('quoteMeta','USDT Perpetual');
-   setText('footerMarket','');
-   prepareAnalysis();draw();
- }catch(e){
-   if(requestId!==currentCandleRequest)return;
-   setText('chartNote',String(e.message||'Немає зв’язку з Bybit'));
-   draw();
- }
+function marketDataState(){
+  if(!state.marketOk){
+    setText('quoteMeta',lastMarketUpdateError?'Bybit • зв’язок втрачено':'USDT Perpetual • очікування даних');
+    return;
+  }
+  const time=lastCandleSuccess?
+    new Date(lastCandleSuccess).toLocaleTimeString('uk-UA',{hour:'2-digit',minute:'2-digit',second:'2-digit',timeZone:'Europe/Ljubljana'}):'—';
+  setText('quoteMeta','USDT Perpetual • оновлено '+time+(lastMarketUpdateError?' • затримка даних':''));
 }
+async function loadCandles({silent=false}={}){
+  // Each request keeps its symbol/timeframe identity so stale responses cannot
+  // overwrite a later selection. Background polls do not clear the canvas.
+  if(silent&&(candleFetching||document.hidden||state.drag))return;
+  const requestId=++currentCandleRequest;
+  const symbol=state.symbol,interval=state.tf;
+  if(!silent){
+    state.candles=[];state.analysis=null;state.marketOk=false;
+    lastMarketUpdateError='';lastCandleSuccess=0;
+    setText('quote','—');setText('quoteDelta','');
+    setText('chartNote','');setText('footerMarket','');
+    marketDataState();analysisView();draw();
+  }
+  if(!availableMarkets.includes(symbol))return;
+  candleFetching=true;
+  try{
+    const url=new URL(marketApi('/api/market/candles'),location.origin);
+    url.searchParams.set('symbol',symbol);url.searchParams.set('interval',interval);
+    const response=await fetch(url,{cache:'no-store',signal:AbortSignal.timeout(12000)});
+    const data=await response.json();
+    if(requestId!==currentCandleRequest||symbol!==state.symbol||interval!==state.tf)return;
+    if(!response.ok||!Array.isArray(data.candles)||!data.candles.length)
+      throw Error(data.error||'Свічки відсутні');
+    const fresh=data.candles.filter(v=>[v.c,v.o,v.h,v.l,v.t,v.v].every(Number.isFinite));
+    if(!fresh.length)throw Error('Bybit повернув некоректні свічки');
+    const prior=state.candles;
+    const changed=prior.length!==fresh.length||prior.at(-1)?.t!==fresh.at(-1)?.t||
+      prior.at(-1)?.c!==fresh.at(-1)?.c||prior.at(-1)?.v!==fresh.at(-1)?.v;
+    state.candles=fresh;state.marketOk=true;
+    lastCandleSuccess=Date.now();lastMarketUpdateError='';
+    const latest=fresh.at(-1),previous=fresh.at(-2);
+    setText('quote',latest.c.toLocaleString('en-US',{maximumFractionDigits:8}));
+    const delta=previous?.c?100*(latest.c-previous.c)/previous.c:null;
+    setText('quoteDelta',Number.isFinite(delta)?(delta>0?'+':'')+delta.toFixed(2)+'%':'');
+    $('quoteDelta').classList.toggle('negative',delta<0);
+    setText('chartNote','');marketDataState();
+    if(changed||!silent){prepareAnalysis();draw();}
+  }catch(error){
+    if(requestId!==currentCandleRequest||symbol!==state.symbol||interval!==state.tf)return;
+    lastMarketUpdateError=error?.message||'Немає зв’язку з Bybit';
+    marketDataState();
+    setText('chartNote','Оновлення затримується: '+lastMarketUpdateError);
+    if(!silent)draw();
+  }finally{
+    if(requestId===currentCandleRequest)candleFetching=false;
+  }
+}
+// Poll on a single interval rather than starting a new network loop each time
+// the timeframe or trading account mode changes. Both modes share market data.
+setInterval(()=>{if(availableMarkets.includes(state.symbol))loadCandles({silent:true})},CANDLE_POLL_MS);
+document.addEventListener('visibilitychange',()=>{
+  if(!document.hidden&&availableMarkets.includes(state.symbol))loadCandles({silent:true});
+});
 $('chartFullscreenButton').onclick=()=>$('maximizeChart').click();
 $('indicatorsButton').onclick=()=>{};
 $('chartInfoButton').onclick=()=>{};
