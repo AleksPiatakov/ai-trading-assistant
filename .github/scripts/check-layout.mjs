@@ -27,6 +27,26 @@ for(const [w,h] of [[1525,900],[1525,740],[1280,740],[980,800]]){
  if(!await page.locator('#settingsNav').evaluate(el=>el.classList.contains('active')))errors.push('Collapse selection changed active destination');
  await page.locator('#sidebarToggle').click();
  await page.locator('#homeNav').click();
+ if(w===1525 && h===900){
+  const intervals={'1':60000,'5':300000,'15':900000,'30':1800000,'60':3600000,'240':14400000,D:86400000,W:604800000};
+  let previousImage=null;
+  let previousSeries=null;
+  for(const [tf,expected] of Object.entries(intervals)){
+    await page.locator('#timeframes [data-tf="'+tf+'"]').click();
+    await page.waitForFunction(() => document.querySelector('#chartNote')?.textContent==='ДЕМО · НЕ КОТИРУВАННЯ',{timeout:5000}).catch(()=>{});
+    await page.waitForTimeout(150);
+    const result=await page.evaluate(async tf=>{
+      const data=await (await fetch('/api/market-data?interval='+tf)).json();
+      return {source:data.source,interval:data.interval,step:data.candles[1].t-data.candles[0].t,closes:data.candles.slice(-6).map(c=>c.c),canvas:document.querySelector('#chart').toDataURL()};
+    },tf);
+    if(result.interval!==tf||result.step!==expected||result.source!=='STATIC_VISUAL_PREVIEW')errors.push('Wrong timeframe candle data for '+tf);
+    if(previousSeries===JSON.stringify(result.closes))errors.push('Unchanged candle series for '+tf);
+    if(previousImage===result.canvas)errors.push('Unchanged chart canvas for '+tf);
+    previousSeries=JSON.stringify(result.closes);previousImage=result.canvas;
+  }
+  await page.locator('#timeframes [data-tf="D"]').click();
+  await page.waitForTimeout(200);
+ }
  await page.screenshot({path:`layout-screenshots/${w}x${h}.png`,fullPage:true});
  const p=boxes['#positions'],o=boxes['#orderCard'],e=boxes['#executeButton'];
  const threshold=2;
