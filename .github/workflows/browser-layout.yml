@@ -4,6 +4,7 @@ on:
     branches: [redesign-approved-trading-ui]
     paths:
       - public/dashboard.html
+      - scripts/local-demo-server.mjs
       - .github/scripts/check-layout.mjs
       - .github/workflows/browser-layout.yml
       - .github/workflows/preview-pages.yml
@@ -23,6 +24,8 @@ jobs:
         run: |
           npm install --no-save --ignore-scripts playwright@1.56.1
           npx playwright install --with-deps chromium
+      - name: Verify local Demo bridge JavaScript syntax
+        run: node --check scripts/local-demo-server.mjs
       - name: Produce static preview
         run: |
           mkdir -p _site
