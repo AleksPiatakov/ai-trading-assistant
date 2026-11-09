@@ -718,6 +718,26 @@ body.real-account .help-info{visibility:hidden;pointer-events:none}
  #chartCard.chart-card{height:560px;min-height:0;max-height:560px}
  #chartCard .chart-wrap{height:auto;min-height:0;flex:1 1 0}
 }
+
+#aiCard .multi-analysis{padding:11px 0 2px;margin-top:10px;border-top:1px solid #46618b}
+#aiCard .multi-analysis-header{display:flex;align-items:center;justify-content:space-between;gap:8px}
+#aiCard .multi-analysis-header strong{font-size:12px;color:#e7efff;display:block}
+#aiCard .multi-analysis-header small{font-size:10px;color:#91afd1;display:block;margin-top:3px}
+#aiCard #refreshAllTimeframes{font-size:10px;border:1px solid #566fa5;border-radius:7px;min-height:29px;padding:5px 8px;white-space:nowrap}
+#aiCard #refreshAllTimeframes:disabled{opacity:.6;cursor:progress}
+#aiCard .multi-summary{font-size:11px;line-height:1.5;color:#c6d6f1;margin:8px 0}
+#aiCard .skill-matrix{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
+#aiCard .skill-tf{padding:7px 6px;border:1px solid #3e5882;border-radius:7px;background:#0c2241;min-width:0;font-size:10px}
+#aiCard .skill-tf strong{display:block;font-size:11px;color:#e9f1ff;margin-bottom:3px}
+#aiCard .skill-tf span{display:block;color:#b9cce5;line-height:1.35}
+#aiCard .skill-tf.up{border-color:#226b62;background:#0c302f}
+#aiCard .skill-tf.down{border-color:#884f65;background:#351f35}
+#aiCard .skill-tf.mixed{border-color:#806945}
+#aiCard .skill-insights{margin-top:8px;display:grid;gap:5px}
+#aiCard .skill-insights .insight{padding:6px 8px;border:1px solid #334d73;border-radius:7px;background:#122746;font-size:10px;color:#bfd2ee;line-height:1.45}
+#aiCard .skill-insights .insight strong{color:#e9f0ff}
+#aiCard .skill-sources{margin-top:8px;font-size:10px;line-height:1.45;color:#92aacc}
+@media(max-width:1200px){#aiCard .skill-matrix{grid-template-columns:repeat(2,minmax(0,1fr))}}
 </style></head>
 <body><div class="app" id="app">
 <nav class="nav nav-reference" aria-label="Навігація">
@@ -755,7 +775,7 @@ body.real-account .help-info{visibility:hidden;pointer-events:none}
 </section>
 <div class="right" id="rightPanel">
 <section class="card" id="aiCard"><div class="bar"><h2><span class="heading-icon assistant-mark" aria-hidden="true">✧</span> AI Помічник трейдера <button type="button" class="help-info" data-help="assistant" aria-label="Пояснення: AI Помічник трейдера" title="Що це?">і</button></h2><button id="foldAI" class="btn ghost" title="Згорнути панель">−</button></div><div class="foldable"><div class="tabs" id="analysisTabs"><button class="btn active" data-tab="plan">Аналіз угоди</button><button class="btn" data-tab="signal">Деталі сигналу</button><button class="btn" data-tab="context">Контекст</button><button class="btn" data-tab="risk">Ризики</button></div>
-<div class="panel-body"><div class="signal-line"><div class="signal" id="scenario">Аналіз ще не сформовано</div><div class="confidence-box">Впевненість <strong>—</strong></div></div><div class="analysis-columns"><div id="analysisFacts" class="fact"></div><div class="signal-metrics"><div class="breakdown-title">Показники аналізу <small>Не розраховано</small></div><span>Узгодженість трендів <b>—</b></span><span>Реакція на обсяг <b>—</b></span><span>Технічні індикатори <b>—</b></span><span>Новинний фон <b>—</b></span></div></div><div id="explanation" class="explain"></div></div></div></section>
+<div class="panel-body"><div class="signal-line"><div class="signal" id="scenario">Аналіз ще не сформовано</div><div class="confidence-box">Впевненість <strong>—</strong></div></div><div class="analysis-columns"><div id="analysisFacts" class="fact"></div><div class="signal-metrics"><div class="breakdown-title">Показники аналізу <small>Не розраховано</small></div><span>Узгодженість трендів <b>—</b></span><span>Реакція на обсяг <b>—</b></span><span>Технічні індикатори <b>—</b></span><span>Новинний фон <b>—</b></span></div></div><div id="explanation" class="explain"></div><div class="multi-analysis" id="multiAnalysis"><div class="multi-analysis-header"><div><strong>Багатотаймфреймовий аналіз</strong><small>12 інтервалів Bybit • незалежно від відкритого графіка</small></div><button id="refreshAllTimeframes" type="button" class="btn ghost">Оновити аналіз</button></div><div id="multiSummary" class="multi-summary" role="status" aria-live="polite">Ще не розраховано</div><div id="skillMatrix" class="skill-matrix"></div><div id="skillInsights" class="skill-insights"></div><div id="skillSources" class="skill-sources">Джерело: публічні ринкові свічки Bybit. Індикатори не гарантують результату угоди.</div></div></div></div></section>
 <section class="card" id="riskCard"><div class="bar"><h2><span class="heading-icon" aria-hidden="true">▣</span> Розрахунок позиції <span class="subtle-heading">(ризик-менеджмент)</span> <button type="button" class="help-info" data-help="risk" aria-label="Пояснення: Калькулятор ризику" title="Що це?">і</button></h2><button class="btn ghost" id="foldRisk" title="Приховати калькулятор">−</button></div><div id="riskContent"><div class="risk-grid-compact"><div class="fields">
 <label>Баланс (USDT)<input id="balance" type="number" min="0" step="any" placeholder="Ваш баланс"></label>
 <label>Ризик на угоду (%)<input id="riskPct" type="number" min="0.01" max="100" step="any" placeholder="—"></label>
