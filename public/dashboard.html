@@ -582,13 +582,13 @@ body.real-account .help-info{visibility:hidden;pointer-events:none}
 #chartCard .long-tf-menu button[aria-checked="true"]{background:#253e79;border-color:#526eae;color:#fff}
 
 /* Small left shift of graph without shifting dashboard cards or toolbars. */
-#chartCard .chart-wrap{margin-left:59px}
-#chartCard .drawing-tools{left:-59px;width:57px}
-#chartCard .drawing-tools span{width:53px}
+#chartCard .chart-wrap{margin-left:46px}
+#chartCard .drawing-tools{left:-46px;width:44px}
+#chartCard .drawing-tools span{width:42px}
 @media(max-width:680px){
- #chartCard .chart-wrap{margin-left:35px}
- #chartCard .drawing-tools{left:-35px;width:34px}
- #chartCard .drawing-tools span{width:32px}
+ #chartCard .chart-wrap{margin-left:30px}
+ #chartCard .drawing-tools{left:-30px;width:29px}
+ #chartCard .drawing-tools span{width:28px}
 }
 </style></head>
 <body><div class="app" id="app">
@@ -1425,14 +1425,18 @@ function draw(){
  const displayedPrice=hasLiveMarket()&&Number.isFinite(marketTickerPrice)?marketTickerPrice:last.c;
  if(chartViewport.offset===0&&displayedPrice>=min&&displayedPrice<=max){
    const y=yPrice(displayedPrice);c.fillStyle=displayedPrice>=last.o?'#079e70':'#b74362';
-   const tagX=right+5,tagW=Math.max(42,width-tagX-4);
-   c.beginPath();c.roundRect(tagX,y-11,tagW,22,8);c.fill();
    const priceLabel=priceFmt(displayedPrice);
+   // Compact badge: keep its right edge fixed, trim excess space from the LEFT.
+   // Never widen the price-scale gutter just to accommodate a badge.
    let labelFont=11;
    c.font='bold '+labelFont+'px system-ui';
-   while(c.measureText(priceLabel).width>tagW-8&&labelFont>8){
+   const badgeRight=width-4,availableWidth=Math.max(36,badgeRight-(right+5));
+   while(c.measureText(priceLabel).width+12>availableWidth&&labelFont>8){
      labelFont-=.5;c.font='bold '+labelFont+'px system-ui';
    }
+   const tagW=Math.min(availableWidth,Math.max(35,Math.ceil(c.measureText(priceLabel).width+12)));
+   const tagX=badgeRight-tagW;
+   c.beginPath();c.roundRect(tagX,y-11,tagW,22,8);c.fill();
    c.fillStyle='#fff';c.textAlign='center';c.fillText(priceLabel,tagX+tagW/2,y+4);
    c.textAlign='left';
  }
