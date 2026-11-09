@@ -611,7 +611,7 @@ body.real-account .help-info{visibility:hidden;pointer-events:none}
 <label>Stop Loss, USDT<input id="stop" type="number" min="0.0001" step="any" placeholder="SL"></label>
 <label>Take Profit, USDT<input id="target" type="number" min="0.0001" step="any" placeholder="TP"></label>
 <label>Комісія за сторону, % (оцінка)<input id="fee" type="number" min="0" step="any" placeholder="—"></label>
-</div><div class="metrics" style="padding:0 12px 10px"><div class="metric"><span>Кількість BTC</span><b id="quantity">—</b></div><div class="metric"><span>Номінал позиції</span><b id="notional">—</b></div><div class="metric"><span>Ризик за стопом</span><b id="loss">—</b></div><div class="metric"><span>Net R:R</span><b id="rr">—</b></div></div></div><div class="risk-footer"><button class="btn risk-edit-btn" id="riskAdvancedButton" type="button">⚙ Рівні та комісії</button><button type="button" class="help-info" data-help="sl-tp" aria-label="Пояснення: Stop Loss, Take Profit і комісія" title="Що це?">і</button><div class="banner" id="riskMessage"></div></div></div></section>
+</div><div class="metrics" style="padding:0 12px 10px"><div class="metric"><span id="quantityLabel">Кількість BTC</span><b id="quantity">—</b></div><div class="metric"><span>Номінал позиції</span><b id="notional">—</b></div><div class="metric"><span>Ризик за стопом</span><b id="loss">—</b></div><div class="metric"><span>Net R:R</span><b id="rr">—</b></div></div></div><div class="risk-footer"><button class="btn risk-edit-btn" id="riskAdvancedButton" type="button">⚙ Рівні та комісії</button><button type="button" class="help-info" data-help="sl-tp" aria-label="Пояснення: Stop Loss, Take Profit і комісія" title="Що це?">і</button><div class="banner" id="riskMessage"></div></div></div></section>
 <section class="card" id="orderCard"><div class="bar"><h2><span class="heading-icon" aria-hidden="true">➤</span> Виконати угоду <span class="subtle-heading">(Bybit)</span> <button type="button" class="help-info" data-help="execution" aria-label="Пояснення: Панель угод" title="Що це?">і</button></h2><button id="foldOrder" class="btn ghost" title="Згорнути панель">−</button></div><div id="orderContent"><div class="tabs order-tabs" id="orderTypes"><button class="btn active" data-type="Limit">Limit</button><button class="btn" data-type="Market">Market</button><button class="btn" data-type="Trigger">Trigger</button><button type="button" class="help-info" data-help="ordertype" aria-label="Пояснення: Типи ордерів" title="Що це?">і</button></div><div class="actions side-actions" style="padding-top:10px"><button id="longButton" class="btn green">Лонг</button><button id="shortButton" class="btn">Шорт</button><button type="button" class="help-info" data-help="longshort" aria-label="Пояснення: Лонг і шорт" title="Що це?">і</button></div><div class="order-position-line"><span>Ціна <b id="orderEntry">—</b></span><span>Кількість <b id="orderQuantity">—</b></span></div><div class="order-sl-tp"><span>☑ Stop Loss <b id="orderSL">—</b></span><span>☑ Take Profit <b id="orderTP">—</b></span></div><div class="banner" id="executionStatus"></div><div class="actions"><button id="executeButton" class="btn green" disabled>Відкрити позицію</button></div></div></section>
 </div>
 </div>
@@ -643,6 +643,7 @@ function setMarketSymbol(symbol){
   if(!availableMarkets.includes(symbol))return;
   if(state.symbol===symbol){closeMarketDropdown();return}
   state.symbol=symbol;
+  $('quantityLabel').textContent='Кількість '+symbol.slice(0,-4);
   $('marketSymbolText').textContent=symbol;
   try{localStorage.setItem('ata-market-symbol',symbol)}catch{}
   updateFavoriteIcon();closeMarketDropdown();
@@ -682,7 +683,7 @@ async function loadMarketList(){
       state.symbol=availableMarkets.includes('BTCUSDT')?'BTCUSDT':availableMarkets[0]||'BTCUSDT';
       $('marketSymbolText').textContent=state.symbol;
     }
-    updateFavoriteIcon();renderMarketList();loadCandles();
+    $('quantityLabel').textContent='Кількість '+state.symbol.slice(0,-4);updateFavoriteIcon();renderMarketList();loadCandles();
   }catch(e){
     if(token!==marketListRequest)return;
     marketsFetched=false;availableMarkets=[];
@@ -728,7 +729,7 @@ const helpArticles={
  timeframes:{title:'Таймфрейми графіка',summary:'Таймфрейм — це проміжок часу, який показує одна свічка. Наприклад 1хв або 1Д (один день).',purpose:'Короткі інтервали допомагають побачити дрібні коливання; довгі — загальний напрямок ринку.',how:'Вибери 5хв, 1год, 4год або 1Д над графіком. Програма запитає нові свічки вибраної пари.',caution:'Короткий таймфрейм містить більше ринкового шуму. Один і той самий актив може мати різні тренди на різних інтервалах.'},
  indicators:{title:'Індикатори EMA, RSI та MACD',summary:'Індикатори — математичні розрахунки на основі ціни, які допомагають описати стан ринку.',purpose:'EMA 50 показує згладжений рух ціни; RSI оцінює відносну силу руху; MACD порівнює швидкі та повільні середні.',how:'Після завантаження свічок графік відображає EMA, RSI і MACD. Порівняй їх на кількох таймфреймах. Кнопка «Індикатори» наразі не відкриває окремих налаштувань.',caution:'Індикатор не гарантує руху ціни й може запізнюватися. Не відкривай угоду лише через один сигнал.'},
  assistant:{title:'AI Помічник трейдера',summary:'Цей блок призначено для пояснення торгового сценарію, аргументів та ризиків.',purpose:'Допомагати ухвалювати усвідомлені рішення, а не замінювати власний аналіз.',how:'Переглядай вкладки «Аналіз угоди», «Деталі», «Ризики» і «Контекст». Коли модуль аналізу не підключено, значення позначені «—».',caution:'Автоматична AI-оцінка сигналів поки не підключена. Порожнє поле не означає рекомендацію купувати або продавати.'},
- risk:{title:'Калькулятор ризику',summary:'Калькулятор допомагає визначити допустимий збиток і розмір позиції до відкриття угоди.',purpose:'Щоб одна невдала угода не спричинила надто великої втрати капіталу.',how:'Введи баланс, відсоток ризику, ціну входу, Stop Loss, Take Profit та приблизну комісію. Після підключення розрахунків програма показуватиме обсяг і співвідношення ризику до прибутку.',caution:'У поточній версії автоматичний розрахунок ще не активовано: поля результатів показують «—». Не вважай ці результати перевіреними й не використовуй їх для реальних ордерів.'},
+ risk:{title:'Калькулятор ризику',summary:'Калькулятор допомагає визначити допустимий збиток і розмір позиції до відкриття угоди.',purpose:'Щоб одна невдала угода не спричинила надто великої втрати капіталу.',how:'Введи баланс, відсоток ризику, ціну входу, Stop Loss, Take Profit і приблизну комісію за одну сторону. Програма порахує приблизний розмір позиції, очікуваний збиток і Net R:R.',caution:'Результат є попередньою оцінкою з урахуванням введеної комісії, без прослизання, фінансування, мінімального кроку контракту та вимог біржі. Ордери залишаються вимкненими.'},
  execution:{title:'Панель виконання угоди',summary:'Тут обирають тип заявки, напрямок (лонг або шорт) і параметри майбутньої угоди.',purpose:'Щоб готувати ордер після аналізу ціни й ризику.',how:'Спочатку вибери тип заявки, потім «Лонг» або «Шорт». Перед торгівлею потрібно визначити розмір позиції, SL і TP. Зараз кнопка відкриття позиції вимкнена.',caution:'Demo API підключений у режимі читання; відправлення ордерів відключене. Real API теж не підключений. Ніщо в цій панелі зараз не відкриває позицію.'},
  ordertype:{title:'Limit, Market і Trigger',summary:'Це різні способи подати наказ біржі.',purpose:'Вибрати, як і за яких умов повинна виконатися угода.',how:'Limit — встановлюєш бажану ціну; угода може не виконатися. Market — за доступною ринковою ціною, можливе прослизання. Trigger — заявка активується, коли виконається задана умова.',caution:'У програмі це поки вибір типу для макета заявки; фактичне надсилання ордерів вимкнене.'},
  longshort:{title:'Лонг і шорт',summary:'Лонг — позиція з розрахунком на зростання ціни. Шорт — позиція з розрахунком на падіння.',purpose:'Вибрати напрямок торгової ідеї.',how:'Натисни «Лонг» або «Шорт» у панелі угоди. Далі порівняй ціну входу, SL і TP та розрахуй можливу втрату.',caution:'Шорт та лонг на ф’ючерсах можуть призвести до ліквідації при використанні плеча. Натискання цих кнопок зараз не створює заявку на Bybit.'},
@@ -953,7 +954,49 @@ function ema(arr,period){const out=[];let prev=null;const alpha=2/(period+1);for
 function rsi(close,period=14){const out=new Array(close.length).fill(null);if(close.length<=period)return out;let gain=0,loss=0;for(let i=1;i<=period;i++){const d=close[i]-close[i-1];gain+=Math.max(0,d);loss+=Math.max(0,-d)}gain/=period;loss/=period;for(let i=period;i<close.length;i++){if(i>period){const d=close[i]-close[i-1];gain=(gain*(period-1)+Math.max(0,d))/period;loss=(loss*(period-1)+Math.max(0,-d))/period}out[i]=loss===0?100:100-100/(1+gain/loss)}return out}
 function prepareAnalysis(){const cs=state.candles;if(cs.length<30)return;const close=cs.map(c=>c.c),e50=ema(close,50),e200=ema(close,200),e12=ema(close,12),e26=ema(close,26),macd=e12.map((v,i)=>v-e26[i]),signal=ema(macd,9),rs=rsi(close),last=close.length-1;state.analysis={price:close[last],above50:close[last]>e50[last],above200:close[last]>e200[last],rsi:rs[last],macd:macd[last],macdSignal:signal[last],e50,e200,macdLine:macd,signalLine:signal,rsiLine:rs};analysisView()}
 function analysisView(){setText('scenario','—');$('analysisFacts').textContent='';$('explanation').textContent='';}
-function calculate(){['quantity','notional','loss','rr','orderEntry','orderQuantity','orderSL','orderTP'].forEach(id=>setText(id,'—'));setText('riskMessage','');draw();}
+function calculate(){
+ const ids=['quantity','notional','loss','rr','orderEntry','orderQuantity','orderSL','orderTP'];
+ ids.forEach(id=>setText(id,'—'));
+ const fields=['balance','riskPct','entry','stop','target','fee'];
+ const filled=fields.every(id=>$(id).value.trim()!=='');
+ setText('riskMessage','');
+ if(filled){
+   const balance=num('balance'),pct=num('riskPct'),entry=num('entry'),
+     stop=num('stop'),target=num('target'),feePct=num('fee');
+   const values=[balance,pct,entry,stop,target,feePct];
+   const correctDirection=state.dir==='long'
+     ? stop<entry&&target>entry
+     : stop>entry&&target<entry;
+   if(!values.every(Number.isFinite)||balance<=0||pct<=0||pct>100||entry<=0||stop<=0||target<=0||feePct<0){
+     setText('riskMessage','Перевір баланс, відсоток ризику, ціни та комісію.');
+   }else if(!correctDirection){
+     setText('riskMessage',state.dir==='long'
+       ? 'Для лонгу: SL нижче входу, TP вище входу.'
+       : 'Для шорту: SL вище входу, TP нижче входу.');
+   }else{
+     const riskBudget=balance*pct/100;
+     const stopLossPerUnit=Math.abs(entry-stop)+(entry+stop)*feePct/100;
+     const netGainPerUnit=Math.abs(target-entry)-(entry+target)*feePct/100;
+     if(stopLossPerUnit<=0||!Number.isFinite(stopLossPerUnit)){
+       setText('riskMessage','Неможливо обчислити ризик на одиницю.');
+     }else{
+       const quantity=riskBudget/stopLossPerUnit;
+       if(Number.isFinite(quantity)&&quantity>0){
+         setText('quantity',quantity.toLocaleString('en-US',{maximumFractionDigits:8}));
+         setText('notional',money(quantity*entry)+' USDT');
+         setText('loss',money(riskBudget)+' USDT');
+         setText('rr',netGainPerUnit>0?'1 : '+(netGainPerUnit/stopLossPerUnit).toFixed(2):'Невигідно');
+         setText('orderEntry',money(entry));
+         setText('orderQuantity',quantity.toLocaleString('en-US',{maximumFractionDigits:8}));
+         setText('orderSL',money(stop));
+         setText('orderTP',money(target));
+       }
+       if(netGainPerUnit<=0)setText('riskMessage','Потенційний прибуток не покриває оцінених комісій.');
+     }
+   }
+ }
+ draw();
+}
 ['balance','riskPct','entry','stop','target','fee'].forEach(id=>$(id).addEventListener('input',()=>{if(['entry','stop','target'].includes(id))state.levels[id]=num(id)||null;calculate()}));
 let currentCandleRequest=0;
 const timeframeLabel=tf=>({'1':'1хв','5':'5хв','15':'15хв','30':'30хв','60':'1год','240':'4год',D:'1Д',W:'1Тиж'}[tf]||tf);
