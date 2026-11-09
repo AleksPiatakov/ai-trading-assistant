@@ -13,6 +13,8 @@ for(const [w,h] of [[1525,900],[1525,740],[1280,740],[980,800]]){
   const selectors=['#chartCard','#aiCard','#riskCard','#orderCard','#positions','#executeButton'];
   return Object.fromEntries(selectors.map(s=>{const el=document.querySelector(s);const r=el.getBoundingClientRect();return [s,{top:r.top,bottom:r.bottom,left:r.left,right:r.right,width:r.width,height:r.height,scrollHeight:el.scrollHeight,clientHeight:el.clientHeight}]}));
  });
+ if(boxes['#chartCard'].height>710)errors.push('Chart panel is excessively stretched: '+boxes['#chartCard'].height+'px');
+ if(boxes['#chartCard'].height<460)errors.push('Chart panel is too short: '+boxes['#chartCard'].height+'px');
  const navIds=['homeNav','marketsNav','analysisNav','journalNav','riskNav','learnNav','settingsNav'];
  for(const selectedId of navIds){
   await page.locator('#'+selectedId).click();
