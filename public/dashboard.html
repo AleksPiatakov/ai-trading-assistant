@@ -464,7 +464,19 @@ function saveLayout(){try{localStorage.setItem('ata-layout',JSON.stringify({mode
 try{const old=JSON.parse(localStorage.getItem('ata-layout')||'{}');if(old.mode==='real')state.mode='real';if(old.sidebar)state.sidebar=true}catch{}
 function applyMode(){const demo=state.mode==='demo';$('demoMode').classList.toggle('active',demo);$('realMode').classList.toggle('active',!demo);setText('footerMode','Режим: '+(demo?'Навчання (Bybit Demo)':'Торгівля (Bybit Real)')+' · торгівля через API поки вимкнена');setText('executionStatus',demo?'Bybit Demo API ще не налаштований. Це не тестове виконання ордерів: кнопка заблокована до безпечного підключення.':'Bybit Real API не налаштований. Реальні ордери заблоковано до окремого підтвердження і підключення.');saveLayout()}
 $('demoMode').onclick=()=>{state.mode='demo';applyMode()};$('realMode').onclick=()=>{state.mode='real';applyMode()};
-$('navToggle').onclick=()=>{state.sidebar=!state.sidebar;$('app').classList.toggle('expanded',state.sidebar);saveLayout()};$('sidebarToggle').onclick=()=>$('navToggle').click();$('homeNav').onclick=()=>window.scrollTo({top:0,behavior:'smooth'});$('app').classList.toggle('expanded',state.sidebar);
+$('navToggle').onclick=()=>{state.sidebar=!state.sidebar;$('app').classList.toggle('expanded',state.sidebar);saveLayout()};$('sidebarToggle').onclick=()=>$('navToggle').click();
+const navDestinations=['homeNav','marketsNav','analysisNav','journalNav','riskNav','learnNav','settingsNav'];
+function selectNav(id){
+  for(const navId of navDestinations){
+    const button=$(navId),selected=navId===id;
+    button.classList.toggle('active',selected);
+    if(selected)button.setAttribute('aria-current','page');
+    else button.removeAttribute('aria-current');
+  }
+}
+for(const navId of navDestinations){$(navId).addEventListener('click',()=>selectNav(navId));}
+selectNav('homeNav');
+$('homeNav').onclick=()=>window.scrollTo({top:0,behavior:'smooth'});$('app').classList.toggle('expanded',state.sidebar);
 function fold(btn,content){$(btn).onclick=()=>{$(content).classList.toggle('hidden');$(btn).textContent=$(content).classList.contains('hidden')?'+':'−'}}
 fold('foldRisk','riskContent');fold('foldOrder','orderContent');$('foldAI').onclick=()=>{$('aiCard').querySelector('.foldable').classList.toggle('hidden');$('foldAI').textContent=$('aiCard').querySelector('.foldable').classList.contains('hidden')?'+':'−'};
 $('hideBottom').onclick=()=>{ $('bottomContent').classList.toggle('hidden');$('hideBottom').textContent=$('bottomContent').classList.contains('hidden')?'+':'−'};
