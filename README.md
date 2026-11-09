@@ -38,3 +38,20 @@ Follow the app's local URL. For type checking: `npx tsc --noEmit`.
 5. More indicator validation and testing across real market data, chart usability and screen widths.
 
 The original uploaded `ai-trading-assistant-source.zip` remains in the repo as a backup. The original `main` branch is unchanged.
+
+## Connect Bybit Demo credentials on Mac (local only)
+
+The public GitHub Pages preview **cannot accept API credentials**. It remains visual-only.
+
+1. Clone this repository and check out `redesign-approved-trading-ui`.
+2. On macOS with Node.js 22+, run `node scripts/local-demo-server.mjs` from the repository directory. No `npm install` is needed for the credentials-only local server.
+3. On the same Mac, open `http://127.0.0.1:4177/`. Select **Налаштування** at the bottom.
+4. Paste the **Demo-only, Read-Only** API Key and API Secret and click **Перевірити й зберегти**.
+5. On success, the credentials are stored in macOS Keychain under services `com.ai-trading-assistant.demo.api-key` and `com.ai-trading-assistant.demo.api-secret`. The text fields are cleared.
+6. Use **Видалити ключ** to delete both Keychain entries.
+
+This verifies against read-only `https://api-demo.bybit.com/v5/account/wallet-balance?accountType=UNIFIED`. It does **not** connect to the real account or submit orders. Network access to Bybit is necessary.
+
+The local service binds only to `127.0.0.1:4177`, validates the HTTP Host and Origin, requires a custom header for mutations, does not enable CORS, and does not echo credentials in responses or logs. Keep macOS Keychain protected. Never paste credentials into GitHub Pages, a chat, or a public repository.
+
+Stage one covers key entry, verification and secure storage. Showing Demo wallet balances, positions and candles in the terminal requires separate later integration.
