@@ -809,6 +809,14 @@ body.real-account .help-info{visibility:hidden;pointer-events:none}
 #aiCard .opportunity-details{margin:5px 0;line-height:1.45}
 #aiCard .multi-analysis{margin-top:7px;padding-top:8px}
 @media(max-width:1050px){#aiCard .signal-metrics b{white-space:normal;text-align:right}}
+
+#aiCard .scanner-count{display:inline-grid;place-items:center;min-width:18px;height:18px;padding:1px 4px;background:#13a579;border-radius:12px;font-size:10px;color:#fff;margin-left:4px}
+#aiCard .scanner-count.hidden{display:none}
+.scanner-tabs{display:flex;gap:6px;padding:9px 20px 0}
+.scanner-tabs button{flex:1;padding:8px;border-radius:8px;border:1px solid #42638f;background:#102641;color:#bcd0eb;font-size:12px;cursor:pointer}
+.scanner-tabs button.active{background:#5034ae;border-color:#a589ee;color:#fff;font-weight:700}
+.scanner-history-row{grid-template-columns:1fr}
+@media(max-width:780px){.scanner-tabs{padding-left:13px;padding-right:13px}}
 </style></head>
 <body><div class="app" id="app">
 <nav class="nav nav-reference" aria-label="Навігація">
@@ -845,7 +853,7 @@ body.real-account .help-info{visibility:hidden;pointer-events:none}
 <div class="chart-footerline" id="chartHint"><span class="legend-ema blue-line">EMA 50</span><span class="legend-ema gold-line">EMA 200</span><span class="legend-ema green-line">Take Profit</span><span class="legend-ema neutral-line">Вхід</span><span class="legend-ema red-line">Stop Loss</span><span class="drag-hint">↕ Перетягуйте рівні на графіку</span></div>
 </section>
 <div class="right" id="rightPanel">
-<section class="card" id="aiCard"><div class="bar"><h2><span class="heading-icon assistant-mark" aria-hidden="true">✧</span> AI Помічник трейдера <button type="button" class="help-info" data-help="assistant" aria-label="Пояснення: AI Помічник трейдера" title="Що це?">і</button></h2><button id="openScanner" class="btn scanner-launch" type="button" title="Сканер ринку">◉ Торгові можливості</button><button id="foldAI" class="btn ghost" title="Згорнути панель">−</button></div><div class="foldable"><div class="tabs" id="analysisTabs"><button class="btn active" data-tab="plan">Аналіз угоди</button><button class="btn" data-tab="signal">Деталі сигналу</button><button class="btn" data-tab="context">Контекст</button><button class="btn" data-tab="risk">Ризики</button></div>
+<section class="card" id="aiCard"><div class="bar"><h2><span class="heading-icon assistant-mark" aria-hidden="true">✧</span> AI Помічник трейдера <button type="button" class="help-info" data-help="assistant" aria-label="Пояснення: AI Помічник трейдера" title="Що це?">і</button></h2><button id="openScanner" class="btn scanner-launch" type="button" title="Сканер ринку">◉ Торгові можливості <span id="scannerAlertCount" class="scanner-count hidden" aria-label="Кількість можливостей"></span></button><button id="foldAI" class="btn ghost" title="Згорнути панель">−</button></div><div class="foldable"><div class="tabs" id="analysisTabs"><button class="btn active" data-tab="plan">Аналіз угоди</button><button class="btn" data-tab="signal">Деталі сигналу</button><button class="btn" data-tab="context">Контекст</button><button class="btn" data-tab="risk">Ризики</button></div>
 <div class="panel-body"><div class="signal-line"><div class="signal" id="scenario">Аналіз ще не сформовано</div><div class="confidence-box">Перевірка умов <strong id="assistantCheckCount">—</strong></div></div><div class="analysis-columns"><div id="analysisFacts" class="fact"></div><div class="signal-metrics"><div class="breakdown-title">Показники аналізу <small id="assistantMetricsStatus">Перевірка</small></div><span>Тренди 1год / 4год <b id="assistantTrends">—</b></span><span>Обсяг (1год) <b id="assistantVolume">—</b></span><span>RSI / MACD <b id="assistantTechnical">—</b></span><span>Новини <b id="assistantNews">Не підключено</b></span></div></div><div id="explanation" class="explain"></div><div class="multi-analysis" id="multiAnalysis"><div class="multi-analysis-header"><div><strong>Багатотаймфреймовий аналіз</strong><small>12 інтервалів Bybit • незалежно від відкритого графіка</small></div><button id="refreshAllTimeframes" type="button" class="btn ghost">Оновити аналіз</button></div><div id="multiSummary" class="multi-summary" role="status" aria-live="polite">Ще не розраховано</div><section id="tradeOpportunity" class="trade-opportunity" aria-labelledby="opportunityTitle">
 <div class="opportunity-heading"><strong id="opportunityTitle">Найближча торгова можливість</strong><span id="opportunityState">Очікування аналізу</span></div>
 <div id="opportunityDetails" class="opportunity-details" role="status" aria-live="polite">Помічник порівняє Long і Short за даними різних таймфреймів. Угоди не відкриваються автоматично.</div>
@@ -869,7 +877,7 @@ body.real-account .help-info{visibility:hidden;pointer-events:none}
 <div class="scanner-dialog" role="dialog" aria-modal="true" aria-labelledby="scannerTitle">
  <header class="scanner-heading"><div><small>AI TRADING ASSISTANT · BYBIT PUBLIC</small><h2 id="scannerTitle">◉ Торгові можливості</h2><p>Локальний сканер перевіряє ринки, навіть коли сторінка закрита, доки запущено сервер.</p></div><button id="scannerClose" type="button" aria-label="Закрити сканер">×</button></header>
  <div class="scanner-controls"><span id="scannerState" role="status">Очікування сканера</span><label>Напрямок <select id="scannerFilter"><option value="all">Усі</option><option value="long">Long</option><option value="short">Short</option></select></label><button id="scannerRefresh" type="button" class="btn ghost">Оновити список</button></div>
- <div class="scanner-summary" id="scannerSummary"></div>
+ <div class="scanner-tabs" role="group" aria-label="Перегляд результатів сканера"><button id="scannerCurrentTab" type="button" class="active">Актуальні</button><button id="scannerHistoryTab" type="button">Історія сигналів</button></div><div class="scanner-summary" id="scannerSummary"></div>
  <div id="scannerResults" class="scanner-results"></div>
  <footer class="scanner-footer">Сканер лише пропонує плани, не відкриває позиції. Комісії, спред, ліквідність та прослизання необхідно перевірити перед торгівлею.</footer>
 </div></div>
@@ -1049,12 +1057,14 @@ document.addEventListener('keydown',event=>{
 
 /* Dedicated scanner viewer. All calculations run on local Node, even when the tab closes.
    Only explicit "На графік" interaction changes manual planning inputs. */
-let scannerSnapshot=null,scannerFocusedBefore=null,scannerRefreshBusy=false,scannerLastError='';
+let scannerSnapshot=null,scannerHistory=[],scannerView='current',scannerFocusedBefore=null,scannerRefreshBusy=false,scannerLastError='';
 const scannerFormat=v=>Number(v).toLocaleString('en-US',{maximumFractionDigits:Math.abs(v)<1?7:Math.abs(v)<100?4:2});
 function scannerIsOpen(){return !$('scannerOverlay').classList.contains('hidden')}
 function scannerOpen(){
  if(scannerIsOpen())return;
  scannerFocusedBefore=document.activeElement;
+ scannerView='current';
+ $('scannerCurrentTab').classList.add('active');$('scannerHistoryTab').classList.remove('active');$('scannerFilter').disabled=false;
  $('scannerOverlay').classList.remove('hidden');
  $('scannerOverlay').setAttribute('aria-hidden','false');
  document.body.style.overflow='hidden';
@@ -1073,6 +1083,31 @@ function renderScannerSnapshot(){
  if(!snap){
   status.textContent=scannerLastError?'Немає зв’язку з локальним сканером':'Отримання результатів…';
   summary.textContent=scannerLastError||'Сканер доступний лише в локальній програмі, не на GitHub Pages.';
+  return;
+ }
+ if(scannerView==='history'){
+  status.textContent='◷ Історія знайдених сценаріїв';
+  summary.textContent='Локально збережено: '+scannerHistory.length+' записів. Історичні сценарії не є актуальними торговими пропозиціями.';
+  if(!scannerHistory.length){
+   const empty=document.createElement('div');empty.className='scanner-empty';
+   empty.textContent='Історія поки порожня. Нові кандидати з’являться тут після завершення сканування.';
+   results.append(empty);
+  }
+  for(const item of scannerHistory){
+   const row=document.createElement('article');row.className='scanner-result scanner-history-row';
+   const info=document.createElement('div'),head=document.createElement('header'),name=document.createElement('strong');
+   name.textContent=item.symbol||'—';
+   const side=document.createElement('span');side.className='direction '+(item.side==='short'?'short':'long');
+   side.textContent=item.side==='short'?'SHORT':'LONG';
+   head.append(name,side);
+   const detail=document.createElement('div');detail.className='scanner-data';
+   detail.textContent='Вхід '+scannerFormat(item.entry)+' · SL '+scannerFormat(item.stop)+' · TP '+scannerFormat(item.target)+
+    ' · R:R 1:'+Number(item.rr).toFixed(2);
+   const stamp=document.createElement('div');stamp.className='scanner-reason';
+   stamp.textContent='Виявлено: '+(item.detectedAt?new Date(item.detectedAt).toLocaleString('uk-UA'):'час невідомий')+
+    ' · Архівний сигнал (не можна виконувати без нового аналізу)';
+   info.append(head,detail,stamp);row.append(info);results.append(row);
+  }
   return;
  }
  const total=Number(snap.total)||0,done=Number(snap.completed)||0;
@@ -1143,6 +1178,9 @@ async function fetchScannerSnapshot(){
   const response=await fetch('/api/scanner/opportunities',{cache:'no-store',signal:AbortSignal.timeout(10000)});
   if(!response.ok)throw new Error('HTTP '+response.status);
   scannerSnapshot=await response.json();scannerLastError='';
+  const count=Array.isArray(scannerSnapshot.opportunities)?scannerSnapshot.opportunities.length:0;
+  $('scannerAlertCount').textContent=String(count);
+  $('scannerAlertCount').classList.toggle('hidden',count===0);
  }catch(e){
   scannerLastError='Сканер недоступний. Запусти локальний сервер node scripts/local-demo-server.mjs.';
   scannerSnapshot=null;
@@ -1152,6 +1190,24 @@ async function fetchScannerSnapshot(){
 $('openScanner').onclick=scannerOpen;
 $('scannerClose').onclick=scannerClose;
 $('scannerOverlay').onclick=e=>{if(e.target===$('scannerOverlay'))scannerClose()};
+function chooseScannerView(view){
+ scannerView=view;
+ $('scannerCurrentTab').classList.toggle('active',view==='current');
+ $('scannerHistoryTab').classList.toggle('active',view==='history');
+ $('scannerFilter').disabled=view==='history';
+ if(view==='history')fetchScannerHistory();
+ else renderScannerSnapshot();
+}
+async function fetchScannerHistory(){
+ try{
+  const response=await fetch('/api/scanner/history',{cache:'no-store',signal:AbortSignal.timeout(10000)});
+  const data=await response.json();
+  scannerHistory=response.ok&&Array.isArray(data.history)?data.history:[];
+ }catch{scannerHistory=[]}
+ if(scannerIsOpen())renderScannerSnapshot();
+}
+$('scannerCurrentTab').onclick=()=>chooseScannerView('current');
+$('scannerHistoryTab').onclick=()=>chooseScannerView('history');
 $('scannerFilter').onchange=renderScannerSnapshot;
 $('scannerRefresh').onclick=fetchScannerSnapshot;
 document.addEventListener('keydown',e=>{
@@ -1166,6 +1222,8 @@ document.addEventListener('keydown',e=>{
  }
 });
 setInterval(()=>{if(scannerIsOpen()&&!document.hidden)fetchScannerSnapshot()},20000);
+setInterval(()=>{if(!document.hidden&&!scannerIsOpen()&&['localhost','127.0.0.1'].includes(location.hostname))fetchScannerSnapshot()},60000);
+if(['localhost','127.0.0.1'].includes(location.hostname))fetchScannerSnapshot();
 function applyMode(){const demo=state.mode==='demo';document.body.classList.toggle('real-account',!demo);if(!demo)closeHelp();$('demoMode').classList.toggle('active',demo);$('realMode').classList.toggle('active',!demo);setText('footerMode','');setText('executionStatus','');saveLayout()}
 $('demoMode').onclick=()=>{state.mode='demo';applyMode();setDemoConnectionStatus();loadDemoAccountData()};$('realMode').onclick=()=>{state.mode='real';applyMode();setDemoConnectionStatus();showBottom('positions')};
 $('navToggle').onclick=()=>{state.sidebar=!state.sidebar;$('app').classList.toggle('expanded',state.sidebar);saveLayout()};$('sidebarToggle').onclick=()=>$('navToggle').click();
