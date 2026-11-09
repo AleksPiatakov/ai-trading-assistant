@@ -6,8 +6,10 @@ on:
       - public/dashboard.html
       - scripts/local-demo-server.mjs
       - scripts/market-scanner.mjs
+      - scripts/multi-year-research.mjs
       - scripts/strategy-verification.mjs
       - scripts/paper-ledger.mjs
+      - .github/scripts/check-multi-year-research.mjs
       - .github/scripts/check-strategy-verification.mjs
       - .github/scripts/check-research-ui.mjs
       - .github/scripts/check-market-scanner.mjs
@@ -45,6 +47,8 @@ jobs:
           node --check scripts/strategy-verification.mjs
           node --check scripts/paper-ledger.mjs
           node .github/scripts/check-strategy-verification.mjs
+          node --check scripts/multi-year-research.mjs
+          node .github/scripts/check-multi-year-research.mjs
       - name: Produce static preview
         run: |
           mkdir -p _site
