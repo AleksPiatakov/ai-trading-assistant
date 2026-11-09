@@ -1020,6 +1020,8 @@ document.addEventListener('keydown',e=>{
 function initDemoSettings(){
  const isLocal=['127.0.0.1','localhost'].includes(location.hostname);
  const form=$('demoCredentialsForm'),note=$('demoSettingsHelp'),result=$('demoSettingsResult'),chip=$('demoKeyState');
+ if(form.dataset.initialized==='true')return;
+ form.dataset.initialized='true';
  const clear=$('demoClearCredentials'),save=$('demoSaveCredentials');
  if(!isLocal){
    form.classList.add('hidden');
