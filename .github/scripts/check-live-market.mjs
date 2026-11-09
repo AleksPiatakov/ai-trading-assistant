@@ -29,6 +29,17 @@ await page.addInitScript(()=>{
 await page.route('**/api/market/instruments',route=>route.fulfill({
   status:200,contentType:'application/json',body:JSON.stringify({category:'linear',symbols:['BTCUSDT','ETHUSDT']})
 }));
+await page.route('**/api/scanner/opportunities',route=>route.fulfill({
+ status:200,contentType:'application/json',body:JSON.stringify({
+  status:'ready',completed:2,total:2,updatedAt:new Date().toISOString(),errors:[],
+  opportunities:[
+   {symbol:'ETHUSDT',side:'long',entry:55,stop:50,target:65,rr:2,confirmations:3,
+    scannedAt:new Date().toISOString(),reasons:['EMA 1год/4год узгоджені']},
+   {symbol:'BTCUSDT',side:'short',entry:100,stop:105,target:90,rr:2,confirmations:4,
+    scannedAt:new Date().toISOString(),reasons:['EMA 1год/4год узгоджені']}
+  ]
+ })
+}));
 const candleBase={BTCUSDT:100,ETHUSDT:50};
 await page.route('**/api/market/candles?*',route=>{
   const url=new URL(route.request().url()),symbol=url.searchParams.get('symbol');
@@ -124,6 +135,15 @@ await page.evaluate(()=>{
   }});
 });
 await page.waitForFunction(()=>document.querySelector('#quote')?.textContent==='55.75',{timeout:4000});
+await page.locator('#openScanner').click();
+if(!await page.locator('#scannerOverlay').isVisible())errors.push('Scanner modal did not open');
+await page.waitForFunction(()=>document.querySelectorAll('.scanner-result').length===2,{timeout:5000});
+await page.locator('#scannerFilter').selectOption('short');
+if(await page.locator('.scanner-result').count()!==1)errors.push('Scanner direction filter failed');
+await page.locator('#scannerFilter').selectOption('all');
+await page.locator('#scannerClose').click();
+if(await page.locator('#scannerOverlay').isVisible())errors.push('Scanner modal did not close');
+if(await page.locator('#executeButton').isEnabled())errors.push('Scanner enabled order submission');
 const selected=await page.locator('#marketSymbolText').innerText();
 if(selected!=='ETHUSDT')errors.push('Symbol switching failed');
 // The market and timeframe are user preferences and must survive a full page reload.
