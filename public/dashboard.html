@@ -979,6 +979,7 @@ body.workspace-standalone #rightPanel.detached-panel.is-minimized{height:auto!im
 .strategy-research-controls label{display:flex;align-items:center;gap:10px;color:#c5d8f0;font-size:12px}
 .strategy-research-controls select{background:#152e54;color:#f0f7ff;border:1px solid #607ca9;border-radius:7px;padding:7px}
 .strategy-research-content{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;padding:16px 20px;min-height:0;flex:1;overflow:auto}
+.strategy-research-content.hidden,.strategy-research-controls.hidden{display:none!important}
 .strategy-research-card{border:1px solid #395b87;background:#102746;border-radius:12px;display:flex;flex-direction:column;gap:11px;padding:14px;min-width:0}
 .strategy-research-card header{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
 .strategy-research-card h3{font-size:15px;margin:0}.strategy-research-card small{font-size:10px;color:#9cb9dd}
@@ -3068,6 +3069,23 @@ canvas.addEventListener('dblclick',e=>{e.preventDefault();chartResetView()});
 /* Strategy verification: no credentials, order endpoint or invented performance data. */
 let researchPopup=null,researchBusy=false;
 const researchFormat=(n,d=2)=>Number.isFinite(n)?Number(n).toFixed(d):'—';
+let activeResearchTab='overview';
+function selectResearchTab(name){
+ activeResearchTab=name==='all'?'all':'overview';
+ const all=activeResearchTab==='all';
+ $('researchOverviewPanel').classList.toggle('hidden',all);
+ $('researchOverviewControls').classList.toggle('hidden',all);
+ $('researchAllMarketsSection').classList.toggle('hidden',!all);
+ for(const [id,active] of [['researchTabOverview',!all],['researchTabAll',all]]){
+  $(id).classList.toggle('active',active);
+  $(id).setAttribute('aria-selected',String(active));
+ }
+ try{sessionStorage.setItem('ata-research-tab',activeResearchTab)}catch{}
+ if(all)refreshAllMarketsResearch();
+}
+$('researchTabOverview').onclick=()=>selectResearchTab('overview');
+$('researchTabAll').onclick=()=>selectResearchTab('all');
+try{selectResearchTab(sessionStorage.getItem('ata-research-tab')||'overview')}catch{selectResearchTab('overview')}
 function researchIsVisible(){return !$('strategyResearchOverlay').classList.contains('hidden')}
 function researchDisplay(){
  $('strategyResearchOverlay').classList.remove('hidden');
@@ -3187,7 +3205,37 @@ function renderAllMarkets(data){
   data.status==='partial'?'Частково завершено · '+completed+'/'+total:
   data.status==='error'?'Помилка завантаження':'Тест не запускався';
  $('researchAllStatus').textContent=status;
- $('researchAllProgressBar').style.width=Math.max(0,Math.min(100,Number(data.progress)||0))+'%';
+ const progress=Math.max(0,Math.min(100,Number(data.progress)||0));
+ $('researchAllProgressBar').style.width=progress+'%';
+ $('researchAllProgress').setAttribute('aria-valuenow',String(progress));
+ $('researchTabProgress').textContent=data.status==='running'?' · '+progress+'%':'';
+ const step=$('researchAllStep');
+ step.textContent=data.status==='running'?
+  'Зараз: '+(data.symbol||'перевіряємо інструменти')+' · '+(data.stage||'підготовка')+
+  ' · завершено '+completed+' із '+total+' пар · загальний прогрес приблизно '+progress+'%':
+  data.status==='complete'?'Тестування завершено. Результати збережені в цьому сеансі локального сервера.':
+  data.status==='partial'?'Частина пар завершилася з помилкою — перевірте примітки нижче.':
+  data.status==='error'?'Тестування зупинилося через помилку.':'Ще немає завантаження.';
+ const perPair=$('researchPairsProgress');perPair.replaceChildren();
+ for(const p of data.pairProgress||[]){
+  const box=document.createElement('article');box.className='research-pair-item';
+  box.dataset.status=p.status||'queued';
+  const header=document.createElement('header');
+  const name=document.createElement('strong');name.textContent=p.symbol||'—';
+  const percent=document.createElement('small');
+  percent.textContent=p.status==='complete'?'Готово':p.status==='error'?'Помилка':p.status==='queued'?'У черзі':String(Math.round(Number(p.progress)||0))+'%';
+  header.append(name,percent);
+  const track=document.createElement('div');track.className='research-pair-track';
+  const fill=document.createElement('div');fill.style.width=Math.max(0,Math.min(100,Number(p.progress)||0))+'%';track.append(fill);
+  const detail=document.createElement('small');detail.textContent=p.error||p.stage||'У черзі';
+  const tfs=document.createElement('div');tfs.className='research-pair-tfs';
+  const names={'15':'15 хв','60':'1 год','240':'4 год','D':'1 день'};
+  tfs.textContent=Object.entries(p.timeframes||{}).map(([tf,t])=>{
+   const loaded=Number(t.loaded)||0,expected=Number(t.expected)||0;
+   return (names[tf]||tf)+': '+loaded.toLocaleString('uk-UA')+' / '+expected.toLocaleString('uk-UA');
+  }).join(' · ')||'Свічки ще не завантажені';
+  box.append(header,track,detail,tfs);perPair.append(box);
+ }
  const metricRoot=$('researchAllMetrics');metricRoot.replaceChildren();
  const add=(name,value)=>metricRoot.append(researchAllSummaryMetric(name,value));
  const tr=data.train||{},out=data.test||{};
