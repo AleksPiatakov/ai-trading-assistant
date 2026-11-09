@@ -887,7 +887,7 @@ async function loadCandles(){
    }
    setText('quoteMeta','USDT Perpetual');
    setText('footerMarket','');
-   draw();
+   prepareAnalysis();draw();
  }catch(e){
    if(requestId!==currentCandleRequest)return;
    setText('chartNote',String(e.message||'Немає зв’язку з Bybit'));
@@ -925,7 +925,53 @@ function draw(){
  c.font='11px system-ui';c.fillStyle='#aebfdf';c.fillText(state.symbol+' · '+timeframeLabel(state.tf),21,26);
  c.fillStyle='#9eadd0';c.fillText('EMA 50',22,44);
  c.fillText('RSI (14)',22,rsiTop+14);c.fillText('MACD (12, 26, 9)',22,macdTop+14);
- state.range=null;
+
+ const candles=state.candles,analysis=state.analysis;
+ if(candles.length>=2){
+   const left=18,plotWidth=right-left,step=plotWidth/candles.length;
+   const lows=candles.map(x=>x.l),highs=candles.map(x=>x.h);
+   const low=Math.min(...lows),high=Math.max(...highs);
+   const pad=Math.max((high-low)*0.09,Math.abs(high)*0.0001,0.00000001);
+   const min=low-pad,max=high+pad;
+   const yPrice=value=>priceBottom-(value-min)/(max-min)*(priceBottom-priceTop);
+   state.range={min,max,top:priceTop,bottom:priceBottom};
+   c.save();c.beginPath();c.rect(left,priceTop,plotWidth,priceBottom-priceTop);c.clip();
+   for(let i=0;i<candles.length;i++){
+     const x=left+step*(i+0.5),item=candles[i],up=item.c>=item.o;
+     c.strokeStyle=c.fillStyle=up?'#20d5a2':'#f16681';c.lineWidth=1;
+     c.beginPath();c.moveTo(x,yPrice(item.h));c.lineTo(x,yPrice(item.l));c.stroke();
+     const yOpen=yPrice(item.o),yClose=yPrice(item.c),bar=Math.max(1.5,Math.min(8,step*0.68));
+     c.fillRect(x-bar/2,Math.min(yOpen,yClose),bar,Math.max(1,Math.abs(yOpen-yClose)));
+   }
+   const line=(values,transform,color)=>{
+     if(!Array.isArray(values))return;c.strokeStyle=color;c.lineWidth=1.5;c.beginPath();
+     let connected=false;
+     for(let i=0;i<values.length;i++){
+       const v=values[i],x=left+step*(i+0.5);
+       if(!Number.isFinite(v)){connected=false;continue}
+       const y=transform(v);if(!connected)c.moveTo(x,y);else c.lineTo(x,y);connected=true;
+     }c.stroke();
+   };
+   if(analysis)line(analysis.e50,yPrice,'#e6be5d');
+   c.restore();
+   c.font='10px system-ui';c.textAlign='right';c.fillStyle='#9eb5d4';
+   for(let j=0;j<=5;j++){
+     const v=max-(max-min)*j/5,yy=priceTop+(priceBottom-priceTop)*j/5;
+     c.fillText(v.toLocaleString('en-US',{maximumFractionDigits:v<1?8:4}),width-4,yy+3);
+   }
+   c.textAlign='left';
+   if(analysis){
+     c.save();c.beginPath();c.rect(left,rsiTop,plotWidth,rsiBottom-rsiTop);c.clip();
+     line(analysis.rsiLine,v=>rsiBottom-((v||0)/100)*(rsiBottom-rsiTop),'#bb91ff');c.restore();
+     const macdNumbers=[...analysis.macdLine,...analysis.signalLine].filter(Number.isFinite);
+     const bound=Math.max(0.00000001,...macdNumbers.map(Math.abs));
+     const macdY=v=>(macdTop+macdBottom)/2-v/bound*(macdBottom-macdTop)*0.44;
+     c.save();c.beginPath();c.rect(left,macdTop,plotWidth,macdBottom-macdTop);c.clip();
+     line(analysis.macdLine,macdY,'#66b9fb');
+     line(analysis.signalLine,macdY,'#f7bd78');
+     c.restore();
+   }
+ }
 }
 const canvas=$('chart');canvas.addEventListener('pointerdown',e=>{if(!state.range)return;const r=canvas.getBoundingClientRect(),yy=e.clientY-r.top;for(const f of ['entry','stop','target']){const v=num(f);const target=state.range.top+(state.range.max-v)/(state.range.max-state.range.min)*(state.range.bottom-state.range.top);if(v>0&&Math.abs(target-yy)<13){state.drag=f;canvas.setPointerCapture(e.pointerId);canvas.style.cursor='ns-resize';return}}});canvas.addEventListener('pointermove',e=>{if(!state.drag||!state.range)return;const r=canvas.getBoundingClientRect(),yy=e.clientY-r.top,rg=state.range;const bounded=Math.min(rg.bottom,Math.max(rg.top,yy)),price=rg.max-(bounded-rg.top)/(rg.bottom-rg.top)*(rg.max-rg.min);$(state.drag).value=price.toFixed(2);state.levels[state.drag]=price;calculate()});const stopDrag=()=>{state.drag=null;canvas.style.cursor='crosshair'};canvas.addEventListener('pointerup',stopDrag);canvas.addEventListener('pointercancel',stopDrag);window.addEventListener('resize',draw);applyMode();showBottom('positions');loadMarketList();if(localDemo())loadDemoAccountData();
 })();
