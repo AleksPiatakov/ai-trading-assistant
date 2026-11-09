@@ -298,7 +298,20 @@ button:focus-visible,input:focus-visible{outline:2px solid #9d88ff;outline-offse
 .account-icon{background:linear-gradient(#19335e,#101f43);border-radius:50%;width:43px;height:43px;border:1px solid #314f7e}
 .account-icon svg{width:24px}
 .header-popover{position:absolute;z-index:40;top:calc(100% - 2px);right:10px;max-width:350px;min-width:250px;color:#dce8fc;font-size:12px;line-height:1.5;padding:14px;border:1px solid #436295;border-radius:10px;background:#0b203d;box-shadow:0 10px 28px #0008}
-@media(min-width:1051px){.top.top-reference{min-height:76px;height:76px}}
+@media(min-width:1051px){
+ .top.top-reference{min-height:76px;height:76px;margin-left:calc(-68px - 10px);padding-left:12px}
+ .nav{padding-top:87px}
+ .app.expanded .top.top-reference{margin-left:calc(-206px - 10px)}
+}
+@media(max-width:1050px){
+ .nav{padding-top:105px}
+ .top.top-reference{margin-left:calc(-68px - 10px);padding-left:12px}
+ .app.expanded .top.top-reference{margin-left:calc(-206px - 10px)}
+}
+@media(max-width:680px){
+ .top.top-reference{margin-left:calc(-49px - 6px)}
+ .app.expanded .top.top-reference{margin-left:calc(-170px - 6px)}
+}
 @media(max-width:1750px){.top-reference .header-brand{gap:10px}.top-reference .brand-candles{flex-basis:51px;width:51px;gap:5px}.top-reference h1{font-size:clamp(15px,1.25vw,21px)}.top-reference h1 small{font-size:.76em}.header-controls{gap:8px}.top-reference .mode button{padding:8px 10px;font-size:12px}.top-reference .exchange-pill{min-width:170px;padding:0 9px}.top-reference .exchange-pill b{font-size:11px}.top-reference .clock-status{min-width:97px;font-size:11px}.header-icon-button{width:34px}.header-icon-button svg{width:24px}}
 @media(max-width:1320px){.top-reference h1 small{display:none}.top-reference .brand-candles{flex-basis:40px;width:40px}.top-reference .header-brand{gap:8px}.header-controls{gap:5px}.top-reference .mode button{font-size:11px;padding:7px 8px}.top-reference .exchange-pill{min-width:auto}.top-reference .clock-status{min-width:80px}}
 @media(max-width:1050px){.top.top-reference{height:auto;min-height:75px;flex-wrap:wrap;gap:5px;padding:9px 8px}.top-reference .header-brand{flex-basis:100%;padding:0}.top-reference .header-controls{margin-left:0;gap:7px;max-width:100%;overflow-x:auto;padding:4px 0}.top-reference h1{font-size:17px}.top-reference h1 small{display:inline}.top-reference .clock-status{display:flex}}
