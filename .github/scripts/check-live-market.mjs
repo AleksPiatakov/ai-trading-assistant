@@ -84,11 +84,11 @@ await page.mouse.move(chartBox.x+chartBox.width*.25,chartBox.y+chartBox.height*.
 await page.mouse.down();
 await page.mouse.move(chartBox.x+chartBox.width*.43,chartBox.y+chartBox.height*.37,{steps:6});
 await page.mouse.up();
-const drawingCount=await page.evaluate(()=>JSON.parse(localStorage.getItem('ata-drawings-BTCUSDT|D')||'[]').length);
+const drawingCount=await page.evaluate(()=>JSON.parse(localStorage.getItem('ata-drawings-BTCUSDT|W')||'[]').length);
 if(drawingCount!==1)errors.push('Trend drawing not saved');
 await page.locator('[data-chart-tool="eraser"]').click();
 await page.mouse.click(chartBox.x+chartBox.width*.25,chartBox.y+chartBox.height*.24);
-const afterErase=await page.evaluate(()=>JSON.parse(localStorage.getItem('ata-drawings-BTCUSDT|D')||'[]').length);
+const afterErase=await page.evaluate(()=>JSON.parse(localStorage.getItem('ata-drawings-BTCUSDT|W')||'[]').length);
 if(afterErase!==0)errors.push('Eraser failed to remove line');
 await page.locator('[data-chart-tool="home"]').click();
 await page.locator('#settingsNav').click();
