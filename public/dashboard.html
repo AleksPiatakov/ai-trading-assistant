@@ -377,17 +377,34 @@ button:focus-visible,input:focus-visible{outline:2px solid #9d88ff;outline-offse
  .top-reference .exchange-pill{gap:6px}
 }
 @media(max-width:1050px){.top-reference .header-controls{gap:10px}.top-reference .exchange-pill{gap:7px}}
+
+/* Sidebar icons matching the approved reference crop: glowing white outlines and 7 clear destinations. */
+.nav.nav-reference{background:linear-gradient(180deg,#081730 0%,#0a1b38 56%,#0a1a37 100%);border-right:1px solid #26446d;gap:6px;padding:12px 8px 12px}
+.nav-reference .nav-action{min-height:51px;height:51px;border:1px solid transparent;border-radius:11px;display:flex;align-items:center;justify-content:center;padding:6px;color:#f1f5ff;background:transparent}
+.nav-reference .nav-action .ico{width:31px;height:31px;display:grid;place-items:center;flex:none}
+.nav-reference .nav-action .ico svg{width:29px;height:29px;filter:drop-shadow(0 1px 1px #fff8) drop-shadow(0 1px 2px #7893c850)}
+.nav-reference .nav-action.active{background:linear-gradient(145deg,#6f39ef 0%,#4c28ad 64%,#29266d 100%);border-color:#ae75ff;box-shadow:0 0 0 1px #9b59ff66,inset 0 1px 2px #d3baffad,0 0 15px #8747ff84}
+.nav-reference .nav-action.active svg{filter:drop-shadow(0 0 2px #fff) drop-shadow(0 0 4px #b7a6ff)}
+.nav-reference .nav-action:hover:not(.active){background:#152b50;border-color:#34507c}
+.nav-reference #sidebarToggle{margin-top:auto;color:#e3eeff}
+.nav-reference #sidebarToggle .ico svg{width:28px;height:28px}
+.app.expanded .nav-reference .nav-action{justify-content:flex-start;gap:13px;padding-left:12px}
+.app.expanded .nav-reference #sidebarToggle .ico{transform:rotate(180deg)}
+@media(min-width:1051px){.nav.nav-reference{padding-top:71px}}
+@media(max-width:1050px){.nav.nav-reference{padding-top:85px}}
+@media(max-width:680px){.nav.nav-reference{padding-left:4px;padding-right:4px;gap:4px}.nav-reference .nav-action{min-height:42px;height:42px;padding:5px}.nav-reference .nav-action .ico,.nav-reference .nav-action .ico svg{width:24px;height:24px}}
 </style></head>
 <body><div class="app" id="app">
-<nav class="nav" aria-label="Навігація">
-
-<button class="active" title="Термінал"><span class="ico"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round"><path d="m3 10 9-7 9 7v10H3z"/><path d="M9 20v-7h6v7"/></svg></span><span class="nav-label">Термінал</span></button>
-<button id="marketsNav" title="Ринки"><span class="ico"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round"><path d="M4 18V9M9 18V5M14 18v-8M19 18V3"/></svg></span><span class="nav-label">Ринки</span></button>
-<button id="analysisNav" title="Аналіз"><span class="ico"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round"><path d="m12 2 2.6 7.4L22 12l-7.4 2.6L12 22l-2.6-7.4L2 12l7.4-2.6L12 2z"/></svg></span><span class="nav-label">Аналіз</span></button>
-<button id="riskNav" title="Ризик"><span class="ico"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h2M14 12h2M8 16h2M14 16h2"/></svg></span><span class="nav-label">Ризик</span></button>
-<button id="journalNav" title="Журнал"><span class="ico"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round"><path d="M5 3h11l3 3v15H5z"/><path d="M8 11h8M8 15h8M8 18h6"/></svg></span><span class="nav-label">Журнал</span></button>
-<button id="learnNav" title="Пояснення"><span class="ico"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round"><path d="M4 5a2 2 0 0 1 2-2h5a3 3 0 0 1 3 3v15H6a2 2 0 0 0-2 0zM20 5a2 2 0 0 0-2-2h-4v18h4a2 2 0 0 1 2 0z"/></svg></span><span class="nav-label">Навчання</span></button>
-<div class="nav-spacer"></div><button id="settingsNav" title="Налаштування"><span class="ico"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M10 2h4l.6 2.6 2 .8 2.3-1.4 2.8 2.8-1.4 2.3.8 2L24 12l-2.9 1-.8 2 1.4 2.3-2.8 2.8-2.3-1.4-2 .8L14 22h-4l-.6-2.6-2-.8-2.3 1.4-2.8-2.8 1.4-2.3-.8-2L0 12l2.9-1 .8-2-1.4-2.3 2.8-2.8 2.3 1.4 2-.8z" transform="translate(1 1) scale(.916)"/></svg></span><span class="nav-label">Налаштування</span></button>
+<nav class="nav nav-reference" aria-label="Навігація">
+<button id="homeNav" class="nav-action active" title="Головна" aria-label="Головна" type="button"><span class="ico"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.35" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="M4 14 16 4l12 10v13H4V14Z"/><path d="M12 27v-9h8v9"/><path d="M23.5 6.5v-3h4v6.3"/></svg></span><span class="nav-label">Головна</span></button>
+<button id="marketsNav" class="nav-action" title="Ринки" aria-label="Ринки" type="button"><span class="ico"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.35" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="M5 27V19M12 27V13M19 27V9M26 27V3"/></svg></span><span class="nav-label">Ринки</span></button>
+<button id="analysisNav" class="nav-action" title="AI-помічник" aria-label="AI-помічник" type="button"><span class="ico"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.35" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="M15.5 7c-3-4-8-1.5-8 2.5-4 1-5.1 6-.8 8-2.1 4 1.5 8 5 7.3 0 3.6 4 4.4 4 1.3V7ZM16.5 7c3-4 8-1.5 8 2.5 4 1 5.1 6 .8 8 2.1 4-1.5 8-5 7.3 0 3.6-4 4.4-4 1.3V7Z"/><path d="M11 10v4l-3 2M21 10v4l3 2M12 20l3-3M20 20l-3-3"/></svg></span><span class="nav-label">AI-помічник</span></button>
+<button id="journalNav" class="nav-action" title="Проєкти та журнал" aria-label="Проєкти та журнал" type="button"><span class="ico"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.35" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="m16 3 13 8-13 8L3 11l13-8ZM3 17l13 8 13-8M3 23l13 8 13-8"/></svg></span><span class="nav-label">Журнал</span></button>
+<button id="riskNav" class="nav-action" title="Калькулятор ризику" aria-label="Калькулятор ризику" type="button"><span class="ico"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.35" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><rect x="5" y="3" width="22" height="26" rx="2"/><path d="M10 9h12M10 16h3M19 16h3M10 22h3M19 22h3"/></svg></span><span class="nav-label">Ризик</span></button>
+<button id="learnNav" class="nav-action" title="Навчання" aria-label="Навчання" type="button"><span class="ico"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.35" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="M16 8C11 3 6 4 3 5v22c5-2 10-1 13 3 3-4 8-5 13-3V5c-4-2-9-1-13 3ZM16 8v22"/></svg></span><span class="nav-label">Навчання</span></button>
+<button id="settingsNav" class="nav-action" title="Налаштування" aria-label="Налаштування" type="button"><span class="ico"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.35" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="M3 8h26M3 16h26M3 24h26"/><circle cx="12" cy="8" r="3.2" fill="#0b1934"/><circle cx="23" cy="16" r="3.2" fill="#0b1934"/><circle cx="9" cy="24" r="3.2" fill="#0b1934"/></svg></span><span class="nav-label">Налаштування</span></button>
+<div class="nav-spacer"></div>
+<button id="sidebarToggle" class="nav-action" title="Розгорнути або згорнути навігацію" aria-label="Розгорнути або згорнути навігацію" type="button"><span class="ico"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.35" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="m9 7 9 9-9 9M18 7l9 9-9 9"/></svg></span><span class="nav-label">Згорнути меню</span></button>
 </nav>
 <div class="workspace"><header class="top top-reference" aria-label="Головна панель трейдера">
 <div class="header-brand">
@@ -447,7 +464,7 @@ function saveLayout(){try{localStorage.setItem('ata-layout',JSON.stringify({mode
 try{const old=JSON.parse(localStorage.getItem('ata-layout')||'{}');if(old.mode==='real')state.mode='real';if(old.sidebar)state.sidebar=true}catch{}
 function applyMode(){const demo=state.mode==='demo';$('demoMode').classList.toggle('active',demo);$('realMode').classList.toggle('active',!demo);setText('footerMode','Режим: '+(demo?'Навчання (Bybit Demo)':'Торгівля (Bybit Real)')+' · торгівля через API поки вимкнена');setText('executionStatus',demo?'Bybit Demo API ще не налаштований. Це не тестове виконання ордерів: кнопка заблокована до безпечного підключення.':'Bybit Real API не налаштований. Реальні ордери заблоковано до окремого підтвердження і підключення.');saveLayout()}
 $('demoMode').onclick=()=>{state.mode='demo';applyMode()};$('realMode').onclick=()=>{state.mode='real';applyMode()};
-$('navToggle').onclick=()=>{state.sidebar=!state.sidebar;$('app').classList.toggle('expanded',state.sidebar);saveLayout()};$('app').classList.toggle('expanded',state.sidebar);
+$('navToggle').onclick=()=>{state.sidebar=!state.sidebar;$('app').classList.toggle('expanded',state.sidebar);saveLayout()};$('sidebarToggle').onclick=()=>$('navToggle').click();$('homeNav').onclick=()=>window.scrollTo({top:0,behavior:'smooth'});$('app').classList.toggle('expanded',state.sidebar);
 function fold(btn,content){$(btn).onclick=()=>{$(content).classList.toggle('hidden');$(btn).textContent=$(content).classList.contains('hidden')?'+':'−'}}
 fold('foldRisk','riskContent');fold('foldOrder','orderContent');$('foldAI').onclick=()=>{$('aiCard').querySelector('.foldable').classList.toggle('hidden');$('foldAI').textContent=$('aiCard').querySelector('.foldable').classList.contains('hidden')?'+':'−'};
 $('hideBottom').onclick=()=>{ $('bottomContent').classList.toggle('hidden');$('hideBottom').textContent=$('bottomContent').classList.contains('hidden')?'+':'−'};
