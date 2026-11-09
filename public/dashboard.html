@@ -943,6 +943,26 @@ body.scanner-standalone .scanner-summary,body.scanner-standalone .scanner-result
 #autoPlanStatus{flex:1}
 #autoPlanReset{padding:4px 8px;font-size:10px}
 @media(max-width:740px){.auto-plan-strip{flex-wrap:wrap}}
+
+/* Dedicated browser window mode for the trading workspace. */
+body.workspace-standalone{background:#081731;min-height:100dvh;overflow:hidden}
+body.workspace-standalone .app{display:block!important;min-height:100dvh;padding:0!important;margin:0!important;max-width:none!important;background:#081731}
+body.workspace-standalone .app>.nav,body.workspace-standalone .app>.top,
+body.workspace-standalone #chartCard,body.workspace-standalone #positions,
+body.workspace-standalone .foot,body.workspace-standalone .scanner-toast{display:none!important}
+body.workspace-standalone .layout{display:block!important;margin:0!important;padding:0!important}
+body.workspace-standalone #rightPanel.detached-panel{
+ position:fixed!important;inset:0!important;display:flex!important;
+ width:100vw!important;height:100dvh!important;max-height:none!important;max-width:none!important;
+ border:0!important;border-radius:0!important;padding:0 12px 16px!important;
+ box-sizing:border-box;resize:none!important;overflow:auto!important;box-shadow:none!important
+}
+body.workspace-standalone #rightPanel.detached-panel .detached-heading{
+ margin:0 -12px 10px;padding:10px 15px;cursor:default;min-height:54px
+}
+body.workspace-standalone #rightPanel.detached-panel>.card{width:100%;max-width:none}
+body.workspace-standalone #rightPanel.detached-panel.is-minimized{height:auto!important}
+@media(max-width:680px){body.workspace-standalone #rightPanel.detached-panel{left:0!important;right:0!important;top:0!important}}
 </style></head>
 <body><div class="app" id="app">
 <nav class="nav nav-reference" aria-label="Навігація">
@@ -1203,7 +1223,7 @@ function freshScannerCandidate(p){
  return Math.abs(target-entry)/Math.abs(entry-stop)>=1.5;
 }
 function maybePrepareAutoPlan(){
- if(scannerStandalone||!autoPlanEnabled)return;
+ if(scannerStandalone||workspaceStandalone||!autoPlanEnabled)return;
  if(autoDraft||manualPlanLocked||!emptyPlan()){autoStatus(autoDraft?'Автоплан '+autoDraft.symbol+' підготовлено · рівні заблоковано від автозаміни':'Власний план захищено · автозаміна призупинена');return}
  if((Array.isArray(demoAccount?.positions)&&demoAccount.positions.length)||(Array.isArray(demoAccount?.orders)&&demoAccount.orders.length)){autoStatus('Є активні позиції або ордери · автопідготовку призупинено');return}
  const snap=scannerSnapshot;
@@ -1237,6 +1257,8 @@ $('autoPlanReset').onclick=()=>{
 };
 const scannerFormat=v=>Number(v).toLocaleString('en-US',{maximumFractionDigits:Math.abs(v)<1?7:Math.abs(v)<100?4:2});
 const scannerStandalone=new URLSearchParams(location.search).get('scanner')==='1';
+const workspaceStandalone=new URLSearchParams(location.search).get('workspace')==='1';
+if(workspaceStandalone)document.body.classList.add('workspace-standalone');
 let scannerPopup=null;
 if(scannerStandalone)document.body.classList.add('scanner-standalone');
 function scannerIsOpen(){return !$('scannerOverlay').classList.contains('hidden')}
@@ -2893,6 +2915,23 @@ const tradeWindow=$('rightPanel');
 const windowSections={ai:'aiCard',risk:'riskCard',order:'orderCard'};
 const sectionNames={ai:'✧ AI Помічник трейдера',risk:'▣ Розрахунок позиції',order:'➤ Виконати угоду'};
 let currentWindowSection='ai';
+let workspacePopup=null;
+function launchWorkspace(section){
+ if(workspacePopup&&!workspacePopup.closed){
+  workspacePopup.postMessage({type:'ata-workspace-section',section},location.origin);
+  workspacePopup.focus();return true;
+ }
+ const url=new URL(location.href);
+ url.searchParams.delete('scanner');url.searchParams.delete('view');
+ url.searchParams.set('workspace','1');url.searchParams.set('section',section);
+ workspacePopup=window.open(url.href,'ata-trader-assistant','popup=yes,width=1040,height=900,resizable=yes,scrollbars=yes');
+ return Boolean(workspacePopup);
+}
+window.addEventListener('message',e=>{
+ if(workspaceStandalone&&e.origin===location.origin&&e.source===window.opener&&e.data?.type==='ata-workspace-section'){
+  openDetachedWindow(['ai','risk','order'].includes(e.data.section)?e.data.section:'ai');
+ }
+});
 function refreshDetachedWindow(){
  const isOpen=!tradeWindow.classList.contains('is-closed');
  const minimized=tradeWindow.classList.contains('is-minimized');
@@ -2906,6 +2945,7 @@ function refreshDetachedWindow(){
  requestAnimationFrame(draw);
 }
 function openDetachedWindow(section='ai'){
+ if(!workspaceStandalone&&!scannerStandalone&&launchWorkspace(section))return;
  currentWindowSection=section;
  tradeWindow.classList.remove('is-closed','is-minimized');
  $('minimizeAssistantWindow').textContent='−';
@@ -2916,7 +2956,10 @@ $('openAssistantWindow').addEventListener('click',()=>openDetachedWindow('ai'));
 $('openRiskWindow').addEventListener('click',()=>openDetachedWindow('risk'));
 $('openOrderWindow').addEventListener('click',()=>openDetachedWindow('order'));
 tradeWindow.querySelectorAll('[data-window-section]').forEach(btn=>btn.addEventListener('click',()=>openDetachedWindow(btn.dataset.windowSection)));
-$('closeAssistantWindow').addEventListener('click',()=>{tradeWindow.classList.add('is-closed');refreshDetachedWindow()});
+$('closeAssistantWindow').addEventListener('click',()=>{
+ if(workspaceStandalone){window.close();return}
+ tradeWindow.classList.add('is-closed');refreshDetachedWindow()
+});
 $('minimizeAssistantWindow').addEventListener('click',()=>{
  const isMinimized=tradeWindow.classList.toggle('is-minimized');
  $('minimizeAssistantWindow').textContent=isMinimized?'□':'−';
@@ -2926,7 +2969,7 @@ $('minimizeAssistantWindow').addEventListener('click',()=>{
 const detachedDragHandle=$('detachedDragHandle');
 let movingDetached=null;
 detachedDragHandle.addEventListener('pointerdown',e=>{
- if(e.button!==0||e.target.closest('button')||window.matchMedia('(max-width:680px)').matches)return;
+ if(workspaceStandalone||e.button!==0||e.target.closest('button')||window.matchMedia('(max-width:680px)').matches)return;
  const rect=tradeWindow.getBoundingClientRect();
  tradeWindow.style.left=rect.left+'px';tradeWindow.style.top=rect.top+'px';tradeWindow.style.right='auto';
  movingDetached={x:e.clientX,y:e.clientY,left:rect.left,top:rect.top};
@@ -2959,6 +3002,10 @@ try{
  }
 }catch{}
 refreshDetachedWindow();
+if(workspaceStandalone){
+ const section=new URLSearchParams(location.search).get('section');
+ openDetachedWindow(['ai','risk','order'].includes(section)?section:'ai');
+}
 if(scannerStandalone){scannerOpenInline();chooseScannerView(new URLSearchParams(location.search).get('view')||'current')}
 else {
  const requestedSymbol=new URLSearchParams(location.search).get('symbol');
