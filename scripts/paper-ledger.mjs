@@ -50,6 +50,9 @@ export function createPaperLedger({path,loadCandles,now=()=>Date.now(),costs=tra
    if(row.status==='waiting-fill'){
     if(!future.length)continue;
     const first=future[0],direction=row.side==='long'?1:-1;
+    if(first.t-observedAt>BAR*2){
+     row.status='rejected';row.reason='market data gap; fill cannot be verified';continue;
+    }
     const entry=first.o*(1+direction*costs.slippagePerSide);
     if(!(direction*(entry-row.stop)>0&&direction*(row.target-entry)>0)){
      row.status='rejected';row.reason='gap invalidated plan';continue;
