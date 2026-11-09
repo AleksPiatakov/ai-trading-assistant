@@ -21,7 +21,7 @@ button:focus-visible,input:focus-visible{outline:2px solid #9d88ff;outline-offse
 .nav button{min-height:44px;display:flex;align-items:center;justify-content:center;gap:12px;color:#afc4e5;background:transparent;border:1px solid transparent;border-radius:10px;padding:7px 10px;text-align:left}
 .nav button:hover{background:#22345b}
 .nav button.active{color:#fff;background:linear-gradient(115deg,#7451f5,#343e96);border-color:#9875ff;box-shadow:0 0 15px #7954e661,inset 0 1px #bda7ff70}
-.nav .ico{font-size:22px;width:25px;line-height:1;text-align:center;flex-shrink:0}
+.nav .ico{font-size:22px;width:25px;line-height:1;text-align:center;flex-shrink:0;display:grid;place-items:center}.nav .ico svg{width:22px;height:22px;display:block}
 .nav-label{display:none;white-space:nowrap;font-weight:600}
 .expanded .nav-label{display:inline}
 .expanded .nav button{justify-content:flex-start}
@@ -171,7 +171,7 @@ button:focus-visible,input:focus-visible{outline:2px solid #9d88ff;outline-offse
  .app.expanded{grid-template-columns:170px minmax(0,1fr)}
  .nav{padding:8px 4px}
  .nav button{min-height:39px;padding:7px 4px}
- .nav .ico{font-size:19px}
+ .nav .ico{font-size:19px}.nav .ico svg{width:19px;height:19px}
  .workspace{padding:0 6px 6px}
  .top h1{font-size:15px;white-space:normal}
  .mode button{padding:6px 8px;font-size:10px}
@@ -194,14 +194,14 @@ button:focus-visible,input:focus-visible{outline:2px solid #9d88ff;outline-offse
 </style></head>
 <body><div class="app" id="app">
 <nav class="nav" aria-label="Навігація">
-<button id="navToggle" title="Згорнути або розгорнути меню"><span class="ico">☰</span><span class="nav-label">Меню</span></button>
-<button class="active" title="Термінал"><span class="ico">⌂</span><span class="nav-label">Термінал</span></button>
-<button id="marketsNav" title="Ринки"><span class="ico">▥</span><span class="nav-label">Ринки</span></button>
-<button id="analysisNav" title="Аналіз"><span class="ico">✧</span><span class="nav-label">Аналіз</span></button>
-<button id="riskNav" title="Ризик"><span class="ico">▣</span><span class="nav-label">Ризик</span></button>
-<button id="journalNav" title="Журнал"><span class="ico">▤</span><span class="nav-label">Журнал</span></button>
-<button id="learnNav" title="Пояснення"><span class="ico">♧</span><span class="nav-label">Навчання</span></button>
-<div class="nav-spacer"></div><button id="settingsNav" title="Налаштування"><span class="ico">⚙</span><span class="nav-label">Налаштування</span></button>
+<button id="navToggle" title="Згорнути або розгорнути меню"><span class="ico"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></span><span class="nav-label">Меню</span></button>
+<button class="active" title="Термінал"><span class="ico"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round"><path d="m3 10 9-7 9 7v10H3z"/><path d="M9 20v-7h6v7"/></svg></span><span class="nav-label">Термінал</span></button>
+<button id="marketsNav" title="Ринки"><span class="ico"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round"><path d="M4 18V9M9 18V5M14 18v-8M19 18V3"/></svg></span><span class="nav-label">Ринки</span></button>
+<button id="analysisNav" title="Аналіз"><span class="ico"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round"><path d="m12 2 2.6 7.4L22 12l-7.4 2.6L12 22l-2.6-7.4L2 12l7.4-2.6L12 2z"/></svg></span><span class="nav-label">Аналіз</span></button>
+<button id="riskNav" title="Ризик"><span class="ico"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h2M14 12h2M8 16h2M14 16h2"/></svg></span><span class="nav-label">Ризик</span></button>
+<button id="journalNav" title="Журнал"><span class="ico"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round"><path d="M5 3h11l3 3v15H5z"/><path d="M8 11h8M8 15h8M8 18h6"/></svg></span><span class="nav-label">Журнал</span></button>
+<button id="learnNav" title="Пояснення"><span class="ico"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round"><path d="M4 5a2 2 0 0 1 2-2h5a3 3 0 0 1 3 3v15H6a2 2 0 0 0-2 0zM20 5a2 2 0 0 0-2-2h-4v18h4a2 2 0 0 1 2 0z"/></svg></span><span class="nav-label">Навчання</span></button>
+<div class="nav-spacer"></div><button id="settingsNav" title="Налаштування"><span class="ico"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M10 2h4l.6 2.6 2 .8 2.3-1.4 2.8 2.8-1.4 2.3.8 2L24 12l-2.9 1-.8 2 1.4 2.3-2.8 2.8-2.3-1.4-2 .8L14 22h-4l-.6-2.6-2-.8-2.3 1.4-2.8-2.8 1.4-2.3-.8-2L0 12l2.9-1 .8-2-1.4-2.3 2.8-2.8 2.3 1.4 2-.8z" transform="translate(1 1) scale(.916)"/></svg></span><span class="nav-label">Налаштування</span></button>
 </nav>
 <div class="workspace"><header class="top">
 <h1>AI TRADING ASSISTANT <small>— Персональний помічник трейдера</small></h1>
