@@ -1043,6 +1043,12 @@ body.research-standalone .strategy-research-panel{height:100dvh;max-height:none}
 .research-tab-bar{padding:6px 20px;gap:6px;min-height:46px}
 .research-tab-bar .btn{padding:7px 13px;font-size:12px;min-height:32px}
 .strategy-all-markets{padding:12px 20px 18px;gap:10px}
+.strategy-all-markets>.research-all-actions{order:0}
+.strategy-all-markets>header{order:1}
+.strategy-all-markets>.research-all-progress{order:2}
+.strategy-all-markets>.research-all-step{order:2}
+.research-pair-error-detail summary{font-size:10px;color:#d8b5c0;cursor:pointer}
+.research-pair-error-detail p{font-size:10px;color:#d8b5c0;overflow-wrap:anywhere;margin:5px 0 0;line-height:1.45}
 .research-all-actions{gap:8px 10px;min-height:36px}
 .research-all-actions select{padding:5px 10px;height:32px}
 .research-all-actions .btn{min-height:32px;padding:6px 13px}
@@ -3258,9 +3264,10 @@ function researchAllSummaryMetric(name,value){
 function renderAllMarkets(data){
  researchAllState=data;
  const completed=Number(data.completed)||0,total=Number(data.total)||10;
- const status=data.status==='running'?'Працює: '+(data.symbol||'завантаження')+' · '+String(data.stage||'')+' · '+completed+'/'+total:
-  data.status==='complete'?'Завершено '+completed+'/'+total:
-  data.status==='partial'?'Частково завершено · '+completed+'/'+total:
+ const errors=(data.pairProgress||[]).filter(p=>p.status==='error').length;
+ const status=data.status==='running'?'У процесі · '+completed+'/'+total:
+  data.status==='complete'?'Готово · '+completed+'/'+total:
+  data.status==='partial'?'Готово '+(completed-errors)+'/'+total+' · помилок '+errors:
   data.status==='error'?'Помилка завантаження':'Тест не запускався';
  $('researchAllStatus').textContent=status;
  const progress=Math.max(0,Math.min(100,Number(data.progress)||0));
@@ -3285,14 +3292,24 @@ function renderAllMarkets(data){
   header.append(name,percent);
   const track=document.createElement('div');track.className='research-pair-track';
   const fill=document.createElement('div');fill.style.width=Math.max(0,Math.min(100,Number(p.progress)||0))+'%';track.append(fill);
-  const detail=document.createElement('small');detail.textContent=p.error||p.stage||'У черзі';
+  const detail=document.createElement('div');detail.className='research-pair-status';
+  const isLimit=Boolean(p.error&&/too many visits|rate limit|429/i.test(p.error));
+  detail.textContent=p.error?(isLimit?'Ліміт API Bybit — дані неповні':'Помилка завантаження даних'):
+   p.status==='complete'?'Перевірку завершено':p.stage||'У черзі';
+  if(p.error)box.title='Деталі помилки: '+p.error;
   const tfs=document.createElement('div');tfs.className='research-pair-tfs';
   const names={'15':'15 хв','60':'1 год','240':'4 год','D':'1 день'};
   tfs.textContent=Object.entries(p.timeframes||{}).map(([tf,t])=>{
    const loaded=Number(t.loaded)||0,expected=Number(t.expected)||0;
    return (names[tf]||tf)+': '+loaded.toLocaleString('uk-UA')+' / '+expected.toLocaleString('uk-UA');
   }).join(' · ')||'Свічки ще не завантажені';
-  box.append(header,track,detail,tfs);perPair.append(box);
+  if(p.error){
+   const more=document.createElement('details');more.className='research-pair-error-detail';
+   const summary=document.createElement('summary');summary.textContent='Деталі помилки';
+   const raw=document.createElement('p');raw.textContent=p.error;
+   more.append(summary,raw);box.append(header,track,detail,tfs,more);
+  }else box.append(header,track,detail,tfs);
+  perPair.append(box);
  }
  const metricRoot=$('researchAllMetrics');metricRoot.replaceChildren();
  const add=(name,value)=>metricRoot.append(researchAllSummaryMetric(name,value));
@@ -3318,7 +3335,7 @@ function renderAllMarkets(data){
   ') · підтвердження 4/4 (train '+(strict.train?.closed||0)+' / OOS '+(strict.test?.closed||0)+
   '). Вибрано тільки за train: '+(data.selectedOnTrain==='baseline'?'поточна':data.selectedOnTrain==='strict'?'суворіша':'жоден варіант')+'.';
  $('researchVariantText').textContent=(data.warning||'')+
-  (data.errors?.length?' · Помилки: '+data.errors.join(' | ').slice(0,300):'')+
+  (data.errors?.length?' · Помилки джерела: '+data.errors.join(' | '):'')+
   ' · Історичні котирування кешуються локально; угоди не відкриваються.';
  $('researchAllMarkets').disabled=data.status==='running';
 }
