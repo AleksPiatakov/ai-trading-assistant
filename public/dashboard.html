@@ -1007,65 +1007,173 @@ $('chart').addEventListener('pointerleave',()=>{if(chartTip.textContent==='Пе�
 let dragInfo=null;
 function draw(){
  const canvas=$('chart');if(!canvas)return;
- const box=canvas.getBoundingClientRect(),width=Math.max(320,Math.round(box.width)),height=Math.max(280,Math.round(box.height)),dpr=Math.min(2,devicePixelRatio||1);
+ const rect=canvas.getBoundingClientRect(),width=Math.max(320,Math.round(rect.width)),height=Math.max(280,Math.round(rect.height)),dpr=Math.min(2,devicePixelRatio||1);
  canvas.width=width*dpr;canvas.height=height*dpr;
  const c=canvas.getContext('2d');c.scale(dpr,dpr);
+ const left=12,right=width-91,priceTop=74,priceBottom=height*.655,
+   rsiTop=height*.68,rsiBottom=height*.785,macdTop=height*.816,macdBottom=height*.945;
+ const plotWidth=right-left;
  c.fillStyle='#07172f';c.fillRect(0,0,width,height);
- const right=width-89,priceTop=55,priceBottom=height*.66,rsiTop=height*.68,rsiBottom=height*.81,macdTop=height*.83,macdBottom=height*.965;
- c.lineWidth=1;
- const grid=(top,bottom,rows)=>{c.strokeStyle='#21395f';for(let i=0;i<=8;i++){const x=10+(right-10)*i/8;c.beginPath();c.moveTo(x,top);c.lineTo(x,bottom);c.stroke()}for(let i=0;i<=rows;i++){const y=top+(bottom-top)*i/rows;c.beginPath();c.moveTo(10,y);c.lineTo(right,y);c.stroke()}};
+ const grid=(top,bottom,rows)=>{
+   c.lineWidth=1;c.strokeStyle='#1a3459';
+   for(let i=0;i<=8;i++){const x=left+plotWidth*i/8;c.beginPath();c.moveTo(x,top);c.lineTo(x,bottom);c.stroke()}
+   for(let i=0;i<=rows;i++){const y=top+(bottom-top)*i/rows;c.beginPath();c.moveTo(left,y);c.lineTo(right,y);c.stroke()}
+ };
  grid(priceTop,priceBottom,5);grid(rsiTop,rsiBottom,2);grid(macdTop,macdBottom,2);
- c.strokeStyle='#355580';c.beginPath();c.moveTo(10,rsiTop-8);c.lineTo(right,rsiTop-8);c.moveTo(10,macdTop-8);c.lineTo(right,macdTop-8);c.stroke();
- c.font='11px system-ui';c.fillStyle='#aebfdf';c.fillText(state.symbol+' · '+timeframeLabel(state.tf),21,26);
- c.fillStyle='#9eadd0';c.fillText('EMA 50',22,44);
- c.fillText('RSI (14)',22,rsiTop+14);c.fillText('MACD (12, 26, 9)',22,macdTop+14);
-
+ c.strokeStyle='#4b6082';c.beginPath();c.moveTo(right,priceTop);c.lineTo(right,macdBottom);c.stroke();
+ c.font='12px system-ui';c.textAlign='left';c.fillStyle='#d8e8ff';
+ c.fillText(state.symbol+' · '+timeframeLabel(state.tf)+' · Bybit',left+5,20);
+ c.font='11px system-ui';
  const candles=state.candles,analysis=state.analysis;
- if(candles.length>=2){
-   const left=18,plotWidth=right-left,step=plotWidth/candles.length;
-   const lows=candles.map(x=>x.l),highs=candles.map(x=>x.h);
-   const low=Math.min(...lows),high=Math.max(...highs);
-   const pad=Math.max((high-low)*0.09,Math.abs(high)*0.0001,0.00000001);
-   const min=low-pad,max=high+pad;
-   const yPrice=value=>priceBottom-(value-min)/(max-min)*(priceBottom-priceTop);
-   state.range={min,max,top:priceTop,bottom:priceBottom};
-   c.save();c.beginPath();c.rect(left,priceTop,plotWidth,priceBottom-priceTop);c.clip();
-   for(let i=0;i<candles.length;i++){
-     const x=left+step*(i+0.5),item=candles[i],up=item.c>=item.o;
-     c.strokeStyle=c.fillStyle=up?'#20d5a2':'#f16681';c.lineWidth=1;
-     c.beginPath();c.moveTo(x,yPrice(item.h));c.lineTo(x,yPrice(item.l));c.stroke();
-     const yOpen=yPrice(item.o),yClose=yPrice(item.c),bar=Math.max(1.5,Math.min(8,step*0.68));
-     c.fillRect(x-bar/2,Math.min(yOpen,yClose),bar,Math.max(1,Math.abs(yOpen-yClose)));
+ state.range=null;
+ if(candles.length<2){
+   c.fillStyle='#a8bad9';c.fillText('EMA 50   EMA 200',left+5,48);
+   c.fillText('RSI (14)',left+5,rsiTop+14);c.fillText('MACD (12, 26, 9)',left+5,macdTop+14);
+   return;
+ }
+ const last=candles.at(-1),previous=candles.at(-2);
+ const percent=previous?.c?100*(last.c-previous.c)/previous.c:NaN;
+ const signed=n=>Number.isFinite(n)?(n>0?'+':'')+n.toFixed(2)+'%':'—';
+ const priceFmt=v=>Number(v).toLocaleString('en-US',{maximumFractionDigits:v<1?8:v<100?5:2});
+ const sample=candles;
+ const maxVolume=Math.max(1,...sample.map(x=>x.v||0));
+ const e50=analysis?.e50||null,e200=analysis?.e200||null;
+ const prices=sample.flatMap(x=>[x.l,x.h]);
+ for(const v of [Number($('entry').value),Number($('stop').value),Number($('target').value)])
+   if(Number.isFinite(v)&&v>0)prices.push(v);
+ const minRaw=Math.min(...prices),maxRaw=Math.max(...prices);
+ const pad=Math.max((maxRaw-minRaw)*.09,Math.abs(maxRaw)*.0001,1e-9);
+ const min=minRaw-pad,max=maxRaw+pad;
+ const yPrice=v=>priceBottom-(v-min)/(max-min)*(priceBottom-priceTop);
+ const step=plotWidth/sample.length,barWidth=Math.max(1.3,Math.min(8,step*.66));
+ state.range={min,max,top:priceTop,bottom:priceBottom};
+ // Price scale and OHLC header reflect the actual latest Bybit candle.
+ c.font='11px system-ui';c.fillStyle='#a9bfe1';
+ const ohlc='O '+priceFmt(last.o)+'   H '+priceFmt(last.h)+'   L '+priceFmt(last.l)+'   C '+priceFmt(last.c);
+ c.fillText(ohlc,left+5,40);
+ if(Number.isFinite(percent)){
+   const text=signed(percent);c.fillStyle=percent>=0?'#36df9e':'#f87992';
+   c.fillText(text,left+5+Math.min(c.measureText(ohlc).width+17,plotWidth-100),40);
+ }
+ c.fillStyle='#a8bbd9';
+ const emaText='EMA 50 '+(analysis?priceFmt(analysis.e50.at(-1)):'—')+
+   '    EMA 200 '+(analysis?priceFmt(analysis.e200.at(-1)):'—');
+ c.fillText(emaText,left+5,60);
+ // Candles and volume are clipped to their respective chart regions.
+ c.save();c.beginPath();c.rect(left,priceTop,plotWidth,priceBottom-priceTop);c.clip();
+ const volumeHeight=Math.max(17,(priceBottom-priceTop)*.14);
+ for(let i=0;i<sample.length;i++){
+   const item=sample[i],x=left+step*(i+.5),up=item.c>=item.o;
+   c.fillStyle=up?'#159675bb':'#bb4c64bb';
+   const vheight=(item.v||0)/maxVolume*volumeHeight;
+   c.fillRect(x-barWidth/2,priceBottom-vheight,barWidth,vheight);
+ }
+ for(let i=0;i<sample.length;i++){
+   const item=sample[i],x=left+step*(i+.5),up=item.c>=item.o;
+   c.strokeStyle=c.fillStyle=up?'#22d9a5':'#ee627c';c.lineWidth=1;
+   c.beginPath();c.moveTo(x,yPrice(item.h));c.lineTo(x,yPrice(item.l));c.stroke();
+   const yo=yPrice(item.o),yc=yPrice(item.c);
+   c.fillRect(x-barWidth/2,Math.min(yo,yc),barWidth,Math.max(1,Math.abs(yo-yc)));
+ }
+ const line=(values,yFn,color,thickness=1.65)=>{
+   if(!Array.isArray(values))return;
+   c.beginPath();c.strokeStyle=color;c.lineWidth=thickness;let started=false;
+   for(let i=0;i<Math.min(values.length,sample.length);i++){
+     const v=values[i];if(!Number.isFinite(v)){started=false;continue}
+     const x=left+step*(i+.5),y=yFn(v);
+     if(!started)c.moveTo(x,y);else c.lineTo(x,y);
+     started=true;
    }
-   const line=(values,transform,color)=>{
-     if(!Array.isArray(values))return;c.strokeStyle=color;c.lineWidth=1.5;c.beginPath();
-     let connected=false;
-     for(let i=0;i<values.length;i++){
-       const v=values[i],x=left+step*(i+0.5);
-       if(!Number.isFinite(v)){connected=false;continue}
-       const y=transform(v);if(!connected)c.moveTo(x,y);else c.lineTo(x,y);connected=true;
-     }c.stroke();
-   };
-   if(analysis)line(analysis.e50,yPrice,'#e6be5d');
-   c.restore();
-   c.font='10px system-ui';c.textAlign='right';c.fillStyle='#9eb5d4';
-   for(let j=0;j<=5;j++){
-     const v=max-(max-min)*j/5,yy=priceTop+(priceBottom-priceTop)*j/5;
-     c.fillText(v.toLocaleString('en-US',{maximumFractionDigits:v<1?8:4}),width-4,yy+3);
-   }
-   c.textAlign='left';
-   if(analysis){
-     c.save();c.beginPath();c.rect(left,rsiTop,plotWidth,rsiBottom-rsiTop);c.clip();
-     line(analysis.rsiLine,v=>rsiBottom-((v||0)/100)*(rsiBottom-rsiTop),'#bb91ff');c.restore();
-     const macdNumbers=[...analysis.macdLine,...analysis.signalLine].filter(Number.isFinite);
-     const bound=Math.max(0.00000001,...macdNumbers.map(Math.abs));
-     const macdY=v=>(macdTop+macdBottom)/2-v/bound*(macdBottom-macdTop)*0.44;
-     c.save();c.beginPath();c.rect(left,macdTop,plotWidth,macdBottom-macdTop);c.clip();
-     line(analysis.macdLine,macdY,'#66b9fb');
-     line(analysis.signalLine,macdY,'#f7bd78');
-     c.restore();
+   c.stroke();
+ };
+ if(e50)line(e50,yPrice,'#36b9fb',2);
+ if(e200)line(e200,yPrice,'#ffba36',2);
+ c.restore();
+ // Scale values stay outside the clipped chart and never overlap candles.
+ c.font='10px system-ui';c.fillStyle='#b6c9e8';c.textAlign='right';
+ for(let i=0;i<=5;i++){
+   const value=max-(max-min)*i/5,y=priceTop+(priceBottom-priceTop)*i/5;
+   c.fillText(priceFmt(value),width-4,y+3);
+ }
+ c.textAlign='left';
+ // Levels: only show them when the user has entered a numeric price.
+ const values={entry:Number($('entry').value),stop:Number($('stop').value),target:Number($('target').value)};
+ const valid=name=>$((name==='target'?'target':name)).value.trim()!==''&&Number.isFinite(values[name])&&values[name]>0;
+ const levelNames={entry:'Вхід',stop:'SL',target:'TP'},colors={entry:'#dce6fa',stop:'#ff647b',target:'#22dd83'};
+ const levelY={};
+ for(const key of ['entry','stop','target']){
+   if(!valid(key))continue;
+   const y=yPrice(values[key]);levelY[key]=y;
+   c.save();c.strokeStyle=colors[key];c.lineWidth=1.5;c.setLineDash(key==='entry'?[5,4]:[8,4]);
+   c.beginPath();c.moveTo(left,y);c.lineTo(right,y);c.stroke();c.restore();
+   c.fillStyle='#0c1931';c.strokeStyle=colors[key];c.lineWidth=1.3;
+   const label=levelNames[key]+': '+priceFmt(values[key]),labelWidth=Math.min(145,c.measureText(label).width+16);
+   c.beginPath();c.roundRect(left+4,Math.max(priceTop+2,Math.min(priceBottom-23,y-11)),labelWidth,22,6);
+   c.fill();c.stroke();c.fillStyle='#f0f5ff';c.font='bold 11px system-ui';
+   c.fillText(label,left+12,Math.max(priceTop+17,Math.min(priceBottom-8,y+4)));
+   c.beginPath();c.arc(right-8,y,6,0,2*Math.PI);c.fillStyle=colors[key];c.fill();
+ }
+ if(valid('entry')&&valid('stop')&&valid('target')){
+   const risk=Math.abs(values.entry-values.stop),reward=Math.abs(values.target-values.entry);
+   const proper=state.dir==='long'?values.stop<values.entry&&values.target>values.entry:
+     values.stop>values.entry&&values.target<values.entry;
+   if(proper&&risk>0){
+     const ratio=reward/risk;
+     const banner='R:R 1 : '+ratio.toFixed(2);
+     c.font='bold 12px system-ui';const bx=right-111,by=priceBottom-30;
+     c.fillStyle='#073a2d';c.strokeStyle='#2fe9a1';c.lineWidth=1.3;
+     c.beginPath();c.roundRect(bx,by,103,23,5);c.fill();c.stroke();
+     c.fillStyle='#69ffc8';c.fillText(banner,bx+9,by+16);
    }
  }
+ // Price label: latest close, not a fabricated live ticker.
+ if(last.c>=min&&last.c<=max){
+   const y=yPrice(last.c);c.fillStyle=last.c>=last.o?'#079e70':'#b74362';
+   c.fillRect(right+1,y-11,width-right-2,22);
+   c.font='bold 11px system-ui';c.fillStyle='#fff';c.fillText(priceFmt(last.c),right+6,y+4);
+ }
+ c.font='11px system-ui';c.textAlign='left';c.fillStyle='#f1d9ff';
+ c.fillText('RSI (14)'+(Number.isFinite(analysis?.rsi)?'   '+analysis.rsi.toFixed(1):''),left+5,rsiTop+13);
+ c.fillStyle='#d1dcf2';c.fillText('MACD (12, 26, 9)',left+5,macdTop+13);
+ c.strokeStyle='#7e579e';c.lineWidth=1;c.setLineDash([5,5]);
+ for(const v of [30,70]){
+   const y=rsiBottom-(v/100)*(rsiBottom-rsiTop);
+   c.beginPath();c.moveTo(left,y);c.lineTo(right,y);c.stroke();
+ }
+ c.setLineDash([]);
+ c.font='10px system-ui';c.textAlign='right';c.fillStyle='#b4c8e4';
+ for(const v of [30,50,70])c.fillText(String(v),width-6,rsiBottom-v/100*(rsiBottom-rsiTop)+3);
+ if(analysis){
+   c.save();c.beginPath();c.rect(left,rsiTop,plotWidth,rsiBottom-rsiTop);c.clip();
+   line(analysis.rsiLine,v=>rsiBottom-(v/100)*(rsiBottom-rsiTop),'#c47aff',2);
+   c.restore();
+   const macdNumbers=[...analysis.macdLine,...analysis.signalLine].filter(Number.isFinite);
+   const bound=Math.max(1e-9,...macdNumbers.map(Math.abs));
+   const macdY=v=>(macdTop+macdBottom)/2-v/bound*(macdBottom-macdTop)*.43;
+   const histogram=analysis.macdLine.map((v,i)=>v-analysis.signalLine[i]);
+   c.save();c.beginPath();c.rect(left,macdTop,plotWidth,macdBottom-macdTop);c.clip();
+   c.strokeStyle='#466489';c.beginPath();c.moveTo(left,macdY(0));c.lineTo(right,macdY(0));c.stroke();
+   for(let i=0;i<histogram.length;i++){
+     const v=histogram[i],x=left+step*(i+.5),zero=macdY(0),yy=macdY(v);
+     c.fillStyle=v>=0?'#14c9a1':'#df536a';c.fillRect(x-barWidth/2,Math.min(zero,yy),barWidth,Math.max(1,Math.abs(zero-yy)));
+   }
+   line(analysis.macdLine,macdY,'#26affb',1.7);
+   line(analysis.signalLine,macdY,'#ffb32f',1.7);
+   c.restore();
+   c.textAlign='right';c.fillStyle='#b4c8e4';
+   c.fillText(bound.toFixed(2),width-5,macdTop+4);
+   c.fillText('0',width-5,macdY(0)+3);
+   c.fillText((-bound).toFixed(2),width-5,macdBottom-4);
+ }
+ // X-axis dates originate from exchange candle timestamps.
+ c.fillStyle='#a9bddb';c.font='10px system-ui';c.textAlign='center';
+ for(let i=1;i<=6;i++){
+   const index=Math.min(sample.length-1,Math.round((sample.length-1)*i/7));
+   const time=new Date(sample[index].t);
+   const label=Number.isFinite(time.getTime())?time.toLocaleDateString('uk-UA',{day:'2-digit',month:'short',timeZone:'UTC'}):'';
+   c.fillText(label,left+step*(index+.5),height-7);
+ }
+ c.textAlign='left';
 }
 const canvas=$('chart');canvas.addEventListener('pointerdown',e=>{if(!state.range)return;const r=canvas.getBoundingClientRect(),yy=e.clientY-r.top;for(const f of ['entry','stop','target']){const v=num(f);const target=state.range.top+(state.range.max-v)/(state.range.max-state.range.min)*(state.range.bottom-state.range.top);if(v>0&&Math.abs(target-yy)<13){state.drag=f;canvas.setPointerCapture(e.pointerId);canvas.style.cursor='ns-resize';return}}});canvas.addEventListener('pointermove',e=>{if(!state.drag||!state.range)return;const r=canvas.getBoundingClientRect(),yy=e.clientY-r.top,rg=state.range;const bounded=Math.min(rg.bottom,Math.max(rg.top,yy)),price=rg.max-(bounded-rg.top)/(rg.bottom-rg.top)*(rg.max-rg.min);$(state.drag).value=price.toFixed(2);state.levels[state.drag]=price;calculate()});const stopDrag=()=>{state.drag=null;canvas.style.cursor='crosshair'};canvas.addEventListener('pointerup',stopDrag);canvas.addEventListener('pointercancel',stopDrag);window.addEventListener('resize',draw);applyMode();showBottom('positions');loadMarketList();if(localDemo())loadDemoAccountData();
 })();
