@@ -780,6 +780,7 @@ function setMarketSymbol(symbol){
   if(!availableMarkets.includes(symbol))return;
   if(state.symbol===symbol){closeMarketDropdown();return}
   state.symbol=symbol;
+  loadChartAnnotations();
   chartViewport.offset=0;chartViewport.count=80;
   $('quantityLabel').textContent='Кількість '+symbol.slice(0,-4);
   $('marketSymbolText').textContent=symbol;
@@ -954,6 +955,7 @@ function syncTimeframeButtons(){
 function selectTimeframe(tf){
  if(tf===state.tf){closeLongTfMenu();return}
  state.tf=tf;
+ loadChartAnnotations();
  chartViewport.offset=0;chartViewport.count=80;
  syncTimeframeButtons();closeLongTfMenu();
  loadCandles();
@@ -1476,6 +1478,84 @@ $('chart').addEventListener('pointermove',e=>{
  }else if(chartTip.textContent==='Перетягніть, щоб змінити TP'){chartTip.classList.add('hidden')}
 });
 $('chart').addEventListener('pointerleave',()=>{if(chartTip.textContent==='Перетягніть, щоб змінити TP')chartTip.classList.add('hidden')});
+// Drawing tools work only on the chart and never submit exchange orders.
+const chartAnnotations=[];
+let activeChartTool=null,drawingGesture=null;
+const annotationKey=()=>state.symbol+'|'+state.tf;
+function toolStorageKey(){return 'ata-drawings-'+annotationKey()}
+function loadChartAnnotations(){
+ chartAnnotations.length=0;
+ try{
+  const items=JSON.parse(localStorage.getItem(toolStorageKey())||'[]');
+  if(Array.isArray(items))for(const x of items.slice(-100)){
+    if(['pencil','trend','horizontal','polyline','text','rectangle','marker'].includes(x.tool)&&
+       Array.isArray(x.points)&&x.points.length<=500&&x.points.every(pt=>pt&&
+       Number.isFinite(pt.x)&&Number.isFinite(pt.y)&&pt.x>=0&&pt.x<=1&&pt.y>=0&&pt.y<=1)){
+       chartAnnotations.push({tool:x.tool,points:x.points,text:typeof x.text==='string'?x.text.slice(0,90):''});
+    }
+  }
+ }catch{}
+}
+function saveChartAnnotations(){
+ try{localStorage.setItem(toolStorageKey(),JSON.stringify(chartAnnotations.slice(-100)))}catch{}
+}
+function setChartTool(tool){
+ activeChartTool=activeChartTool===tool?null:tool;
+ document.querySelectorAll('[data-chart-tool]').forEach(b=>{
+  const on=b.dataset.chartTool===activeChartTool;
+  b.classList.toggle('active',on);b.setAttribute('aria-pressed',String(on));
+ });
+ $('chart').style.cursor=activeChartTool?'crosshair':'grab';
+}
+function chartRelativePoint(e){
+ const rect=$('chart').getBoundingClientRect(),left=10,right=rect.width-69;
+ const top=74,bottom=rect.height*.655;
+ return {x:Math.max(0,Math.min(1,(e.clientX-rect.left-left)/(right-left))),
+  y:Math.max(0,Math.min(1,(e.clientY-rect.top-top)/(bottom-top)))};
+}
+function paintAnnotations(ctx,left,right,top,bottom){
+ const all=drawingGesture?[...chartAnnotations,drawingGesture]:chartAnnotations;
+ ctx.save();ctx.beginPath();ctx.rect(left,top,right-left,bottom-top);ctx.clip();
+ for(const shape of all){
+   const pts=shape.points||[];if(!pts.length)continue;
+   const px=pt=>left+pt.x*(right-left),py=pt=>top+pt.y*(bottom-top);
+   ctx.lineWidth=1.8;ctx.strokeStyle='#bf9cfe';ctx.fillStyle='#e5d5ff';
+   ctx.setLineDash(shape.tool==='horizontal'?[5,4]:[]);
+   ctx.beginPath();
+   if(shape.tool==='horizontal'){
+     ctx.moveTo(left,py(pts[0]));ctx.lineTo(right,py(pts[0]));ctx.stroke();
+   }else if(shape.tool==='text'){
+     ctx.font='bold 12px system-ui';ctx.fillText(shape.text||'Позначка',px(pts[0]),py(pts[0]));
+   }else if(shape.tool==='marker'){
+     ctx.arc(px(pts[0]),py(pts[0]),5,0,Math.PI*2);ctx.fill();
+   }else if(shape.tool==='rectangle'&&pts.length>1){
+     ctx.strokeRect(px(pts[0]),py(pts[0]),px(pts[1])-px(pts[0]),py(pts[1])-py(pts[0]));
+   }else{
+     pts.forEach((pt,i)=>i?ctx.lineTo(px(pt),py(pt)):ctx.moveTo(px(pt),py(pt)));
+     ctx.stroke();
+   }
+ }
+ ctx.restore();
+}
+function eraseClosestAnnotation(point){
+ if(!chartAnnotations.length)return;
+ let winner=-1,distance=Infinity;
+ chartAnnotations.forEach((shape,i)=>{
+   for(const pt of shape.points){
+     const d=Math.hypot((pt.x-point.x)*2,pt.y-point.y);
+     if(d<distance){distance=d;winner=i}
+   }
+ });
+ if(winner>=0&&distance<.13){chartAnnotations.splice(winner,1);saveChartAnnotations();draw()}
+}
+document.querySelectorAll('[data-chart-tool]').forEach(button=>button.onclick=()=>{
+ const type=button.dataset.chartTool;
+ if(type==='levels'){setChartTool(null);$('riskAdvancedButton').click();$('entry').focus();return}
+ if(type==='home'){setChartTool(null);chartResetView();return}
+ if(type==='zoom'){setChartTool(null);chartZoom(.8);return}
+ setChartTool(type);
+});
+loadChartAnnotations();
 let dragInfo=null;
 const chartViewport={count:80,offset:0};
 let chartPan=null;
@@ -1683,6 +1763,7 @@ function draw(){
    c.fillText(label,left+step*(index+.5),height-7);
  }
  c.textAlign='left';
+ paintAnnotations(c,left,right,priceTop,priceBottom);
 }
 const canvas=$('chart');
 canvas.style.touchAction='none';
@@ -1695,6 +1776,20 @@ canvas.addEventListener('wheel',e=>{
 },{passive:false});
 canvas.addEventListener('pointerdown',e=>{
  if(!state.range||e.button!==0)return;
+ if(activeChartTool){
+  const pt=chartRelativePoint(e);
+  if(activeChartTool==='eraser'){eraseClosestAnnotation(pt);return}
+  if(activeChartTool==='text'){
+   const label=window.prompt('Підпис на графіку (до 90 символів):');
+   if(label?.trim()){chartAnnotations.push({tool:'text',points:[pt],text:label.trim().slice(0,90)});saveChartAnnotations();draw()}
+   return;
+  }
+  if(activeChartTool==='horizontal'||activeChartTool==='marker'){
+   chartAnnotations.push({tool:activeChartTool,points:[pt]});saveChartAnnotations();draw();return;
+  }
+  drawingGesture={tool:activeChartTool,points:[pt,pt]};
+  canvas.setPointerCapture(e.pointerId);draw();return;
+ }
  const bounds=canvas.getBoundingClientRect(),yy=e.clientY-bounds.top,rg=state.range;
  for(const field of ['entry','stop','target']){
    if($(field).value.trim()==='')continue;
@@ -1710,6 +1805,13 @@ canvas.addEventListener('pointerdown',e=>{
  canvas.setPointerCapture(e.pointerId);canvas.style.cursor='grabbing';
 });
 canvas.addEventListener('pointermove',e=>{
+ if(drawingGesture){
+   const pt=chartRelativePoint(e);
+   if(drawingGesture.tool==='pencil')drawingGesture.points.push(pt);
+   else drawingGesture.points[drawingGesture.points.length-1]=pt;
+   if(drawingGesture.points.length>500)drawingGesture.points.splice(1,1);
+   draw();return;
+ }
  if(state.drag&&state.range){
    const bounds=canvas.getBoundingClientRect(),yy=e.clientY-bounds.top,rg=state.range;
    const bounded=Math.min(rg.bottom,Math.max(rg.top,yy));
@@ -1724,7 +1826,10 @@ canvas.addEventListener('pointermove',e=>{
    constrainChartViewport();draw();
  }
 });
-const stopDrag=()=>{state.drag=null;chartPan=null;canvas.style.cursor='grab'};
+const stopDrag=()=>{
+ if(drawingGesture){chartAnnotations.push(drawingGesture);drawingGesture=null;saveChartAnnotations();draw()}
+ state.drag=null;chartPan=null;canvas.style.cursor=activeChartTool?'crosshair':'grab';
+};
 canvas.addEventListener('pointerup',stopDrag);
 canvas.addEventListener('pointercancel',stopDrag);
 canvas.addEventListener('dblclick',e=>{e.preventDefault();chartResetView()});
