@@ -18,6 +18,13 @@ await context.route('**/api/strategy/backtest?*',r=>json(r,{ordersEnabled:false,
  period:{from:'2026-10-10T00:00:00Z',to:'2026-11-01T00:00:00Z'},metrics:{closed:2,winRate:50,profitFactor:1.5,maxDrawdownR:1,expectancyR:.25,totalNetR:.5},
  costs:{feePerSide:.00055,slippagePerSide:.0005},trades:[{symbol:'BTCUSDT',signalAt:'2026-10-14T00:00:00Z',side:'long',reason:'stop',netR:-1.1}],
  warning:'Small sample'}));
+await context.route('**/api/strategy/multi-year',r=>json(r,{status:'running',years:3,
+ total:10,completed:0,progress:8,symbol:'BTCUSDT',stage:'Свічки 15',
+ train:{closed:0,expectancyR:null},test:{closed:0,expectancyR:null},
+ pairProgress:[
+  {symbol:'BTCUSDT',status:'running',stage:'Завантаження 15',progress:82,timeframes:{'15':{loaded:85000,expected:105000},'60':{loaded:0,expected:26000}}},
+  {symbol:'ETHUSDT',status:'queued',stage:'У черзі',progress:0,timeframes:{}}
+ ],results:[],errors:[]}));
 const page=await context.newPage();
 page.on('pageerror',e=>errors.push('main: '+e.message));
 await page.goto('http://127.0.0.1:8765',{waitUntil:'load'});
@@ -27,6 +34,16 @@ const popup=await event;
 popup.on('pageerror',e=>errors.push('research: '+e.message));
 await popup.waitForLoadState('load');
 await popup.locator('#paperMetrics .research-metric').first().waitFor({timeout:12000});
+await popup.locator('#researchTabAll').click();
+await popup.locator('#researchPairsProgress .research-pair-item').first().waitFor({timeout:12000});
+if(await popup.locator('#researchOverviewPanel').isVisible())errors.push('Overview still visible in all-markets tab');
+if(!await popup.locator('#researchAllMarketsSection').isVisible())errors.push('All-markets tab hidden');
+if(await popup.locator('#researchPairsProgress .research-pair-item').count()!==2)errors.push('Per-symbol status cards absent');
+if(!await popup.locator('#researchPairsProgress').innerText().then(t=>t.includes('85 000')||t.includes('85 000')))errors.push('Downloaded candles not shown');
+if(await popup.locator('#researchAllProgress').getAttribute('aria-valuenow')!=='8')errors.push('Weighted progress not rendered');
+await popup.locator('#researchTabOverview').click();
+if(!await popup.locator('#researchOverviewPanel').isVisible())errors.push('Overview not restored');
+if(await popup.locator('#researchAllMarketsSection').isVisible())errors.push('All-markets panel overlays overview');
 const pf=await popup.locator('#paperMetrics .research-metric').nth(2).innerText();
 if(!pf.includes('—'))errors.push('Empty paper performance shown as nonempty: '+pf);
 if(!await popup.locator('#paperStatus').innerText().then(x=>x.includes('Очікують')))errors.push('Waiting paper records not shown');
