@@ -840,6 +840,8 @@ try{
   if(Array.isArray(saved))favorites=saved.filter(x=>typeof x==='string'&&/^[A-Z0-9]{3,30}USDT$/.test(x)).slice(0,100);
   const savedSymbol=localStorage.getItem('ata-market-symbol');
   if(typeof savedSymbol==='string'&&/^[A-Z0-9]{3,30}USDT$/.test(savedSymbol))state.symbol=savedSymbol;
+  const savedTimeframe=localStorage.getItem('ata-market-timeframe');
+  if(typeof savedTimeframe==='string'&&new Set(['1','3','5','15','30','60','120','240','D','W','M','3M']).has(savedTimeframe))state.tf=savedTimeframe;
 }catch{}
 const marketApi=path=>path;
 function updateFavoriteIcon(){
@@ -892,8 +894,9 @@ async function loadMarketList(){
     marketsFetched=true;
     if(!availableMarkets.includes(state.symbol)){
       state.symbol=availableMarkets.includes('BTCUSDT')?'BTCUSDT':availableMarkets[0]||'BTCUSDT';
-      $('marketSymbolText').textContent=state.symbol;
+      try{localStorage.setItem('ata-market-symbol',state.symbol)}catch{}
     }
+    $('marketSymbolText').textContent=state.symbol;
     $('quantityLabel').textContent='Кількість '+state.symbol.slice(0,-4);updateFavoriteIcon();renderMarketList();loadCandles();refreshMultiAnalysis(true);
   }catch(e){
     if(token!==marketListRequest)return;
@@ -1027,6 +1030,7 @@ function syncTimeframeButtons(){
 function selectTimeframe(tf){
  if(tf===state.tf){closeLongTfMenu();return}
  state.tf=tf;
+ try{localStorage.setItem('ata-market-timeframe',tf)}catch{}
  loadChartAnnotations();
  chartViewport.offset=0;chartViewport.count=80;
  syncTimeframeButtons();closeLongTfMenu();
@@ -2158,6 +2162,6 @@ const stopDrag=()=>{
 canvas.addEventListener('pointerup',stopDrag);
 canvas.addEventListener('pointercancel',stopDrag);
 canvas.addEventListener('dblclick',e=>{e.preventDefault();chartResetView()});
-window.addEventListener('resize',draw);applyMode();showBottom('positions');loadMarketList();if(localDemo())loadDemoAccountData();
+window.addEventListener('resize',draw);$('marketSymbolText').textContent=state.symbol;syncTimeframeButtons();applyMode();showBottom('positions');loadMarketList();if(localDemo())loadDemoAccountData();
 })();
 </script></body></html>
