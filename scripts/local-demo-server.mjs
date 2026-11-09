@@ -9,7 +9,8 @@
 import http from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
-import { dirname, resolve } from 'node:path';
+import { dirname, resolve, join } from 'node:path';
+import { homedir } from 'node:os';
 import { spawn } from 'node:child_process';
 import { createHmac } from 'node:crypto';
 import { createMarketScanner } from './market-scanner.mjs';
@@ -203,7 +204,7 @@ async function getKlines(symbol,interval){
  const aggregated=interval==='3M'?aggregateQuarterly(candles):candles;
  return {symbol,interval,source:'Bybit public market API',updatedAt:new Date().toISOString(),candles:aggregated};
 }
-const opportunityScanner=createMarketScanner({getKlines,getInstruments});
+const opportunityScanner=createMarketScanner({getKlines,getInstruments,historyPath:join(homedir(),'Library','Application Support','AI Trading Assistant','scanner-history.json')});
 const server=http.createServer(async(req,res)=>{
   const hostHeader=String(req.headers.host||'');
   if(!['127.0.0.1:'+port,'localhost:'+port].includes(hostHeader)){
@@ -233,6 +234,9 @@ const server=http.createServer(async(req,res)=>{
       const query=new URL(req.url,'http://127.0.0.1:'+port).searchParams;
       return json(res,200,await getKlines(query.get('symbol')||'BTCUSDT',query.get('interval')||'D'));
     }catch(e){return json(res,503,{error:String(e.message||'Bybit market API недоступний'),candles:[]});}
+  }
+  if(req.method==='GET'&&path==='/api/scanner/history'){
+    return json(res,200,{history:opportunityScanner.getHistory(),ordersEnabled:false});
   }
   if(req.method==='GET'&&path==='/api/scanner/opportunities'){
     return json(res,200,opportunityScanner.getSnapshot());
