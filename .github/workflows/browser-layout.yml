@@ -9,6 +9,7 @@ on:
       - .github/scripts/check-market-scanner.mjs
       - .github/scripts/check-layout.mjs
       - .github/scripts/check-live-market.mjs
+      - .github/scripts/check-scanner-popup.mjs
       - .github/workflows/browser-layout.yml
       - .github/workflows/preview-pages.yml
   workflow_dispatch:
@@ -45,6 +46,8 @@ jobs:
         run: node .github/scripts/check-layout.mjs
       - name: Verify streaming and symbol navigation
         run: node .github/scripts/check-live-market.mjs
+      - name: Verify separate scanner window, analytics and chart handoff
+        run: node .github/scripts/check-scanner-popup.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
