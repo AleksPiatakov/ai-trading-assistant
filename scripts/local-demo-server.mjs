@@ -81,6 +81,58 @@ async function verifyDemoKey(key,secret){
   }
   return true;
 }
+
+async function authenticatedGet(path,params,key,secret){
+  const query=new URLSearchParams(params).toString();
+  const now=Date.now().toString(),window='5000';
+  const signature=createHmac('sha256',secret).update(now+key+window+query).digest('hex');
+  const response=await fetch('https://api-demo.bybit.com'+path+'?'+query,{
+    headers:{'X-BAPI-API-KEY':key,'X-BAPI-TIMESTAMP':now,
+      'X-BAPI-RECV-WINDOW':window,'X-BAPI-SIGN':signature},
+    cache:'no-store',signal:AbortSignal.timeout(10000)
+  });
+  if(!response.ok)throw new Error('Bybit Demo HTTP '+response.status);
+  const data=await response.json();
+  if(data?.retCode!==0)throw new Error('Bybit Demo: '+String(data?.retMsg||data?.retCode).slice(0,130));
+  return data.result||{};
+}
+const finiteText=value=>value===undefined||value===null||value===''?'':String(value);
+async function loadDemoAccount(){
+  const [key,secret]=await Promise.all([keychainRead(services.key),keychainRead(services.secret)]);
+  if(!key||!secret)throw new Error('Demo API ключ не збережено');
+  const wallet=await authenticatedGet('/v5/account/wallet-balance',{accountType:'UNIFIED'},key,secret);
+  const item=wallet.list?.find(x=>x.accountType==='UNIFIED');
+  if(!item)throw new Error('Bybit не повернув Unified wallet');
+  const results=await Promise.allSettled([
+    authenticatedGet('/v5/position/list',{category:'linear',settleCoin:'USDT'},key,secret),
+    authenticatedGet('/v5/order/realtime',{category:'linear',settleCoin:'USDT',openOnly:'0'},key,secret)
+  ]);
+  const positions=results[0].status==='fulfilled'?(results[0].value.list||[])
+    .filter(p=>Number(p.size)>0).map(p=>({
+      symbol:finiteText(p.symbol),side:finiteText(p.side),size:finiteText(p.size),
+      avgPrice:finiteText(p.avgPrice),stopLoss:finiteText(p.stopLoss),
+      takeProfit:finiteText(p.takeProfit),unrealisedPnl:finiteText(p.unrealisedPnl),
+      positionValue:finiteText(p.positionValue),markPrice:finiteText(p.markPrice)
+    })) : null;
+  const orders=results[1].status==='fulfilled'?(results[1].value.list||[]).map(o=>({
+    symbol:finiteText(o.symbol),side:finiteText(o.side),orderType:finiteText(o.orderType),
+    price:finiteText(o.price),qty:finiteText(o.qty),leavesQty:finiteText(o.leavesQty),
+    orderStatus:finiteText(o.orderStatus),createdTime:finiteText(o.createdTime)
+  })) : null;
+  return {
+    mode:'demo',source:'Bybit Demo API',updatedAt:new Date().toISOString(),
+    wallet:{totalEquity:finiteText(item.totalEquity),totalWalletBalance:finiteText(item.totalWalletBalance),
+      totalAvailableBalance:finiteText(item.totalAvailableBalance),
+      totalPerpUPL:finiteText(item.totalPerpUPL),
+      usdtWallet:finiteText(item.coin?.find(c=>c.coin==='USDT')?.walletBalance)},
+    positions,orders,
+    warnings:{
+      positions:results[0].status==='rejected'?'Не вдалося отримати позиції':null,
+      orders:results[1].status==='rejected'?'Не вдалося отримати ордери':null
+    },
+    ordersEnabled:false
+  };
+}
 const server=http.createServer(async(req,res)=>{
   const hostHeader=String(req.headers.host||'');
   if(!['127.0.0.1:'+port,'localhost:'+port].includes(hostHeader)){
@@ -100,6 +152,12 @@ const server=http.createServer(async(req,res)=>{
   if(req.method==='GET'&&path==='/api/demo/status'){
     const configured=await keychainRead(services.key).then(Boolean).catch(()=>false);
     return json(res,200,{configured,mode:'demo',ordersEnabled:false});
+  }
+  if(req.method==='GET'&&path==='/api/demo/account'){
+    try{
+      const account=await loadDemoAccount();
+      return json(res,200,account);
+    }catch(e){return json(res,503,{error:String(e.message||'Bybit Demo недоступний').slice(0,160),mode:'demo'});}
   }
   if(path==='/api/demo/credentials' && (req.method==='POST'||req.method==='DELETE')){
     if(req.headers['x-ata-local']!=='1'||req.headers['sec-fetch-site'] && req.headers['sec-fetch-site']!=='same-origin'){
