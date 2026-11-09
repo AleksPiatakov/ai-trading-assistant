@@ -1338,7 +1338,8 @@ function findNearestOpportunity(rows){
 function renderOpportunity(){
  const card=$('tradeOpportunity'),status=$('opportunityState'),details=$('opportunityDetails'),apply=$('applyOpportunity');
  const all=multiSnapshot?.rows||[];
- proposedOpportunity=all.length===ANALYSIS_TFS.length?findNearestOpportunity(all):null;
+ const recent=multiSnapshot&&Date.now()-multiSnapshot.at<240000;
+ proposedOpportunity=recent&&multiSnapshot.symbol===state.symbol&&all.length===ANALYSIS_TFS.length?findNearestOpportunity(all):null;
  const candidate=proposedOpportunity;
  card.classList.toggle('opportunity-ready',candidate?.status==='ready');
  apply.disabled=candidate?.status!=='ready';
@@ -1363,9 +1364,10 @@ $('applyOpportunity').onclick=()=>{
  if(!candidate||candidate.status!=='ready'||multiSnapshot?.symbol!==state.symbol)return;
  state.dir=candidate.side;
  for(const [field,v] of [['entry',candidate.entry],['stop',candidate.sl],['target',candidate.tp]])$(field).value=String(Number(v.toPrecision(9)));
- for(const [id,side] of [['longButton','long'],['shortButton','short']]){
-  const el=$(id);if(el)el.classList.toggle('active',side===state.dir);
- }
+ $('longButton').classList.toggle('green',state.dir==='long');
+ $('shortButton').classList.toggle('red',state.dir==='short');
+ $('longButton').classList.toggle('active',state.dir==='long');
+ $('shortButton').classList.toggle('active',state.dir==='short');
  calculate();draw();
  $('opportunityState').textContent='Перенесено в план • ордери вимкнені';
 };
