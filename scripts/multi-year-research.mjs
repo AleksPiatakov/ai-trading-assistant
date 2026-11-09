@@ -40,9 +40,21 @@ export function createMultiYearResearch({dir,getKlinesPage,getInstruments,now=()
    if(Array.isArray(saved.candles))rows=clean(saved.candles);
   }catch{}
   rows=rows.filter(c=>c.t<=nowTime);
-  // The latest saved candle may be forming: re-fetch recent bars to refresh.
-  const refreshTail=rows.length?Math.min(nowTime,rows.at(-1).t-TFS[tf]):nowTime;
-  let end=rows.length&&rows[0].t<=fromTime?refreshTail:nowTime;
+  // Refresh recent candles and then ONLY extend missing older ranges.
+  // Avoid requesting the entire first year again when expanding to 2–3 years.
+  let end=nowTime;
+  if(rows.length){
+   const latest=(await getKlinesPage(symbol,tf,nowTime,1000))
+    .map(x=>({t:Number(x.t),o:Number(x.o),h:Number(x.h),l:Number(x.l),c:Number(x.c),v:Number(x.v)})).filter(good);
+   rows=clean([...rows,...latest]).filter(c=>c.t>=fromTime-TFS[tf]*2);
+   if(rows.length&&rows[0].t<=fromTime){
+    await mkdir(join(dir,'history'),{recursive:true,mode:0o700});
+    await writeFile(path+'.tmp',JSON.stringify({version:1,symbol,tf,candles:rows}),{mode:0o600});
+    await rename(path+'.tmp',path);
+    return rows.filter(c=>c.t>=fromTime);
+   }
+   end=rows.length?rows[0].t-1:nowTime;
+  }
   let fetched=0;
   const save=async()=>{
    await mkdir(join(dir,'history'),{recursive:true,mode:0o700});
