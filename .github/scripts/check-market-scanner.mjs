@@ -21,5 +21,9 @@ assert.deepEqual([...new Set(calls.map(x=>x.tf))],['15','60','240','D']);
 assert.equal(calls.length,8);
 assert.equal(result.errors.length,0);
 assert.ok(Array.isArray(result.opportunities));
+assert.ok(Array.isArray(result.attention),'Watchlist missing');
+assert.ok(result.attention.every(x=>x.passed>=2&&x.total===5),'Incorrect observation criteria');
+assert.ok(result.attention.every(x=>typeof x.reason==='string'&&Array.isArray(x.waitFor)),'Missing watchlist explanations');
+
 scanner.stop();
 console.log('Scanner mock test: success');
