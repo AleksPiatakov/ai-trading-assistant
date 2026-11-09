@@ -22,18 +22,41 @@ const json = (res,status,obj) => {
   res.writeHead(status,{'content-type':'application/json; charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff'});
   res.end(JSON.stringify(obj));
 };
-const runSecurity = (args,secretInput) => new Promise((resolve,reject) => {
+// The macOS "security add-generic-password ... -w" command prompts at a TTY.
+// Piping a password to that command does NOT satisfy its prompt and leaves it
+// hanging. Batch mode (-i) reads a command from stdin without putting secrets
+// in the process argument list. Credentials are deliberately restricted to
+// the ordinary ASCII token alphabet to avoid command interpolation.
+const runSecurity = (args,stdinText) => new Promise((resolve,reject) => {
   if(process.platform!=='darwin')return reject(new Error('Потрібен macOS Keychain'));
   const child=spawn('/usr/bin/security',args,{stdio:['pipe','pipe','pipe']});
-  let out='',err='';
-  child.stdout.on('data',buf=>{out+=buf.toString();});
-  child.stderr.on('data',buf=>{err+=buf.toString();});
-  child.on('error',()=>reject(new Error('macOS Keychain недоступний')));
-  child.on('close',code=>code===0?resolve(out.trimEnd()):reject(new Error('Keychain error '+code)));
-  child.stdin.end(secretInput===undefined?'':secretInput+'\n');
+  let out='',settled=false;
+  const finish=(error,value)=>{
+    if(settled)return;
+    settled=true;clearTimeout(timer);
+    if(error)reject(error);else resolve(value);
+  };
+  const timer=setTimeout(()=>{
+    child.kill('SIGKILL');
+    finish(new Error('macOS Keychain не відповідає. Перевірте, чи розблокована зв’язка ключів.'));
+  },8000);
+  child.stdout.on('data',buf=>{out+=buf.toString();if(out.length>16384)out=out.slice(-16384);});
+  // Never store, print or return security stderr: interactive output might
+  // contain private values on some operating system versions.
+  child.stderr.resume();
+  child.on('error',()=>finish(new Error('macOS Keychain недоступний')));
+  child.on('close',code=>code===0?finish(null,out.trimEnd()):finish(new Error('Операція Keychain завершилася з помилкою ('+code+')')));
+  child.stdin.on('error',()=>{});
+  child.stdin.end(stdinText===undefined?'':stdinText);
 });
 const keychainRead = service => runSecurity(['find-generic-password','-a',account,'-s',service,'-w']);
-const keychainSave = (service,value) => runSecurity(['add-generic-password','-U','-a',account,'-s',service,'-w'],value);
+const keychainSave = async (service,value) => {
+  if(!/^[A-Za-z0-9_-]{8,512}$/.test(value))throw new Error('Непідтримувані символи API-ключа. Не вводьте секрет у терміналі.');
+  // In security interactive mode the complete add command is read on stdin.
+  await runSecurity(['-i'],'add-generic-password -U -a '+account+' -s '+service+' -w '+value+'\n');
+  const stored=await keychainRead(service);
+  if(stored!==value)throw new Error('Keychain не підтвердив збереження ключа');
+};
 const keychainDelete = service => runSecurity(['delete-generic-password','-a',account,'-s',service]);
 const readJson = async req => {
   let raw='';
