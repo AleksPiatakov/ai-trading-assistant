@@ -1289,7 +1289,7 @@ function renderAssistantWatch(){
 }
 $('watchOpenScanner').onclick=()=>{scannerOpen();chooseScannerView('attention')};
 
-let alertLastId=0,alertInitialized=false,alertInbox=[],browserAlertsEnabled=false;
+let alertLastId=0,alertInitialized=false,alertSession=null,alertInbox=[],browserAlertsEnabled=false;
 try{browserAlertsEnabled=localStorage.getItem('ata-browser-alerts')==='true'}catch{}
 function renderScannerAlertInbox(){
  const inbox=$('scannerAlertInbox');inbox.replaceChildren();
@@ -1315,6 +1315,7 @@ async function syncScannerNotifications(){
   const response=await fetch('/api/scanner/notifications',{cache:'no-store',signal:AbortSignal.timeout(8000)});
   if(!response.ok)return;
   const data=await response.json();
+  if(alertSession!==String(data.session||'')){alertSession=String(data.session||'');alertInitialized=false;alertLastId=0;alertInbox=[]}
   $('scannerMacAlerts').checked=data.macNotifications===true;
   const alerts=Array.isArray(data.alerts)?data.alerts:[];
   const latest=Math.max(0,...alerts.map(item=>Number(item.id)||0));
