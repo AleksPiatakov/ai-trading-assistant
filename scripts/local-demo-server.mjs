@@ -7,7 +7,7 @@
  * This bridge intentionally does not place orders.
  */
 import http from 'node:http';
-import { readFile } from 'node:fs/promises';
+import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve, join } from 'node:path';
 import { homedir } from 'node:os';
@@ -204,7 +204,38 @@ async function getKlines(symbol,interval){
  const aggregated=interval==='3M'?aggregateQuarterly(candles):candles;
  return {symbol,interval,source:'Bybit public market API',updatedAt:new Date().toISOString(),candles:aggregated};
 }
-const opportunityScanner=createMarketScanner({getKlines,getInstruments,historyPath:join(homedir(),'Library','Application Support','AI Trading Assistant','scanner-history.json')});
+const scannerDataDir=join(homedir(),'Library','Application Support','AI Trading Assistant');
+const alertPreferencesPath=join(scannerDataDir,'notification-preferences.json');
+let alertPreferences={macNotifications:false};
+async function loadAlertPreferences(){
+ try{
+  const data=JSON.parse(await readFile(alertPreferencesPath,'utf8'));
+  alertPreferences={macNotifications:data.macNotifications===true};
+ }catch{alertPreferences={macNotifications:false}}
+}
+async function saveAlertPreferences(){
+ await mkdir(scannerDataDir,{recursive:true,mode:0o700});
+ await writeFile(alertPreferencesPath,JSON.stringify(alertPreferences),{mode:0o600});
+}
+function notifyMacOfOpportunity(alert){
+ if(!alertPreferences.macNotifications||process.platform!=='darwin')return;
+ // Arguments are constant syntax plus strictly sanitized market symbol and side.
+ // AppleScript displays a notification only; never invokes a trade or network action.
+ const symbol=/^[A-Z0-9]{3,30}USDT$/.test(alert.symbol)?alert.symbol:'Пара';
+ const side=alert.side==='short'?'SHORT':'LONG';
+ const title='AI Trading Assistant';
+ const body=symbol+' · '+side+' — з’явився торговий план. Перевірте графік.';
+ const script='display notification '+JSON.stringify(body)+' with title '+JSON.stringify(title);
+ const child=spawn('/usr/bin/osascript',['-e',script],{stdio:'ignore'});
+ const kill=setTimeout(()=>child.kill('SIGKILL'),5000);
+ kill.unref?.();
+ child.on('error',()=>clearTimeout(kill));
+ child.on('close',()=>clearTimeout(kill));
+}
+const opportunityScanner=createMarketScanner({getKlines,getInstruments,
+ historyPath:join(scannerDataDir,'scanner-history.json'),
+ onPromotion:notifyMacOfOpportunity});
+
 const server=http.createServer(async(req,res)=>{
   const hostHeader=String(req.headers.host||'');
   if(!['127.0.0.1:'+port,'localhost:'+port].includes(hostHeader)){
@@ -234,6 +265,24 @@ const server=http.createServer(async(req,res)=>{
       const query=new URL(req.url,'http://127.0.0.1:'+port).searchParams;
       return json(res,200,await getKlines(query.get('symbol')||'BTCUSDT',query.get('interval')||'D'));
     }catch(e){return json(res,503,{error:String(e.message||'Bybit market API недоступний'),candles:[]});}
+  }
+  if(req.method==='GET'&&path==='/api/scanner/notifications'){
+    return json(res,200,{alerts:opportunityScanner.getAlerts(),macNotifications:alertPreferences.macNotifications,ordersEnabled:false});
+  }
+  if(req.method==='POST'&&path==='/api/scanner/notification-settings'){
+    if(req.headers['x-ata-local']!=='1'||(req.headers['sec-fetch-site']&&req.headers['sec-fetch-site']!=='same-origin'))
+      return json(res,403,{error:'Лише локальний інтерфейс може налаштовувати сповіщення'});
+    if(!String(req.headers['content-type']||'').startsWith('application/json'))
+      return json(res,415,{error:'Очікується JSON'});
+    try{
+      const data=await readJson(req);
+      if(typeof data.macNotifications!=='boolean')return json(res,400,{error:'Потрібен параметр macNotifications'});
+      if(data.macNotifications&&process.platform!=='darwin')
+        return json(res,422,{error:'Системні сповіщення підтримуються лише на macOS'});
+      alertPreferences={macNotifications:data.macNotifications};
+      await saveAlertPreferences();
+      return json(res,200,{macNotifications:alertPreferences.macNotifications,ordersEnabled:false});
+    }catch{return json(res,500,{error:'Налаштування сповіщень не вдалося зберегти'})}
   }
   if(req.method==='GET'&&path==='/api/scanner/history'){
     return json(res,200,{history:opportunityScanner.getHistory(),ordersEnabled:false});
@@ -270,7 +319,7 @@ const server=http.createServer(async(req,res)=>{
 });
 server.listen(port,host,()=>{
   console.log('AI Trading Assistant Demo settings: http://127.0.0.1:'+port+'/');
-  opportunityScanner.start();
+  loadAlertPreferences().finally(()=>opportunityScanner.start());
 });
 process.on('SIGINT',()=>{opportunityScanner.stop();server.close(()=>process.exit(0))});
 process.on('SIGTERM',()=>{opportunityScanner.stop();server.close(()=>process.exit(0))});
