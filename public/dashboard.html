@@ -1356,7 +1356,7 @@ function renderScannerSnapshot(){
     why.textContent=item.reason+' Очікувати: '+(Array.isArray(item.waitFor)?item.waitFor.join('; '):'нових підтверджень')+'.';
     details.append(head,line,why);
     const action=document.createElement('button');action.type='button';action.className='btn ghost';
-    action.textContent='Переглянути графік';
+    action.textContent='Відкрити графік';
     action.onclick=()=>{
       if(!availableMarkets.includes(item.symbol)){
         summary.textContent='Пара відсутня в актуальному списку інструментів Bybit.';return;
