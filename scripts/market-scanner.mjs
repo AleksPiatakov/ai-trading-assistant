@@ -3,6 +3,8 @@
  * Runs with the local loopback Node server, not in the browser or GitHub Pages.
  * It never accesses API credentials and has no order submission endpoint.
  */
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { dirname } from 'node:path';
 const WATCHLIST=['BTCUSDT','ETHUSDT','SOLUSDT','XRPUSDT','BNBUSDT','DOGEUSDT','ADAUSDT','LINKUSDT','AVAXUSDT','DOTUSDT'];
 const REQUIRED=['15','60','240','D'];
 const REFRESH_MS=5*60*1000;
@@ -69,10 +71,10 @@ function proposal(symbol,data,asOf){
   }
   return out.sort((a,b)=>b.confirmations-a.confirmations||b.rr-a.rr)[0]||null;
 }
-export function createMarketScanner({getKlines,getInstruments}){
+export function createMarketScanner({getKlines,getInstruments,historyPath=null}){
   let snapshot={status:'starting',updatedAt:null,startedAt:null,completed:0,total:0,watchlist:WATCHLIST.slice(),
     opportunities:[],errors:[],mode:'local-background',ordersEnabled:false};
-  let scanning=false,closed=false;
+  let scanning=false,closed=false,history=[];
   async function scan(){
     if(scanning||closed)return;
     scanning=true;const start=new Date().toISOString(),found=[],errors=[];
@@ -94,13 +96,39 @@ export function createMarketScanner({getKlines,getInstruments}){
       snapshot={...snapshot,completed:snapshot.completed+1};
     }
     found.sort((a,b)=>b.confirmations-a.confirmations||b.rr-a.rr);
+    const prior=new Set(snapshot.opportunities.map(x=>x.symbol+'|'+x.side));
+    for(const item of found){
+      if(!prior.has(item.symbol+'|'+item.side)){
+        history.unshift({...item,detectedAt:new Date().toISOString()});
+      }
+    }
+    history=history.slice(0,100);
+    if(historyPath){
+      try{
+        await mkdir(dirname(historyPath),{recursive:true,mode:0o700});
+        await writeFile(historyPath,JSON.stringify({version:1,history},null,2),{mode:0o600});
+      }catch(e){errors.push('Не вдалося зберегти історію сканування')}
+    }
     snapshot={...snapshot,status:errors.length&&errors.length===list.length?'error':'ready',updatedAt:new Date().toISOString(),
       opportunities:found.slice(0,15),errors,completed:list.length,total:list.length};
     scanning=false;
   }
   let timer=null;
-  const start=()=>{scan().catch(()=>{scanning=false;snapshot={...snapshot,status:'error',errors:['Помилка сканера']}});timer=setInterval(()=>scan().catch(()=>{scanning=false}),REFRESH_MS);timer.unref?.()};
+  const start=()=>{
+    (async()=>{
+      if(historyPath){
+        try{
+          const raw=JSON.parse(await readFile(historyPath,'utf8'));
+          if(Array.isArray(raw.history))history=raw.history.slice(0,100);
+        }catch{}
+      }
+      await scan();
+    })().catch(()=>{scanning=false;snapshot={...snapshot,status:'error',errors:['Помилка сканера']}});
+    timer=setInterval(()=>scan().catch(()=>{scanning=false}),REFRESH_MS);
+    timer.unref?.();
+  };
   const stop=()=>{closed=true;clearInterval(timer)};
   const getSnapshot=()=>({...snapshot,opportunities:snapshot.opportunities.filter(x=>Date.now()-Date.parse(x.scannedAt)<REFRESH_MS*2)});
-  return {start,stop,getSnapshot,refresh:scan};
+  const getHistory=()=>history.slice(0,100).map(x=>({...x}));
+  return {start,stop,getSnapshot,getHistory,refresh:scan};
 }
