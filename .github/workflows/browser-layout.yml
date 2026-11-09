@@ -5,6 +5,8 @@ on:
     paths:
       - public/dashboard.html
       - scripts/local-demo-server.mjs
+      - scripts/market-scanner.mjs
+      - .github/scripts/check-market-scanner.mjs
       - .github/scripts/check-layout.mjs
       - .github/scripts/check-live-market.mjs
       - .github/workflows/browser-layout.yml
@@ -27,6 +29,10 @@ jobs:
           npx playwright install --with-deps chromium
       - name: Verify local Demo bridge JavaScript syntax
         run: node --check scripts/local-demo-server.mjs
+      - name: Verify scanner module and read-only mock workflow
+        run: |
+          node --check scripts/market-scanner.mjs
+          node .github/scripts/check-market-scanner.mjs
       - name: Produce static preview
         run: |
           mkdir -p _site
