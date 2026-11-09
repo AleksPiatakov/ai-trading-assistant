@@ -4,7 +4,6 @@ on:
     branches: [redesign-approved-trading-ui]
     paths:
       - public/dashboard.html
-      - public/preview-data.js
       - .github/scripts/check-layout.mjs
       - .github/workflows/browser-layout.yml
       - .github/workflows/preview-pages.yml
@@ -28,15 +27,7 @@ jobs:
         run: |
           mkdir -p _site
           cp public/dashboard.html _site/index.html
-          cp public/preview-data.js _site/preview-data.js
-          python3 - <<'PY'
-          from pathlib import Path
-          p=Path('_site/index.html')
-          text=p.read_text()
-          text=text.replace('<script>\\n(function(){','<script src="./preview-data.js"></script>\\n<script>\\n(function(){',1)
-          p.write_text(text)
-          PY
-      - name: Start preview server
+     - name: Start preview server
         run: |
           python3 -m http.server 8765 --directory _site > /tmp/ata-web.log 2>&1 &
           sleep 2
