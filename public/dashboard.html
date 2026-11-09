@@ -3047,7 +3047,7 @@ function renderStrategyMetrics(rootId,metrics){
   ['Profit Factor (R)',Number.isFinite(metrics?.profitFactor)?researchFormat(metrics.profitFactor):'—'],
   ['Max Drawdown (R)',Number.isFinite(metrics?.maxDrawdownR)?researchFormat(metrics.maxDrawdownR):'—'],
   ['Expectancy (R)',Number.isFinite(metrics?.expectancyR)?researchFormat(metrics.expectancyR,3):'—'],
-  ['Підсумок (R)',Number.isFinite(metrics?.totalNetR)?researchFormat(metrics.totalNetR,3):'—']
+  ['Підсумок (R)',Number(metrics?.closed)>0&&Number.isFinite(metrics?.totalNetR)?researchFormat(metrics.totalNetR,3):'—']
  ];
  for(const [label,value] of list){
   const item=document.createElement('div');item.className='research-metric';
