@@ -196,7 +196,7 @@ const server=http.createServer(async(req,res)=>{
   if(req.method==='OPTIONS'){res.writeHead(405);res.end();return;}
   if(req.method==='GET'&&(path==='/'||path==='/dashboard.html')){
     const html=await readFile(resolve(base,'public/dashboard.html'));
-    res.writeHead(200,{'content-type':'text/html; charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff','referrer-policy':'no-referrer','content-security-policy':"default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; form-action 'self'; frame-ancestors 'none'"});
+    res.writeHead(200,{'content-type':'text/html; charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff','referrer-policy':'no-referrer','content-security-policy':"default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' wss://stream.bybit.com; form-action 'self'; frame-ancestors 'none'"});
     res.end(html);return;
   }
   if(req.method==='GET'&&path==='/api/demo/status'){
