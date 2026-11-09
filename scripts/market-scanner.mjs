@@ -7,6 +7,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
 const WATCHLIST=['BTCUSDT','ETHUSDT','SOLUSDT','XRPUSDT','BNBUSDT','DOGEUSDT','ADAUSDT','LINKUSDT','AVAXUSDT','DOTUSDT'];
 const REQUIRED=['15','60','240','D'];
+const BAR_MS={'15':900000,'60':3600000,'240':14400000,D:86400000};
 const REFRESH_MS=5*60*1000;
 const ALLOWED=new Set(WATCHLIST);
 const finite=x=>Number.isFinite(x);
@@ -42,6 +43,14 @@ function analyze(candles,tf){
   const volumeBaseline=prior.reduce((a,v)=>a+v.v,0)/20;
   return {tf,price:last.c,lastTime:last.t,direction,rsi:rsi(close),macd,atr,support,resistance,
     relVolume:volumeBaseline>0?last.v/volumeBaseline:null};
+}
+export function evaluateTradeSetup(symbol,candleSeries,asOf=Date.now()){
+ const frames={};
+ for(const tf of REQUIRED){
+  const candles=(candleSeries[tf]||[]).filter(c=>c.t+BAR_MS[tf]<=asOf);
+  frames[tf]=analyze(candles,tf);
+ }
+ return proposal(symbol,frames,new Date(asOf).toISOString());
 }
 function frameSummary(data){
  return REQUIRED.map(tf=>data[tf]).filter(Boolean).map(f=>({
@@ -113,7 +122,7 @@ function attentionCandidate(symbol,frames,asOf){
   waitFor:pending.length?pending.slice(0,2):['Підтвердити актуальний вхід, SL/TP, R:R і ліквідність'],
   disclosure:'Рейтинг уваги за 5 перевірками, не ймовірність прибутку. Це не сигнал до входу.'};
 }
-export function createMarketScanner({getKlines,getInstruments,historyPath=null,onPromotion=()=>{}}){
+export function createMarketScanner({getKlines,getInstruments,historyPath=null,onPromotion=()=>{},onCycle=async()=>{}}){
   let snapshot={status:'starting',updatedAt:null,startedAt:null,completed:0,total:0,watchlist:WATCHLIST.slice(),
     opportunities:[],attention:[],alerts:[],errors:[],mode:'local-background',ordersEnabled:false};
   let scanning=false,closed=false,history=[],alerts=[],hasBaseline=false,previousWatching=new Set(),previousOpportunities=new Set(),sequence=0;
@@ -130,7 +139,8 @@ export function createMarketScanner({getKlines,getInstruments,historyPath=null,o
         // Stagger requests to stay within public market API rate limits.
         for(const tf of REQUIRED){
           const data=await getKlines(symbol,tf);
-          frames[tf]=analyze(data.candles,tf);
+          // A forming candle must NEVER count as a confirmed trend or an entry.
+          frames[tf]=analyze(data.candles.filter(c=>c.t+BAR_MS[tf]<=Date.now()),tf);
         }
         const scannedAt=new Date().toISOString();
         const item=proposal(symbol,frames,scannedAt);
@@ -175,6 +185,8 @@ export function createMarketScanner({getKlines,getInstruments,historyPath=null,o
     }
     snapshot={...snapshot,status:errors.length&&errors.length===list.length?'error':'ready',updatedAt:new Date().toISOString(),
       opportunities:found.slice(0,15),attention:attention.slice(0,10),alerts:alerts.slice(),errors,completed:list.length,total:list.length};
+    try{await onCycle({opportunities:found,checkedAt:snapshot.updatedAt})}
+    catch(e){snapshot.errors=[...snapshot.errors,'Журнал paper trading: '+String(e.message||e).slice(0,90)]}
     scanning=false;
   }
   let timer=null;
