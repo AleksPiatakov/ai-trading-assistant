@@ -265,10 +265,48 @@ button:focus-visible,input:focus-visible{outline:2px solid #9d88ff;outline-offse
  #riskCard.advanced~#orderCard{margin-top:0}
  .bottom{clear:both}
 }
+
+/* Approved header reference: desktop 2048x83 proportions, neon highlights, and icon linework */
+.top.top-reference{position:relative;min-height:76px;height:76px;gap:16px;padding:0 13px 0 0;margin:0 -10px;background:linear-gradient(180deg,#06112a 0%,#0a1a3a 58%,#07162f 100%);border-top:1px solid #1d315c;border-bottom:1px solid #254878;box-shadow:0 2px 12px #05102eaa;display:flex;align-items:center;justify-content:space-between;overflow:visible;z-index:4}
+.top-reference .header-brand{display:flex;min-width:0;align-items:center;gap:19px;flex:1;padding-left:10px}
+.top-reference .header-menu{margin-right:8px}
+.top-reference h1{display:block;min-width:0;flex:none;font-weight:800;font-size:clamp(17px,1.52vw,29px);letter-spacing:.005em;color:#f1f5ff;text-shadow:0 0 8px #aba0ff9e,0 0 18px #504bce65;white-space:nowrap;line-height:1.25;margin:0}
+.top-reference h1 small{font-weight:450;font-size:.78em;color:#e5e7f5;text-shadow:none}
+.top-reference .brand-candles{flex:0 0 78px;width:78px;height:40px;display:flex;gap:7px;transform:rotate(9deg);margin:0 3px 0 0;align-items:center;justify-content:center}
+.top-reference .brand-candles i{width:6px;border-radius:1px;background:#27abff;box-shadow:0 0 9px #158aff,0 0 17px #1f74ff}
+.top-reference .brand-candles i:nth-child(1){height:15px}
+.top-reference .brand-candles i:nth-child(2){height:25px}
+.top-reference .brand-candles i:nth-child(3){height:32px;background:#2cceff}
+.top-reference .brand-candles i:nth-child(4){height:37px;background:#9b5bff;box-shadow:0 0 10px #8857ff}
+.top-reference .brand-candles i:nth-child(5){height:23px;background:#41e4d1}
+.top-reference .brand-candles i:before{height:calc(100% + 8px);background:currentColor;color:#6fcfff;top:-4px;left:2.5px}
+.header-controls{display:flex;align-items:center;gap:14px;flex:none}
+.top-reference .mode{border:1px solid #304977;border-radius:26px;background:linear-gradient(180deg,#101b3b,#0b1a37);height:46px;padding:3px;gap:2px}
+.top-reference .mode button{font-size:14px;font-weight:500;padding:8px 17px;border-radius:22px;color:#d3d8ea}
+.top-reference .mode button.active{font-weight:730;color:white;background:linear-gradient(130deg,#5b2de7,#7236ef 62%,#4324b7);box-shadow:0 0 10px #9e4bff,0 0 20px #7636f090,inset 0 1px 1px #e0b5ff;outline:1px solid #aa76ff}
+.live-dot{width:10px;height:10px;border-radius:50%;background:#3b6674;display:inline-block;vertical-align:middle;margin-right:4px}
+.mode button.active .live-dot{background:#19f49b;box-shadow:0 0 9px #21f49f}
+.top-reference .exchange-pill{height:45px;display:flex;align-items:center;gap:5px;border-radius:12px;padding:0 14px;min-width:202px;justify-content:center;background:linear-gradient(#0a242f,#071c2a);border:1px solid #245e54;box-shadow:inset 0 0 0 1px #0f4b38}
+.top-reference .exchange-pill b{font-weight:700;font-size:13px;color:#ffd085}
+.top-reference .exchange-pill .dot{background:#ffb34e;margin-right:3px}
+.top-reference .exchange-pill .chevron{color:#7eb6ad;font-size:18px;margin-left:3px}
+.top-reference .clock-status{height:43px;border-color:#294475;background:linear-gradient(#13254a,#0c1d3d);border-radius:10px;display:flex;align-items:center;font-size:13px;font-weight:600;min-width:110px;justify-content:center}
+.header-icon-button{position:relative;display:grid;place-items:center;width:41px;height:43px;flex:none;border:0;background:transparent;color:#c9d4ee;border-radius:10px;padding:7px;cursor:pointer;transition:background-color .2s,color .2s}
+.header-icon-button svg{width:27px;height:27px;filter:drop-shadow(0 1px 2px #0006)}
+.header-icon-button:hover{background:#172b50;color:#fff}
+.alert-dot{position:absolute;top:4px;right:5px;background:#f74b64;width:9px;height:9px;border-radius:50%;box-shadow:0 0 5px #ff6679}
+.account-icon{background:linear-gradient(#19335e,#101f43);border-radius:50%;width:43px;height:43px;border:1px solid #314f7e}
+.account-icon svg{width:24px}
+.header-popover{position:absolute;z-index:40;top:calc(100% - 2px);right:10px;max-width:350px;min-width:250px;color:#dce8fc;font-size:12px;line-height:1.5;padding:14px;border:1px solid #436295;border-radius:10px;background:#0b203d;box-shadow:0 10px 28px #0008}
+@media(min-width:1051px){.top.top-reference{min-height:76px;height:76px}}
+@media(max-width:1750px){.top-reference .header-brand{gap:10px}.top-reference .brand-candles{flex-basis:51px;width:51px;gap:5px}.top-reference h1{font-size:clamp(15px,1.25vw,21px)}.top-reference h1 small{font-size:.76em}.header-controls{gap:8px}.top-reference .mode button{padding:8px 10px;font-size:12px}.top-reference .exchange-pill{min-width:170px;padding:0 9px}.top-reference .exchange-pill b{font-size:11px}.top-reference .clock-status{min-width:97px;font-size:11px}.header-icon-button{width:34px}.header-icon-button svg{width:24px}}
+@media(max-width:1320px){.top-reference h1 small{display:none}.top-reference .brand-candles{flex-basis:40px;width:40px}.top-reference .header-brand{gap:8px}.header-controls{gap:5px}.top-reference .mode button{font-size:11px;padding:7px 8px}.top-reference .exchange-pill{min-width:auto}.top-reference .clock-status{min-width:80px}}
+@media(max-width:1050px){.top.top-reference{height:auto;min-height:75px;flex-wrap:wrap;gap:5px;padding:9px 8px}.top-reference .header-brand{flex-basis:100%;padding:0}.top-reference .header-controls{margin-left:0;gap:7px;max-width:100%;overflow-x:auto;padding:4px 0}.top-reference h1{font-size:17px}.top-reference h1 small{display:inline}.top-reference .clock-status{display:flex}}
+@media(max-width:680px){.top-reference h1{font-size:13px}.top-reference h1 small{display:none}.top-reference .brand-candles{display:flex;flex-basis:34px;width:34px;gap:3px}.top-reference .brand-candles i{width:4px}.top-reference .header-menu{width:32px}.top-reference .mode button{font-size:10px}.top-reference .exchange-pill{min-width:142px}.top-reference .exchange-pill b{font-size:10px}}
 </style></head>
 <body><div class="app" id="app">
 <nav class="nav" aria-label="Навігація">
-<button id="navToggle" title="Згорнути або розгорнути меню"><span class="ico"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></span><span class="nav-label">Меню</span></button>
+
 <button class="active" title="Термінал"><span class="ico"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round"><path d="m3 10 9-7 9 7v10H3z"/><path d="M9 20v-7h6v7"/></svg></span><span class="nav-label">Термінал</span></button>
 <button id="marketsNav" title="Ринки"><span class="ico"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round"><path d="M4 18V9M9 18V5M14 18v-8M19 18V3"/></svg></span><span class="nav-label">Ринки</span></button>
 <button id="analysisNav" title="Аналіз"><span class="ico"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round"><path d="m12 2 2.6 7.4L22 12l-7.4 2.6L12 22l-2.6-7.4L2 12l7.4-2.6L12 2z"/></svg></span><span class="nav-label">Аналіз</span></button>
@@ -277,10 +315,21 @@ button:focus-visible,input:focus-visible{outline:2px solid #9d88ff;outline-offse
 <button id="learnNav" title="Пояснення"><span class="ico"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round"><path d="M4 5a2 2 0 0 1 2-2h5a3 3 0 0 1 3 3v15H6a2 2 0 0 0-2 0zM20 5a2 2 0 0 0-2-2h-4v18h4a2 2 0 0 1 2 0z"/></svg></span><span class="nav-label">Навчання</span></button>
 <div class="nav-spacer"></div><button id="settingsNav" title="Налаштування"><span class="ico"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M10 2h4l.6 2.6 2 .8 2.3-1.4 2.8 2.8-1.4 2.3.8 2L24 12l-2.9 1-.8 2 1.4 2.3-2.8 2.8-2.3-1.4-2 .8L14 22h-4l-.6-2.6-2-.8-2.3 1.4-2.8-2.8 1.4-2.3-.8-2L0 12l2.9-1 .8-2-1.4-2.3 2.8-2.8 2.3 1.4 2-.8z" transform="translate(1 1) scale(.916)"/></svg></span><span class="nav-label">Налаштування</span></button>
 </nav>
-<div class="workspace"><header class="top">
-<h1><span class="brand-candles" aria-hidden="true"><i></i><i></i><i></i><i></i></span> AI TRADING ASSISTANT <small>— Персональний помічник трейдера</small></h1>
-<div class="mode"><button id="demoMode" class="active" type="button">Навчання (Demo)</button><button id="realMode" type="button">Торгівля (Real)</button></div>
-<div class="status clock-status" id="clockStatus" aria-label="Поточний час">--:--</div><div id="exchangeStatus" class="status warn"><span class="dot"></span><b>Bybit: API не підключено</b></div>
+<div class="workspace"><header class="top top-reference" aria-label="Головна панель трейдера">
+<div class="header-brand">
+<button id="navToggle" class="header-icon-button header-menu" type="button" title="Згорнути або розгорнути навігацію" aria-label="Перемкнути меню"><svg aria-hidden="true" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>
+<span class="brand-candles" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
+<h1>AI TRADING ASSISTANT <small>— Персональний помічник трейдера</small></h1>
+</div>
+<div class="header-controls">
+<div class="mode" role="group" aria-label="Режим роботи"><button id="demoMode" class="active" type="button">Навчання (Демо)</button><button id="realMode" type="button"><span class="live-dot"></span> Торгівля (Реал)</button></div>
+<div id="exchangeStatus" class="status warn exchange-pill" role="status"><span class="dot"></span><b>Bybit (не підключено)</b><span class="chevron">⌄</span></div>
+<div class="status clock-status" id="clockStatus" aria-label="Поточний час">--:-- (CET)</div>
+<button id="headerAlerts" class="header-icon-button alert-button" type="button" title="Сповіщення" aria-label="Сповіщення"><svg aria-hidden="true" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg><span class="alert-dot"></span></button>
+<button id="headerSettings" class="header-icon-button" type="button" title="Налаштування" aria-label="Налаштування"><svg aria-hidden="true" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19 13.5v-3l2-1.4-2-3.5-2.3.6L14 4.5 13.5 2h-3L10 4.5 7.3 6.2 5 5.6 3 9.1 5 10.5v3L3 14.9l2 3.5 2.3-.6 2.7 1.7.5 2.5h3l.5-2.5 2.7-1.7 2.3.6 2-3.5z"/></svg></button>
+<button id="headerAccount" class="header-icon-button account-icon" type="button" title="Рахунок Bybit" aria-label="Стан рахунку"><svg aria-hidden="true" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/></svg></button>
+</div>
+<div id="headerPopover" class="header-popover hidden" role="status" aria-live="polite"></div>
 </header>
 <div class="layout">
 <section class="card chart-card" id="chartCard"><div class="bar"><h2><span class="coin-icon" aria-hidden="true">₿</span> BTCUSDT <span class="star-icon" aria-hidden="true">☆</span></h2><span id="quote" class="last">—</span><span id="quoteMeta" class="detail">Очікування даних</span><button class="btn ghost" id="maximizeChart" title="Розгорнути графік">⛶</button></div>
@@ -315,6 +364,11 @@ const setText=(id,txt)=>$(id).textContent=txt;
 const value=id=>$(id).value;
 function updateClock(){setText('clockStatus',new Date().toLocaleTimeString('uk-UA',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/Ljubljana'})+' CET')}updateClock();setInterval(updateClock,30000);
 $('riskAdvancedButton').onclick=()=>{$('riskCard').classList.toggle('advanced');$('riskAdvancedButton').textContent=$('riskCard').classList.contains('advanced')?'⚙ Згорнути рівні':'⚙ Рівні та комісії'};
+const headerPopover=$('headerPopover');
+function showHeaderPopover(message){headerPopover.textContent=message;headerPopover.classList.toggle('hidden',headerPopover.textContent===headerPopover.dataset.last&&!headerPopover.classList.contains('hidden'));headerPopover.dataset.last=message;}
+$('headerAlerts').onclick=()=>showHeaderPopover('Сповіщення: нових повідомлень немає. З’єднання з рахунком Bybit не встановлено.');
+$('headerSettings').onclick=()=>{$('settingsNav').click();$('positions').scrollIntoView({behavior:'smooth'});};
+$('headerAccount').onclick=()=>showHeaderPopover('Рахунок Bybit не підключений. Баланс та позиції недоступні. Для безпечного підключення потрібна окрема інтеграція.');
 function saveLayout(){try{localStorage.setItem('ata-layout',JSON.stringify({mode:state.mode,sidebar:state.sidebar}))}catch{}}
 try{const old=JSON.parse(localStorage.getItem('ata-layout')||'{}');if(old.mode==='real')state.mode='real';if(old.sidebar)state.sidebar=true}catch{}
 function applyMode(){const demo=state.mode==='demo';$('demoMode').classList.toggle('active',demo);$('realMode').classList.toggle('active',!demo);setText('footerMode','Режим: '+(demo?'Навчання (Bybit Demo)':'Торгівля (Bybit Real)')+' · торгівля через API поки вимкнена');setText('executionStatus',demo?'Bybit Demo API ще не налаштований. Це не тестове виконання ордерів: кнопка заблокована до безпечного підключення.':'Bybit Real API не налаштований. Реальні ордери заблоковано до окремого підтвердження і підключення.');saveLayout()}
