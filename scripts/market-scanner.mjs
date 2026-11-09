@@ -106,10 +106,10 @@ function attentionCandidate(symbol,frames,asOf){
   waitFor:pending.length?pending.slice(0,2):['Підтвердити актуальний вхід, SL/TP, R:R і ліквідність'],
   disclosure:'Рейтинг уваги за 5 перевірками, не ймовірність прибутку. Це не сигнал до входу.'};
 }
-export function createMarketScanner({getKlines,getInstruments,historyPath=null}){
+export function createMarketScanner({getKlines,getInstruments,historyPath=null,onPromotion=()=>{}}){
   let snapshot={status:'starting',updatedAt:null,startedAt:null,completed:0,total:0,watchlist:WATCHLIST.slice(),
-    opportunities:[],attention:[],errors:[],mode:'local-background',ordersEnabled:false};
-  let scanning=false,closed=false,history=[];
+    opportunities:[],attention:[],alerts:[],errors:[],mode:'local-background',ordersEnabled:false};
+  let scanning=false,closed=false,history=[],alerts=[],hasBaseline=false,previousWatching=new Set(),previousOpportunities=new Set(),sequence=0;
   async function scan(){
     if(scanning||closed)return;
     scanning=true;const start=new Date().toISOString(),found=[],attention=[],errors=[];
@@ -135,6 +135,24 @@ export function createMarketScanner({getKlines,getInstruments,historyPath=null})
     }
     found.sort((a,b)=>b.confirmations-a.confirmations||b.rr-a.rr);
     attention.sort((a,b)=>b.passed-a.passed||Number(b.aligned)-Number(a.aligned)||a.symbol.localeCompare(b.symbol));
+    // Alert only on a transition from an observed pair into a NEW qualified setup.
+    // First scan establishes baseline; no startup storm or repeated alerts on every refresh.
+    const currentOpportunities=new Set(found.map(x=>x.symbol+'|'+x.side));
+    const currentWatching=new Set(attention.map(x=>x.symbol));
+    if(hasBaseline){
+      for(const item of found){
+        const key=item.symbol+'|'+item.side;
+        if(previousWatching.has(item.symbol)&&!previousOpportunities.has(key)){
+          const alert={id:++sequence,symbol:item.symbol,side:item.side,entry:item.entry,
+            stop:item.stop,target:item.target,rr:item.rr,createdAt:new Date().toISOString(),
+            message:'Пара під наглядом перейшла до торгового плану; перевірте актуальність перед входом.'};
+          alerts.unshift(alert);
+          try{onPromotion({...alert})}catch{}
+        }
+      }
+    }
+    hasBaseline=true;previousWatching=currentWatching;previousOpportunities=currentOpportunities;
+    alerts=alerts.slice(0,50);
     const prior=new Set(snapshot.opportunities.map(x=>x.symbol+'|'+x.side));
     for(const item of found){
       if(!prior.has(item.symbol+'|'+item.side)){
@@ -149,7 +167,7 @@ export function createMarketScanner({getKlines,getInstruments,historyPath=null})
       }catch(e){errors.push('Не вдалося зберегти історію сканування')}
     }
     snapshot={...snapshot,status:errors.length&&errors.length===list.length?'error':'ready',updatedAt:new Date().toISOString(),
-      opportunities:found.slice(0,15),attention:attention.slice(0,10),errors,completed:list.length,total:list.length};
+      opportunities:found.slice(0,15),attention:attention.slice(0,10),alerts:alerts.slice(),errors,completed:list.length,total:list.length};
     scanning=false;
   }
   let timer=null;
@@ -169,5 +187,6 @@ export function createMarketScanner({getKlines,getInstruments,historyPath=null})
   const stop=()=>{closed=true;clearInterval(timer)};
   const getSnapshot=()=>({...snapshot,opportunities:snapshot.opportunities.filter(x=>Date.now()-Date.parse(x.scannedAt)<REFRESH_MS*2),attention:snapshot.attention.filter(x=>Date.now()-Date.parse(x.checkedAt)<REFRESH_MS*2)});
   const getHistory=()=>history.slice(0,100).map(x=>({...x}));
-  return {start,stop,getSnapshot,getHistory,refresh:scan};
+  const getAlerts=()=>alerts.map(x=>({...x}));
+  return {start,stop,getSnapshot,getHistory,getAlerts,refresh:scan};
 }
