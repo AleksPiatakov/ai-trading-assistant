@@ -693,6 +693,15 @@ body.real-account .help-info{visibility:hidden;pointer-events:none}
 #chartCard .drawing-tools button.drawing-tool-button.active{background:#372c81;border-color:#9772ee;color:#fff;box-shadow:0 0 8px #815cf066}
 #chartCard .drawing-tools button.drawing-tool-button:focus-visible{outline:2px solid #ac96ff;outline-offset:1px}
 @media(max-width:680px){#chartCard .drawing-tools button.drawing-tool-button{width:26px;height:33px}#chartCard .drawing-tools button.drawing-tool-button svg{width:19px;height:19px}}
+
+.chart-config-section{padding:8px 6px 18px;border-bottom:1px solid #42608b}
+.chart-config-section h3{font-size:15px;margin:8px 0;color:#edf4ff}
+.chart-config-section p{font-size:11px;color:#a9c1e0;margin:0 0 12px}
+.chart-config-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-bottom:12px}
+.chart-config-grid label{display:flex;flex-direction:column;gap:5px;color:#c9d7eb;font-size:11px}
+.chart-config-grid input{height:35px;border-radius:7px;border:1px solid #5673a1;background:#0c203e;color:#fff;padding:7px;min-width:0}
+#chartSettingsStatus{color:#a5e6c4;margin-left:10px;font-size:11px}
+@media(max-width:600px){.chart-config-grid{grid-template-columns:1fr}}
 </style></head>
 <body><div class="app" id="app">
 <nav class="nav nav-reference" aria-label="Навігація">
@@ -745,7 +754,7 @@ body.real-account .help-info{visibility:hidden;pointer-events:none}
 <section class="card bottom" id="positions"><div class="bar"><button class="btn active" data-bottom="positions">Відкриті позиції</button><button type="button" class="help-info" data-help="positions" aria-label="Пояснення: Відкриті позиції" title="Що це?">і</button><button class="btn" data-bottom="orders">Поточні ордери</button><button type="button" class="help-info" data-help="orders" aria-label="Пояснення: Поточні ордери" title="Що це?">і</button><button class="btn" data-bottom="journal">Журнал</button><button type="button" class="help-info" data-help="journal" aria-label="Пояснення: Журнал" title="Що це?">і</button><button class="btn" data-bottom="settings">Налаштування</button><button type="button" class="help-info" data-help="settings" aria-label="Пояснення: Налаштування" title="Що це?">і</button><span class="grow"></span><button class="btn ghost" id="hideBottom">−</button></div><div id="bottomContent" class="table-scroll"><table class="position-table"><thead><tr><th>Пара</th><th>Напрямок</th><th>Обсяг</th><th>Вхід</th><th>SL</th><th>TP</th><th>P&L (USDT)</th><th>P&L (%)</th><th>Дії</th></tr></thead><tbody><tr class="empty-position"><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td><button class="btn" disabled>Закрити 25%</button> <button class="btn" disabled>Закрити 50%</button> <button class="btn" disabled>SL → BE</button></td></tr></tbody></table></div></section>
 <footer class="foot"><span id="footerMarket"></span><span id="footerMode"></span></footer>
 </div></div>
-<div id="settingsOverlay" class="settings-overlay hidden" aria-hidden="true"><div class="settings-modal" role="dialog" aria-modal="true" aria-labelledby="settingsModalTitle"><div class="settings-modal-header"><div><span class="settings-kicker">AI TRADING ASSISTANT</span><h2 id="settingsModalTitle">Налаштування</h2></div><button id="settingsClose" type="button" aria-label="Закрити налаштування">×</button></div><div id="settingsModalContent" class="settings-modal-content"><section class="demo-credentials" aria-labelledby="demoConfigTitle">
+<div id="settingsOverlay" class="settings-overlay hidden" aria-hidden="true"><div class="settings-modal" role="dialog" aria-modal="true" aria-labelledby="settingsModalTitle"><div class="settings-modal-header"><div><span class="settings-kicker">AI TRADING ASSISTANT</span><h2 id="settingsModalTitle">Налаштування</h2></div><button id="settingsClose" type="button" aria-label="Закрити налаштування">×</button></div><div id="settingsModalContent" class="settings-modal-content"><section class="chart-config-section"><h3>Налаштування рівнів графіка</h3><p>Введені рівні використовуються для планування угоди й не надсилаються на біржу.</p><div class="chart-config-grid"><label>Вхід (USDT)<input type="number" step="any" min="0.00000001" id="settingEntry" placeholder="Не встановлено"></label><label>Stop Loss (USDT)<input type="number" step="any" min="0.00000001" id="settingStop" placeholder="Не встановлено"></label><label>Take Profit (USDT)<input type="number" step="any" min="0.00000001" id="settingTarget" placeholder="Не встановлено"></label></div><button class="btn purple" id="applyChartSettings" type="button">Застосувати рівні</button><span id="chartSettingsStatus" role="status" aria-live="polite"></span></section><section class="demo-credentials" aria-labelledby="demoConfigTitle">
 <div class="demo-config-heading"><span id="demoConfigTitle">Bybit Demo API</span><span class="demo-config-chip" id="demoKeyState">—</span></div>
 <p class="demo-config-note" id="demoSettingsHelp"></p>
 <form id="demoCredentialsForm" autocomplete="off" spellcheck="false">
@@ -989,6 +998,10 @@ function openSettingsModal(){
  const layer=$('settingsOverlay');
  if(!layer.classList.contains('hidden'))return;
  settingsPreviousFocus=document.activeElement;
+ for(const [target,source] of [['settingEntry','entry'],['settingStop','stop'],['settingTarget','target']]){
+   $(target).value=$(source).value;
+ }
+ $('chartSettingsStatus').textContent='';
  layer.classList.remove('hidden');layer.setAttribute('aria-hidden','false');
  document.body.style.overflow='hidden';
  initDemoSettings();
@@ -1002,6 +1015,19 @@ function closeSettingsModal(){
  settingsPreviousFocus?.focus?.();
  settingsPreviousFocus=null;
 }
+$('applyChartSettings').onclick=()=>{
+ for(const [target,source] of [['settingEntry','entry'],['settingStop','stop'],['settingTarget','target']]){
+   const value=$(target).value.trim();
+   if(value&&(Number(value)<=0||!Number.isFinite(Number(value)))){
+     $('chartSettingsStatus').textContent='Усі ціни мають бути додатними.';return;
+   }
+ }
+ for(const [target,source] of [['settingEntry','entry'],['settingStop','stop'],['settingTarget','target']]){
+   $(source).value=$(target).value.trim();
+ }
+ calculate();draw();
+ $('chartSettingsStatus').textContent='Рівні застосовано до графіка.';
+};
 $('settingsClose').onclick=closeSettingsModal;
 $('settingsDone').onclick=closeSettingsModal;
 $('settingsOverlay').onclick=e=>{if(e.target===$('settingsOverlay'))closeSettingsModal()};
@@ -1552,7 +1578,7 @@ function eraseClosestAnnotation(point){
 }
 document.querySelectorAll('[data-chart-tool]').forEach(button=>button.onclick=()=>{
  const type=button.dataset.chartTool;
- if(type==='levels'){setChartTool(null);$('riskAdvancedButton').click();$('entry').focus();return}
+ if(type==='levels'){setChartTool(null);openSettingsModal();$('settingEntry').focus();return}
  if(type==='home'){setChartTool(null);chartResetView();return}
  if(type==='zoom'){setChartTool(null);chartZoom(.8);return}
  setChartTool(type);
