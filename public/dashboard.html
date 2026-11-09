@@ -1365,7 +1365,9 @@ function draw(){
  const pad=Math.max((maxRaw-minRaw)*.09,Math.abs(maxRaw)*.0001,1e-9);
  const min=minRaw-pad,max=maxRaw+pad;
  const yPrice=v=>priceBottom-(v-min)/(max-min)*(priceBottom-priceTop);
- const step=plotWidth/sample.length,barWidth=Math.max(1.3,Math.min(8,step*.66));
+ // Leave a deliberate blank strip between the most recent candle and the price axis.
+ const candleWidth=Math.max(120,plotWidth-38);
+ const step=candleWidth/sample.length,barWidth=Math.max(1.3,Math.min(8,step*.66));
  state.range={min,max,top:priceTop,bottom:priceBottom};
  // Price scale and OHLC header reflect the actual latest Bybit candle.
  c.font='11px system-ui';c.fillStyle='#a9bfe1';
@@ -1456,10 +1458,11 @@ function draw(){
    let labelFont=11;
    c.font='bold '+labelFont+'px system-ui';
    const badgeRight=width-4,availableWidth=Math.max(36,badgeRight-(right+5));
-   while(c.measureText(priceLabel).width+12>availableWidth&&labelFont>8){
+   const badgeMaxWidth=Math.min(64,availableWidth);
+   while(c.measureText(priceLabel).width+8>badgeMaxWidth&&labelFont>8){
      labelFont-=.5;c.font='bold '+labelFont+'px system-ui';
    }
-   const tagW=Math.min(availableWidth,Math.max(35,Math.ceil(c.measureText(priceLabel).width+12)));
+   const tagW=Math.min(badgeMaxWidth,Math.max(35,Math.ceil(c.measureText(priceLabel).width+8)));
    const tagX=badgeRight-tagW;
    c.beginPath();c.roundRect(tagX,y-11,tagW,22,8);c.fill();
    c.fillStyle='#fff';c.textAlign='center';c.fillText(priceLabel,tagX+tagW/2,y+4);
@@ -1543,7 +1546,7 @@ canvas.addEventListener('pointermove',e=>{
    state.levels[state.drag]=price;calculate();return;
  }
  if(chartPan){
-   const plot=Math.max(150,canvas.getBoundingClientRect().width-91);
+   const plot=Math.max(120,canvas.getBoundingClientRect().width-107);
    const perCandle=plot/Math.max(1,visibleCandleCount());
    chartViewport.offset=chartPan.offset+Math.round((e.clientX-chartPan.x)/Math.max(2,perCandle));
    constrainChartViewport();draw();
