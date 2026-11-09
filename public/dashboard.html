@@ -831,6 +831,19 @@ body.real-account .help-info{visibility:hidden;pointer-events:none}
 .scanner-tabs button{font-size:11px;white-space:nowrap;padding:8px 4px}
 .scanner-attention-row{border-color:#64779a}
 @media(max-width:1150px){#aiCard .assistant-watch-brief{grid-template-columns:1fr}}
+
+.scanner-notification-controls{padding:9px 20px;display:flex;align-items:center;flex-wrap:wrap;gap:10px;border-bottom:1px solid #395279}
+.scanner-notification-controls label{display:flex;align-items:center;gap:6px;font-size:11px;color:#d2e0f7;cursor:pointer}
+.scanner-notification-controls input{accent-color:#825af4}
+.scanner-notification-controls .btn{font-size:10px;padding:5px 9px}
+.scanner-alert-status{padding:5px 20px;color:#a9c5e7;font-size:10px}
+.scanner-alert-inbox{max-height:170px;overflow:auto;padding:8px 20px;display:grid;gap:6px}
+.scanner-alert-inbox[hidden]{display:none!important}
+.scanner-alert-inbox div{background:#102946;border:1px solid #3b6088;border-radius:6px;padding:7px;font-size:11px;color:#d8e9ff}
+.scanner-toast{position:fixed;right:20px;bottom:18px;max-width:min(470px,95vw);z-index:12000;display:flex;align-items:center;gap:9px;background:#143853;color:#d9f9f0;border:1px solid #33ac91;border-radius:12px;padding:13px;box-shadow:0 8px 30px #020914a8;font-size:12px}
+.scanner-toast.hidden{display:none}
+.scanner-toast button{background:#17466b;border:1px solid #5b819c;color:#eaf7ff;border-radius:6px;padding:5px 7px;cursor:pointer}
+@media(max-width:780px){.scanner-notification-controls,.scanner-alert-status,.scanner-alert-inbox{padding-left:13px;padding-right:13px}}
 </style></head>
 <body><div class="app" id="app">
 <nav class="nav nav-reference" aria-label="Навігація">
@@ -887,11 +900,12 @@ body.real-account .help-info{visibility:hidden;pointer-events:none}
 <section class="card bottom" id="positions"><div class="bar"><button class="btn active" data-bottom="positions">Відкриті позиції</button><button type="button" class="help-info" data-help="positions" aria-label="Пояснення: Відкриті позиції" title="Що це?">і</button><button class="btn" data-bottom="orders">Поточні ордери</button><button type="button" class="help-info" data-help="orders" aria-label="Пояснення: Поточні ордери" title="Що це?">і</button><button class="btn" data-bottom="journal">Журнал</button><button type="button" class="help-info" data-help="journal" aria-label="Пояснення: Журнал" title="Що це?">і</button><button class="btn" data-bottom="settings">Налаштування</button><button type="button" class="help-info" data-help="settings" aria-label="Пояснення: Налаштування" title="Що це?">і</button><span class="grow"></span><button class="btn ghost" id="hideBottom">−</button></div><div id="bottomContent" class="table-scroll"><table class="position-table"><thead><tr><th>Пара</th><th>Напрямок</th><th>Обсяг</th><th>Вхід</th><th>SL</th><th>TP</th><th>P&L (USDT)</th><th>P&L (%)</th><th>Дії</th></tr></thead><tbody><tr class="empty-position"><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td><button class="btn" disabled>Закрити 25%</button> <button class="btn" disabled>Закрити 50%</button> <button class="btn" disabled>SL → BE</button></td></tr></tbody></table></div></section>
 <footer class="foot"><span id="footerMarket"></span><span id="footerMode"></span></footer>
 </div></div>
+<div id="scannerToast" class="scanner-toast hidden" role="status" aria-live="polite"><span id="scannerToastMessage"></span><button id="scannerToastOpen" class="btn ghost" type="button">Переглянути</button><button id="scannerToastDismiss" type="button" aria-label="Приховати">×</button></div>
 <div id="scannerOverlay" class="scanner-overlay hidden" aria-hidden="true">
 <div class="scanner-dialog" role="dialog" aria-modal="true" aria-labelledby="scannerTitle">
  <header class="scanner-heading"><div><small>AI TRADING ASSISTANT · BYBIT PUBLIC</small><h2 id="scannerTitle">◉ Торгові можливості</h2><p>Локальний сканер перевіряє ринки, навіть коли сторінка закрита, доки запущено сервер.</p></div><button id="scannerClose" type="button" aria-label="Закрити сканер">×</button></header>
  <div class="scanner-controls"><span id="scannerState" role="status">Очікування сканера</span><label>Напрямок <select id="scannerFilter"><option value="all">Усі</option><option value="long">Long</option><option value="short">Short</option></select></label><button id="scannerRefresh" type="button" class="btn ghost">Оновити список</button></div>
- <div class="scanner-tabs" role="group" aria-label="Перегляд результатів сканера"><button id="scannerCurrentTab" type="button" class="active">Торгові плани</button><button id="scannerAttentionTab" type="button">Пари під наглядом</button><button id="scannerHistoryTab" type="button">Історія</button></div><div class="scanner-summary" id="scannerSummary"></div>
+ <div class="scanner-tabs" role="group" aria-label="Перегляд результатів сканера"><button id="scannerCurrentTab" type="button" class="active">Торгові плани</button><button id="scannerAttentionTab" type="button">Пари під наглядом</button><button id="scannerHistoryTab" type="button">Історія</button></div><div class="scanner-notification-controls"><label><input id="scannerMacAlerts" type="checkbox"> Системні сповіщення macOS</label><label><input id="scannerBrowserAlerts" type="checkbox"> Сповіщення браузера</label><button id="scannerShowAlerts" type="button" class="btn ghost">Події <span id="scannerUnread">0</span></button></div><div id="scannerAlertStatus" role="status" class="scanner-alert-status">Сповіщення надходять лише після явного увімкнення. Нові сигнали не відкривають угоди.</div><div id="scannerAlertInbox" class="scanner-alert-inbox" hidden></div><div class="scanner-summary" id="scannerSummary"></div>
  <div id="scannerResults" class="scanner-results"></div>
  <footer class="scanner-footer">Сканер лише пропонує плани, не відкриває позиції. Комісії, спред, ліквідність та прослизання необхідно перевірити перед торгівлею.</footer>
 </div></div>
@@ -1274,6 +1288,79 @@ function renderAssistantWatch(){
  }
 }
 $('watchOpenScanner').onclick=()=>{scannerOpen();chooseScannerView('attention')};
+
+let alertLastId=0,alertInitialized=false,alertInbox=[],browserAlertsEnabled=false;
+try{browserAlertsEnabled=localStorage.getItem('ata-browser-alerts')==='true'}catch{}
+function renderScannerAlertInbox(){
+ const inbox=$('scannerAlertInbox');inbox.replaceChildren();
+ for(const item of alertInbox.slice(0,30)){
+  const row=document.createElement('div');
+  row.textContent=item.symbol+' '+(item.side==='short'?'SHORT':'LONG')+' · План після спостереження · '+new Date(item.createdAt).toLocaleTimeString('uk-UA');
+  inbox.append(row);
+ }
+ if(!alertInbox.length)inbox.textContent='Нових подій немає.';
+ $('scannerUnread').textContent=String(alertInbox.length);
+}
+function showScannerToast(alert){
+ $('scannerToastMessage').textContent=alert.symbol+' · '+(alert.side==='short'?'SHORT':'LONG')+
+   ': пара під наглядом стала кандидатом. Перевір план перед рішенням.';
+ $('scannerToast').classList.remove('hidden');
+}
+$('scannerToastOpen').onclick=()=>{scannerOpen();$('scannerAlertInbox').hidden=false;$('scannerToast').classList.add('hidden')};
+$('scannerToastDismiss').onclick=()=>$('scannerToast').classList.add('hidden');
+$('scannerShowAlerts').onclick=()=>{$('scannerAlertInbox').hidden=!$('scannerAlertInbox').hidden;renderScannerAlertInbox()};
+async function syncScannerNotifications(){
+ if(!['127.0.0.1','localhost'].includes(location.hostname))return;
+ try{
+  const response=await fetch('/api/scanner/notifications',{cache:'no-store',signal:AbortSignal.timeout(8000)});
+  if(!response.ok)return;
+  const data=await response.json();
+  $('scannerMacAlerts').checked=data.macNotifications===true;
+  const alerts=Array.isArray(data.alerts)?data.alerts:[];
+  const latest=Math.max(0,...alerts.map(item=>Number(item.id)||0));
+  if(!alertInitialized){
+    alertInitialized=true;
+    // Events stored before this page session remain in the inbox, not toast notifications.
+    alertLastId=latest;
+    alertInbox=alerts.slice(0,30);
+    renderScannerAlertInbox();
+    return;
+  }
+  const fresh=alerts.filter(item=>Number(item.id)>alertLastId).sort((a,b)=>a.id-b.id);
+  alertLastId=Math.max(alertLastId,latest);
+  if(fresh.length){
+    alertInbox=[...fresh.reverse(),...alertInbox].slice(0,30);
+    renderScannerAlertInbox();
+    showScannerToast(fresh[0]);
+    if(browserAlertsEnabled&&typeof Notification!=='undefined'&&Notification.permission==='granted'&&!document.hidden){
+      // The in-app toast is shown regardless of notification permission.
+      try{new Notification('AI Trading Assistant',{body:fresh[0].symbol+' · новий кандидат на угоду. Перевір графік.'})}catch{}
+    }
+  }
+ }catch{}
+}
+$('scannerMacAlerts').onchange=async e=>{
+ const enabled=e.target.checked;e.target.disabled=true;
+ try{
+  const r=await fetch('/api/scanner/notification-settings',{method:'POST',headers:{'Content-Type':'application/json','X-ATA-Local':'1'},body:JSON.stringify({macNotifications:enabled})});
+  const data=await r.json();
+  if(!r.ok)throw Error(data.error||'Помилка');
+  $('scannerAlertStatus').textContent=enabled?'Сповіщення macOS увімкнені. macOS може попросити дозвіл на показ.':'Сповіщення macOS вимкнені.';
+ }catch(err){e.target.checked=!enabled;$('scannerAlertStatus').textContent=String(err.message)}
+ finally{e.target.disabled=false}
+};
+$('scannerBrowserAlerts').checked=browserAlertsEnabled;
+$('scannerBrowserAlerts').onchange=async e=>{
+ if(!e.target.checked){browserAlertsEnabled=false;localStorage.setItem('ata-browser-alerts','false');return}
+ if(typeof Notification==='undefined'){$('scannerAlertStatus').textContent='Цей браузер не підтримує системні вебсповіщення.';e.target.checked=false;return}
+ const permission=await Notification.requestPermission();
+ browserAlertsEnabled=permission==='granted';
+ e.target.checked=browserAlertsEnabled;
+ localStorage.setItem('ata-browser-alerts',String(browserAlertsEnabled));
+ $('scannerAlertStatus').textContent=browserAlertsEnabled?'Сповіщення браузера увімкнені.':'Браузер не дозволив сповіщення.';
+};
+setInterval(syncScannerNotifications,15000);
+if(['127.0.0.1','localhost'].includes(location.hostname))syncScannerNotifications();
 $('openScanner').onclick=scannerOpen;
 $('scannerClose').onclick=scannerClose;
 $('scannerOverlay').onclick=e=>{if(e.target===$('scannerOverlay'))scannerClose()};
