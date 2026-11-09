@@ -1193,12 +1193,12 @@ function scannerOpenInline(){
  if(!scannerStandalone)document.body.style.overflow='hidden';
  $('scannerClose').focus();fetchScannerSnapshot();
 }
-function scannerOpen(){
- if(scannerStandalone){scannerOpenInline();return}
- if(scannerPopup&&!scannerPopup.closed){scannerPopup.focus();return}
- const url=new URL(location.href);url.searchParams.set('scanner','1');
+function scannerOpen(view='current'){
+ if(scannerStandalone){scannerOpenInline();chooseScannerView(view);return}
+ if(scannerPopup&&!scannerPopup.closed){scannerPopup.postMessage({type:'ata-scanner-view',view},location.origin);scannerPopup.focus();return}
+ const url=new URL(location.href);url.searchParams.set('scanner','1');url.searchParams.set('view',view);
  scannerPopup=window.open(url.href,'ata-trading-opportunities','popup=yes,width=1190,height=920,resizable=yes,scrollbars=yes');
- if(!scannerPopup)scannerOpenInline();
+ if(!scannerPopup){scannerOpenInline();chooseScannerView(view)}
 }
 function scannerClose(){
  if(scannerStandalone){window.close();return}
@@ -1244,6 +1244,7 @@ function applyScannerMarket(item,withPlan=false){
  $('chartCard').scrollIntoView({behavior:'smooth',block:'start'});
 }
 window.addEventListener('message',e=>{
+ if(scannerStandalone&&e.origin===location.origin&&e.data?.type==='ata-scanner-view'){chooseScannerView(e.data.view);return}
  if(scannerStandalone||e.origin!==location.origin||e.data?.type!=='ata-scanner-open-market')return;
  if(e.source!==scannerPopup&&e.source?.name!=='ata-trading-opportunities')return;
  const item=e.data;
@@ -1489,12 +1490,12 @@ function renderAssistantWatch(){
   button.append(name,note);
   button.title=item.reason;
   button.onclick=()=>{
-    scannerOpen();chooseScannerView('attention');
+    scannerOpen('attention');
   };
   root.append(button);
  }
 }
-$('watchOpenScanner').onclick=()=>{scannerOpen();chooseScannerView('attention')};
+$('watchOpenScanner').onclick=()=>{scannerOpen('attention')};
 
 let alertLastId=0,alertInitialized=false,alertSession=null,alertInbox=[],browserAlertsEnabled=false;
 try{browserAlertsEnabled=localStorage.getItem('ata-browser-alerts')==='true'}catch{}
@@ -1573,6 +1574,7 @@ $('openScanner').onclick=scannerOpen;
 $('scannerClose').onclick=scannerClose;
 $('scannerOverlay').onclick=e=>{if(e.target===$('scannerOverlay'))scannerClose()};
 function chooseScannerView(view){
+ if(!['current','attention','history'].includes(view))view='current';
  scannerView=view;
  $('scannerCurrentTab').classList.toggle('active',view==='current');
  $('scannerHistoryTab').classList.toggle('active',view==='history');
@@ -2895,7 +2897,7 @@ try{
  }
 }catch{}
 refreshDetachedWindow();
-if(scannerStandalone)scannerOpenInline();
+if(scannerStandalone){scannerOpenInline();chooseScannerView(new URLSearchParams(location.search).get('view')||'current')}
 else {
  const requestedSymbol=new URLSearchParams(location.search).get('symbol');
  if(requestedSymbol&&(/^[A-Z0-9]{3,30}USDT$/).test(requestedSymbol)){
