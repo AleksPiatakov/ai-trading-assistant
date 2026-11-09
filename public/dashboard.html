@@ -674,6 +674,18 @@ body.real-account .help-info{visibility:hidden;pointer-events:none}
 #aiCard #analysisFacts .analysis-fact-row:last-child{border-bottom:none}
 #aiCard #analysisFacts .analysis-fact-row span{color:#a5bddd;min-width:0}
 #aiCard #analysisFacts .analysis-fact-row strong{font-size:11px;font-weight:650;color:#e7f2ff;text-align:right;overflow-wrap:anywhere}
+
+.settings-overlay{position:fixed;inset:0;z-index:9800;background:#020916ca;display:flex;align-items:center;justify-content:center;padding:18px;overflow:auto}
+.settings-overlay.hidden{display:none}
+.settings-modal{width:min(740px,100%);max-height:min(90vh,820px);display:flex;flex-direction:column;min-height:0;background:linear-gradient(145deg,#172c51,#091a33);border:1px solid #5d79ad;border-radius:16px;box-shadow:0 25px 65px #000a;color:#e6f0ff}
+.settings-modal-header{display:flex;align-items:center;justify-content:space-between;padding:20px 23px 15px;border-bottom:1px solid #345380}
+.settings-kicker{font-size:10px;letter-spacing:.13em;color:#ae9af9;font-weight:750}
+.settings-modal h2{font-size:21px;margin:4px 0 0}
+#settingsClose{background:#20395e;border:1px solid #5875a1;border-radius:8px;width:34px;height:34px;color:#edf4ff;font-size:26px;cursor:pointer}
+.settings-modal-content{overflow:auto;min-height:0;padding:8px 12px}
+.settings-modal-footer{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:13px 20px 16px;border-top:1px solid #345380;color:#afc4de;font-size:11px}
+.settings-modal-footer button{padding:7px 18px}
+@media(max-width:620px){.settings-modal-footer{flex-direction:column;align-items:flex-start}.settings-modal-header{padding:15px}}
 </style></head>
 <body><div class="app" id="app">
 <nav class="nav nav-reference" aria-label="Навігація">
@@ -726,6 +738,16 @@ body.real-account .help-info{visibility:hidden;pointer-events:none}
 <section class="card bottom" id="positions"><div class="bar"><button class="btn active" data-bottom="positions">Відкриті позиції</button><button type="button" class="help-info" data-help="positions" aria-label="Пояснення: Відкриті позиції" title="Що це?">і</button><button class="btn" data-bottom="orders">Поточні ордери</button><button type="button" class="help-info" data-help="orders" aria-label="Пояснення: Поточні ордери" title="Що це?">і</button><button class="btn" data-bottom="journal">Журнал</button><button type="button" class="help-info" data-help="journal" aria-label="Пояснення: Журнал" title="Що це?">і</button><button class="btn" data-bottom="settings">Налаштування</button><button type="button" class="help-info" data-help="settings" aria-label="Пояснення: Налаштування" title="Що це?">і</button><span class="grow"></span><button class="btn ghost" id="hideBottom">−</button></div><div id="bottomContent" class="table-scroll"><table class="position-table"><thead><tr><th>Пара</th><th>Напрямок</th><th>Обсяг</th><th>Вхід</th><th>SL</th><th>TP</th><th>P&L (USDT)</th><th>P&L (%)</th><th>Дії</th></tr></thead><tbody><tr class="empty-position"><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td><button class="btn" disabled>Закрити 25%</button> <button class="btn" disabled>Закрити 50%</button> <button class="btn" disabled>SL → BE</button></td></tr></tbody></table></div></section>
 <footer class="foot"><span id="footerMarket"></span><span id="footerMode"></span></footer>
 </div></div>
+<div id="settingsOverlay" class="settings-overlay hidden" aria-hidden="true"><div class="settings-modal" role="dialog" aria-modal="true" aria-labelledby="settingsModalTitle"><div class="settings-modal-header"><div><span class="settings-kicker">AI TRADING ASSISTANT</span><h2 id="settingsModalTitle">Налаштування</h2></div><button id="settingsClose" type="button" aria-label="Закрити налаштування">×</button></div><div id="settingsModalContent" class="settings-modal-content"><section class="demo-credentials" aria-labelledby="demoConfigTitle">
+<div class="demo-config-heading"><span id="demoConfigTitle">Bybit Demo API</span><span class="demo-config-chip" id="demoKeyState">—</span></div>
+<p class="demo-config-note" id="demoSettingsHelp"></p>
+<form id="demoCredentialsForm" autocomplete="off" spellcheck="false">
+<label>API Key<input type="text" id="demoApiKey" name="key" autocomplete="off" autocapitalize="off" placeholder="API Key" required /></label>
+<label>API Secret<input type="password" id="demoApiSecret" name="secret" autocomplete="new-password" placeholder="API Secret" required /></label>
+<div class="demo-config-actions"><button id="demoSaveCredentials" type="submit" class="btn purple">Перевірити й зберегти</button><button id="demoClearCredentials" type="button" class="btn ghost">Видалити ключ</button></div>
+</form>
+<div id="demoSettingsResult" class="demo-config-result" role="status" aria-live="polite"></div>
+</section></div><div class="settings-modal-footer"><span>Реальний рахунок не підключено. Ордери вимкнені.</span><button id="settingsDone" class="btn purple" type="button">Закрити</button></div></div></div>
 <div id="helpOverlay" class="help-overlay hidden" aria-hidden="true"><div class="help-modal" role="dialog" aria-modal="true" aria-labelledby="helpTitle" aria-describedby="helpSummary"><div class="help-modal-head"><span class="help-modal-tag">ДОВІДКА • НАВЧАННЯ</span><button id="helpClose" class="help-close" type="button" aria-label="Закрити пояснення">×</button></div><h2 id="helpTitle"></h2><p id="helpSummary"></p><h3>Для чого потрібно</h3><p id="helpPurpose"></p><h3>Як користуватися</h3><p id="helpHow"></p><h3>Важливо знати</h3><p id="helpCaution"></p><button id="helpGotIt" class="btn purple help-understood" type="button">Зрозуміло</button></div></div>
 <script>
 (function(){
@@ -828,7 +850,7 @@ $('riskAdvancedButton').onclick=()=>{$('riskCard').classList.toggle('advanced');
 const headerPopover=$('headerPopover');
 function showHeaderPopover(message){headerPopover.textContent=message;headerPopover.classList.toggle('hidden',headerPopover.textContent===headerPopover.dataset.last&&!headerPopover.classList.contains('hidden'));headerPopover.dataset.last=message;}
 $('headerAlerts').onclick=()=>showHeaderPopover('Сповіщення: нових повідомлень немає. З’єднання з рахунком Bybit не встановлено.');
-$('headerSettings').onclick=()=>{$('settingsNav').click();$('positions').scrollIntoView({behavior:'smooth'});};
+$('headerSettings').onclick=()=>{$('settingsNav').click()};
 $('headerAccount').onclick=()=>showHeaderPopover('Рахунок Bybit не підключений. Баланс та позиції недоступні. Для безпечного підключення потрібна окрема інтеграція.');
 function saveLayout(){try{localStorage.setItem('ata-layout',JSON.stringify({mode:state.mode,sidebar:state.sidebar}))}catch{}}
 try{const old=JSON.parse(localStorage.getItem('ata-layout')||'{}');if(old.mode==='real')state.mode='real';if(old.sidebar)state.sidebar=true}catch{}
@@ -897,6 +919,7 @@ function selectNav(id){
   }
 }
 for(const navId of navDestinations){$(navId).addEventListener('click',()=>selectNav(navId));}
+$('settingsNav').addEventListener('click',openSettingsModal);
 selectNav('homeNav');
 $('homeNav').onclick=()=>window.scrollTo({top:0,behavior:'smooth'});$('app').classList.toggle('expanded',state.sidebar);
 function fold(btn,content){$(btn).onclick=()=>{$(content).classList.toggle('hidden');$(btn).textContent=$(content).classList.contains('hidden')?'+':'−'}}
@@ -949,17 +972,42 @@ window.addEventListener('resize',closeLongTfMenu);
 syncTimeframeButtons();
 document.querySelectorAll('[data-bottom]').forEach(b=>b.onclick=()=>showBottom(b.dataset.bottom));
 function showBottom(which){document.querySelectorAll('[data-bottom]').forEach(b=>b.classList.toggle('active',b.dataset.bottom===which));const s=$('bottomContent');if(which==='positions'||which==='orders'){renderDemoTradingTab(which);return}
-if(which==='journal'){s.innerHTML='<div style="padding:12px"><textarea id="journalText" rows="3" style="width:100%;background:#07162c;color:white;border:1px solid #395685;padding:8px" placeholder="Запишіть ідею або результат аналізу"></textarea><button id="saveNote" class="btn purple">Зберегти локально</button><div id="notes" style="padding-top:10px"></div></div>';$('saveNote').onclick=()=>{const t=$('journalText').value.trim();if(t){try{let a=JSON.parse(localStorage.getItem('ata-notes')||'[]');a.unshift({t,at:new Date().toLocaleString('uk-UA')});localStorage.setItem('ata-notes',JSON.stringify(a.slice(0,50)))}catch{}$('journalText').value='';renderNotes()}};renderNotes()}if(which==='settings'){s.innerHTML=`<section class="demo-credentials" aria-labelledby="demoConfigTitle">
-<div class="demo-config-heading"><span id="demoConfigTitle">Bybit Demo API</span><span class="demo-config-chip" id="demoKeyState">—</span></div>
-<p class="demo-config-note" id="demoSettingsHelp"></p>
-<form id="demoCredentialsForm" autocomplete="off" spellcheck="false">
-<label>API Key<input type="text" id="demoApiKey" name="key" autocomplete="off" autocapitalize="off" placeholder="API Key" required /></label>
-<label>API Secret<input type="password" id="demoApiSecret" name="secret" autocomplete="new-password" placeholder="API Secret" required /></label>
-<div class="demo-config-actions"><button id="demoSaveCredentials" type="submit" class="btn purple">Перевірити й зберегти</button><button id="demoClearCredentials" type="button" class="btn ghost">Видалити ключ</button></div>
-</form>
-<div id="demoSettingsResult" class="demo-config-result" role="status" aria-live="polite"></div>
-</section>`;initDemoSettings()}s.classList.remove('hidden')}
+if(which==='journal'){s.innerHTML='<div style="padding:12px"><textarea id="journalText" rows="3" style="width:100%;background:#07162c;color:white;border:1px solid #395685;padding:8px" placeholder="Запишіть ідею або результат аналізу"></textarea><button id="saveNote" class="btn purple">Зберегти локально</button><div id="notes" style="padding-top:10px"></div></div>';$('saveNote').onclick=()=>{const t=$('journalText').value.trim();if(t){try{let a=JSON.parse(localStorage.getItem('ata-notes')||'[]');a.unshift({t,at:new Date().toLocaleString('uk-UA')});localStorage.setItem('ata-notes',JSON.stringify(a.slice(0,50)))}catch{}$('journalText').value='';renderNotes()}};renderNotes()}if(which==='settings'){openSettingsModal();return}s.classList.remove('hidden')}
 
+
+let settingsPreviousFocus=null;
+function openSettingsModal(){
+ const layer=$('settingsOverlay');
+ if(!layer.classList.contains('hidden'))return;
+ settingsPreviousFocus=document.activeElement;
+ layer.classList.remove('hidden');layer.setAttribute('aria-hidden','false');
+ document.body.style.overflow='hidden';
+ initDemoSettings();
+ $('settingsClose').focus();
+}
+function closeSettingsModal(){
+ const layer=$('settingsOverlay');
+ if(layer.classList.contains('hidden'))return;
+ layer.classList.add('hidden');layer.setAttribute('aria-hidden','true');
+ document.body.style.overflow='';
+ settingsPreviousFocus?.focus?.();
+ settingsPreviousFocus=null;
+}
+$('settingsClose').onclick=closeSettingsModal;
+$('settingsDone').onclick=closeSettingsModal;
+$('settingsOverlay').onclick=e=>{if(e.target===$('settingsOverlay'))closeSettingsModal()};
+document.addEventListener('keydown',e=>{
+ if($('settingsOverlay').classList.contains('hidden'))return;
+ if(e.key==='Escape'){e.preventDefault();closeSettingsModal();return}
+ if(e.key==='Tab'){
+  const all=[...$('settingsOverlay').querySelectorAll('button:not(:disabled),input:not(:disabled)')]
+   .filter(el=>el.getClientRects().length);
+  if(!all.length)return;
+  const first=all[0],last=all.at(-1);
+  if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus()}
+  if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus()}
+ }
+});
 function initDemoSettings(){
  const isLocal=['127.0.0.1','localhost'].includes(location.hostname);
  const form=$('demoCredentialsForm'),note=$('demoSettingsHelp'),result=$('demoSettingsResult'),chip=$('demoKeyState');
