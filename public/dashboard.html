@@ -3010,6 +3010,111 @@ canvas.addEventListener('pointerup',stopDrag);
 canvas.addEventListener('pointercancel',stopDrag);
 canvas.addEventListener('dblclick',e=>{e.preventDefault();chartResetView()});
 
+
+/* Strategy verification: no credentials, order endpoint or invented performance data. */
+let researchPopup=null,researchBusy=false;
+const researchFormat=(n,d=2)=>Number.isFinite(n)?Number(n).toFixed(d):'—';
+function researchIsVisible(){return !$('strategyResearchOverlay').classList.contains('hidden')}
+function researchDisplay(){
+ $('strategyResearchOverlay').classList.remove('hidden');
+ $('strategyResearchOverlay').setAttribute('aria-hidden','false');
+ const chosen=availableMarkets.includes(state.symbol)&&[...$('researchSymbol').options].some(o=>o.value===state.symbol)?state.symbol:'BTCUSDT';
+ $('researchSymbol').value=chosen;
+ fetchPaperResults();
+}
+function openStrategyResearch(){
+ if(researchStandalone){researchDisplay();return}
+ if(researchPopup&&!researchPopup.closed){researchPopup.focus();return}
+ const url=new URL(location.href);
+ for(const key of ['workspace','section','scanner','view','symbol'])url.searchParams.delete(key);
+ url.searchParams.set('research','1');
+ researchPopup=window.open(url.href,'ata-strategy-verification','popup=yes,width=1250,height=920,resizable=yes,scrollbars=yes');
+ if(!researchPopup)researchDisplay();
+}
+function closeStrategyResearch(){
+ if(researchStandalone){window.close();return}
+ $('strategyResearchOverlay').classList.add('hidden');$('strategyResearchOverlay').setAttribute('aria-hidden','true');
+}
+$('openStrategyResearch').onclick=openStrategyResearch;
+$('openResearchInAssistant').onclick=openStrategyResearch;
+$('researchClose').onclick=closeStrategyResearch;
+$('strategyResearchOverlay').onclick=e=>{if(e.target===$('strategyResearchOverlay'))closeStrategyResearch()};
+function renderStrategyMetrics(rootId,metrics){
+ const root=$(rootId);root.replaceChildren();
+ const list=[
+  ['Перевірені угоди',Number.isFinite(metrics?.closed)?String(metrics.closed):'—'],
+  ['Win Rate',Number.isFinite(metrics?.winRate)?researchFormat(metrics.winRate,1)+'%':'—'],
+  ['Profit Factor (R)',Number.isFinite(metrics?.profitFactor)?researchFormat(metrics.profitFactor):'—'],
+  ['Max Drawdown (R)',Number.isFinite(metrics?.maxDrawdownR)?researchFormat(metrics.maxDrawdownR):'—'],
+  ['Expectancy (R)',Number.isFinite(metrics?.expectancyR)?researchFormat(metrics.expectancyR,3):'—'],
+  ['Підсумок (R)',Number.isFinite(metrics?.totalNetR)?researchFormat(metrics.totalNetR,3):'—']
+ ];
+ for(const [label,value] of list){
+  const item=document.createElement('div');item.className='research-metric';
+  const name=document.createElement('span');name.textContent=label;
+  const number=document.createElement('strong');number.textContent=value;
+  item.append(name,number);root.append(item);
+ }
+}
+function renderStrategyTrades(rootId,trades,isPaper){
+ const root=$(rootId);root.replaceChildren();
+ const rows=Array.isArray(trades)?trades.slice(0,80):[];
+ if(!rows.length){
+  const tr=document.createElement('tr'),td=document.createElement('td');
+  td.colSpan=5;td.textContent='Поки немає завершених записів для оцінки.';tr.append(td);root.append(tr);return;
+ }
+ for(const trade of rows){
+  const tr=document.createElement('tr');
+  const values=[
+   (isPaper?trade.observedAt:trade.signalAt)||'—',trade.symbol||'—',
+   trade.side==='short'?'SHORT':'LONG',isPaper?(trade.status==='closed'?(trade.reason||'—'):trade.status):(trade.reason||'—'),
+   Number.isFinite(trade.netR)?researchFormat(trade.netR,3):'—'
+  ];
+  values[0]=values[0]==='—'?'—':new Date(values[0]).toLocaleString('uk-UA',{dateStyle:'short',timeStyle:'short'});
+  for(const val of values){const td=document.createElement('td');td.textContent=String(val);tr.append(td)}
+  root.append(tr);
+ }
+}
+async function fetchPaperResults(){
+ $('paperStatus').textContent='Отримуємо записи paper trading з локального сервера…';
+ try{
+  const resp=await fetch('/api/strategy/paper',{cache:'no-store',signal:AbortSignal.timeout(12000)});
+  const data=await resp.json();if(!resp.ok)throw Error(data.error||'HTTP '+resp.status);
+  renderStrategyMetrics('paperMetrics',data.metrics);
+  renderStrategyTrades('paperTrades',data.trades,true);
+  const t=data.totals||{};
+  $('paperStatus').textContent='Завершено: '+(t.closed||0)+' · Відкрито: '+(t.open||0)+' · Очікують наступної свічки: '+(t.waiting||0)+' · Відхилено: '+(t.rejected||0);
+  $('paperDetails').textContent=(data.warning||'')+(data.error?' · '+data.error:'');
+  $('paperUpdated').textContent='Локальний журнал · без реальних ордерів';
+ }catch(e){$('paperStatus').textContent='Paper Trading недоступний: запусти локальний сервер 127.0.0.1:4177 ('+String(e.message).slice(0,100)+')';}
+}
+async function runStrategyVerification(){
+ if(researchBusy)return;
+ researchBusy=true;$('researchRunBacktest').disabled=true;
+ $('backtestStatus').textContent='Завантажуємо історичні свічки Bybit і перевіряємо сценарії без використання майбутніх даних…';
+ $('backtestMetrics').replaceChildren();$('backtestTrades').replaceChildren();
+ try{
+  const symbol=$('researchSymbol').value;
+  const resp=await fetch('/api/strategy/backtest?symbol='+encodeURIComponent(symbol),{cache:'no-store',signal:AbortSignal.timeout(90000)});
+  const data=await resp.json();if(!resp.ok)throw Error(data.error||'HTTP '+resp.status);
+  renderStrategyMetrics('backtestMetrics',data.metrics);
+  renderStrategyTrades('backtestTrades',Array.isArray(data.trades)?[...data.trades].reverse():[],false);
+  const p=data.period||{},m=data.metrics||{};
+  $('backtestPeriod').textContent=[p.from?.slice(0,10),p.to?.slice(0,10)].filter(Boolean).join(' — ')||'Історичний період';
+  $('backtestStatus').textContent=m.closed?
+   'Завершено '+m.closed+' історичних угод на '+symbol+'. Вхід на наступній свічці, SL першочерговий.':
+   'За доступний період немає жодної завершеної угоди за правилами стратегії.';
+  $('backtestDetails').textContent=(data.warning||'')+' · Комісія '+researchFormat((data.costs?.feePerSide||0)*100,3)+'%/сторона, прослизання '+researchFormat((data.costs?.slippagePerSide||0)*100,3)+'%/сторона. Сигнали йдуть за закритими свічками; капітал і плече не моделюються.';
+ }catch(e){
+  $('backtestStatus').textContent='Не вдалося виконати історичний тест: '+String(e.message||e).slice(0,160);
+  $('backtestDetails').textContent='Для тесту потрібен запущений локальний сервер і доступ до історичних свічок Bybit.';
+ }finally{researchBusy=false;$('researchRunBacktest').disabled=false}
+}
+$('researchRunBacktest').onclick=runStrategyVerification;
+$('researchRefreshPaper').onclick=fetchPaperResults;
+setInterval(()=>{if(researchIsVisible())fetchPaperResults()},60000);
+if(researchStandalone)researchDisplay();
+
 /* Floating assistant workspace: keep existing cards and handlers mounted. */
 const tradeWindow=$('rightPanel');
 const windowSections={ai:'aiCard',risk:'riskCard',order:'orderCard'};
