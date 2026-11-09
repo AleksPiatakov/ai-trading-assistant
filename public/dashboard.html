@@ -478,6 +478,31 @@ button:focus-visible,input:focus-visible{outline:2px solid #9d88ff;outline-offse
 #chartCard .chart-note:empty,#chartCard .chart-drag-tip.hidden{display:none}
 .foot:empty{display:none}
 
+
+/* One market selector shared by Demo and Real; never reveals account credentials. */
+#chartCard>.bar{overflow:visible}
+.market-selector-container{position:relative;display:flex;align-items:center;gap:4px;flex:0 0 auto;min-width:0}
+.market-select-button,.market-favorite-button{border:0;background:transparent;color:#f0f5ff;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:7px;font:inherit}
+.market-select-button{font-size:19px;font-weight:780;white-space:nowrap;padding:0}
+.market-caret{color:#adc2ea;font-size:20px;margin-left:2px}
+.market-favorite-button{font-size:25px;color:#c9d5f0;padding:2px 5px}
+.market-favorite-button.active{color:#ffc558}
+.market-select-button:focus-visible,.market-favorite-button:focus-visible{outline:2px solid #ad8bff;border-radius:6px}
+.market-dropdown{position:absolute;z-index:150;left:0;top:calc(100% + 12px);width:min(380px,calc(100vw - 35px));background:#101f3b;border:1px solid #486b9e;border-radius:12px;box-shadow:0 24px 48px #020814da;overflow:hidden}
+.market-dropdown.hidden{display:none}
+.market-searchbox{padding:12px 12px 9px}
+.market-searchbox input{width:100%;min-height:38px;border-radius:8px;background:#071630;color:#eff5ff;border:1px solid #45648e;padding:7px 10px;outline:none}
+.market-searchbox input:focus{border-color:#9a73ff}
+.market-filter-tabs{display:flex;padding:0 12px 9px;gap:7px}
+.market-filter-tabs button{font-size:11px;padding:6px 9px;background:transparent;border:1px solid #3b5682;color:#b9c9e6;border-radius:7px;cursor:pointer}
+.market-filter-tabs button.active{background:#42357d;border-color:#9370ef;color:#fff}
+.market-list{max-height:310px;overflow:auto;overscroll-behavior:contain}
+.market-list-entry{border:0;border-top:1px solid #273a5a;background:transparent;color:#dae9ff;display:flex;align-items:center;justify-content:space-between;width:100%;cursor:pointer;padding:11px 15px;text-align:left;font-size:13px}
+.market-list-entry:hover,.market-list-entry[aria-selected="true"]{background:#213860}
+.market-list-entry small{color:#90a6c9;font-size:10px}
+.market-list-status{color:#9db3d3;font-size:11px;padding:9px 13px}
+#chartCard>.bar .market-selector-container .coin-icon{flex-shrink:0}
+@media(max-width:780px){.market-select-button{font-size:15px}.market-favorite-button{font-size:20px}.market-dropdown{width:min(330px,calc(100vw - 35px))}}
 /* Credential form is available only in the local Mac app, never on public GitHub Pages. */
 .demo-credentials{max-width:720px;padding:14px 18px 18px;color:#edf3ff}
 .demo-config-heading{display:flex;gap:12px;align-items:center;font-size:17px;font-weight:750;margin-bottom:9px}
@@ -530,7 +555,7 @@ button:focus-visible,input:focus-visible{outline:2px solid #9d88ff;outline-offse
 <div id="headerPopover" class="header-popover hidden" role="status" aria-live="polite"></div>
 </header>
 <div class="layout">
-<section class="card chart-card" id="chartCard"><div class="bar"><h2><span class="coin-icon" aria-hidden="true">₿</span> BTCUSDT <span class="star-icon" aria-hidden="true">☆</span></h2><span class="chart-quote-group"><span id="quote" class="last">—</span><span id="quoteDelta" class="chart-delta"></span><span id="quoteMeta" class="detail"></span></span><button class="chart-collapse-button" id="maximizeChart" title="Розгорнути графік" aria-label="Розгорнути графік">»</button></div>
+<section class="card chart-card" id="chartCard"><div class="bar"><div class="market-selector-container"><button id="marketSelectButton" class="market-select-button" type="button" aria-expanded="false" aria-controls="marketDropdown" aria-label="Вибрати торгову пару"><span class="coin-icon" aria-hidden="true">₿</span><span id="marketSymbolText">BTCUSDT</span><span class="market-caret">⌄</span></button><button id="marketFavorite" class="market-favorite-button" type="button" aria-label="Додати пару до обраних" title="Додати до обраних">☆</button><div class="market-dropdown hidden" id="marketDropdown"><div class="market-searchbox"><input id="marketSearch" type="search" placeholder="Пошук пари, наприклад ETHUSDT" autocomplete="off" aria-label="Пошук торгових пар"></div><div class="market-filter-tabs"><button id="marketAllTab" class="active" type="button">Усі USDT Perpetual</button><button id="marketFavTab" type="button">★ Обрані</button></div><div id="marketList" class="market-list" role="listbox" aria-label="Торгові пари"></div><div id="marketListStatus" class="market-list-status"></div></div></div><span class="chart-quote-group"><span id="quote" class="last">—</span><span id="quoteDelta" class="chart-delta"></span><span id="quoteMeta" class="detail"></span></span><button class="chart-collapse-button" id="maximizeChart" title="Розгорнути графік" aria-label="Розгорнути графік">»</button></div>
 <div class="chart-toolbar"><span class="draw-cross" aria-hidden="true">＋</span><div id="timeframes"><button class="btn" data-tf="1">1хв</button><button class="btn" data-tf="5">5хв</button><button class="btn" data-tf="15">15хв</button><button class="btn" data-tf="30">30хв</button><button class="btn" data-tf="60">1год</button><button class="btn" data-tf="240">4год</button><button class="btn active" data-tf="D">1Д</button><button class="btn" data-tf="W">1Тиж ⌄</button></div><span class="grow"></span><div class="chart-toolbar-actions"><button class="chart-tool-action" id="indicatorsButton" type="button" title="Показники EMA, RSI, MACD"><span class="trend-glyph">⌁</span> Індикатори</button><button class="chart-tool-icon" id="chartInfoButton" type="button" title="Інформація про графік">▤</button><button class="chart-tool-icon" id="chartFullscreenButton" type="button" title="На весь екран">⛶</button></div></div>
 <div class="chart-wrap"><div class="drawing-tools" aria-label="Інструменти графіка"><span title="Олівець"><svg aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="m6 23 15-15 5 5-15 15-7 2 2-7ZM18 11l5 5M21 8l3-3a3 3 0 0 1 4 4l-2 3"/></svg></span><span title="Лінія тренду"><svg aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M7 25 25 7"/><circle cx="7" cy="25" r="2.5"/><circle cx="25" cy="7" r="2.5"/></svg></span><span title="Горизонтальні рівні"><svg aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8h22M5 16h22M5 24h22"/><circle cx="20" cy="8" r="3" fill="#0c1d39"/><circle cx="11" cy="16" r="3" fill="#0c1d39"/><circle cx="23" cy="24" r="3" fill="#0c1d39"/></svg></span><span title="З’єднані точки"><svg aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M6 24 14 8l12 10-8 9"/><circle cx="6" cy="24" r="2.4"/><circle cx="14" cy="8" r="2.4"/><circle cx="26" cy="18" r="2.4"/><circle cx="18" cy="27" r="2.4"/></svg></span><span title="Текст"><svg aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8V5h22v3M16 5v22M11 27h10"/></svg></span><span title="Геометричні лінії"><svg aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="m7 7 18 18M25 7 7 25M7 7v18h18V7H7"/><circle cx="7" cy="7" r="2"/><circle cx="25" cy="7" r="2"/><circle cx="7" cy="25" r="2"/><circle cx="25" cy="25" r="2"/></svg></span><span title="Налаштування рівнів"><svg aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h24M4 16h24M4 24h24"/><circle cx="11" cy="8" r="3.2" fill="#0c1d39"/><circle cx="22" cy="16" r="3.2" fill="#0c1d39"/><circle cx="13" cy="24" r="3.2" fill="#0c1d39"/></svg></span><span title="Маркер"><svg aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="13" width="20" height="8" rx="3" transform="rotate(-42 16 17)"/><path d="m8 24 4 3M20 9l4 4"/></svg></span><span title="Збільшення"><svg aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><circle cx="14" cy="14" r="9"/><path d="M14 9v10M9 14h10M21 21l7 7"/></svg></span><span class="drawing-separator" aria-hidden="true"></span><span title="Робоча область"><svg aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="m6 15 10-10 10 10v12H6V15Z"/></svg></span></div><canvas id="chart" aria-label="Графік BTCUSDT, свічки, EMA, RSI, MACD та рівні плану"></canvas><div id="chartNote" class="chart-note"></div><div id="chartDragTip" class="chart-drag-tip hidden"></div></div>
 <div class="chart-footerline" id="chartHint"><span class="legend-ema blue-line">EMA 50</span><span class="legend-ema gold-line">EMA 200</span><span class="legend-ema green-line">Take Profit</span><span class="legend-ema neutral-line">Вхід</span><span class="legend-ema red-line">Stop Loss</span><span class="drag-hint">↕ Перетягуйте рівні на графіку</span></div>
@@ -556,7 +581,92 @@ button:focus-visible,input:focus-visible{outline:2px solid #9d88ff;outline-offse
 (function(){
 'use strict';
 let demoAccount=null,demoAccountError='';
-const $=id=>document.getElementById(id), state={mode:'demo',tf:'D',tab:'plan',type:'Limit',dir:'long',candles:[],levels:{entry:null,stop:null,target:null},drag:null,range:null,marketOk:false,sidebar:false,analysis:null};
+const $=id=>document.getElementById(id), state={symbol:'BTCUSDT',mode:'demo',tf:'D',tab:'plan',type:'Limit',dir:'long',candles:[],levels:{entry:null,stop:null,target:null},drag:null,range:null,marketOk:false,sidebar:false,analysis:null};
+
+let availableMarkets=[],marketsFetched=false,marketListRequest=0,marketTab='all',lastPriceRequest=0;
+let favorites=[];
+try{
+  const saved=JSON.parse(localStorage.getItem('ata-market-favorites')||'[]');
+  if(Array.isArray(saved))favorites=saved.filter(x=>typeof x==='string'&&/^[A-Z0-9]{3,30}USDT$/.test(x)).slice(0,100);
+  const savedSymbol=localStorage.getItem('ata-market-symbol');
+  if(typeof savedSymbol==='string'&&/^[A-Z0-9]{3,30}USDT$/.test(savedSymbol))state.symbol=savedSymbol;
+}catch{}
+const marketApi=path=>path;
+function updateFavoriteIcon(){
+  const active=favorites.includes(state.symbol),el=$('marketFavorite');
+  el.textContent=active?'★':'☆';el.classList.toggle('active',active);
+  el.setAttribute('aria-label',active?'Прибрати '+state.symbol+' з обраних':'Додати '+state.symbol+' до обраних');
+}
+function setMarketSymbol(symbol){
+  if(!availableMarkets.includes(symbol))return;
+  if(state.symbol===symbol){closeMarketDropdown();return}
+  state.symbol=symbol;
+  $('marketSymbolText').textContent=symbol;
+  try{localStorage.setItem('ata-market-symbol',symbol)}catch{}
+  updateFavoriteIcon();closeMarketDropdown();
+  for(const id of ['entry','stop','target'])$(id).value='';
+  state.levels={entry:null,stop:null,target:null};state.range=null;
+  calculate();loadCandles();
+}
+function closeMarketDropdown(){
+  $('marketDropdown').classList.add('hidden');
+  $('marketSelectButton').setAttribute('aria-expanded','false');
+}
+function renderMarketList(){
+  const list=$('marketList'),status=$('marketListStatus'),needle=$('marketSearch').value.trim().toUpperCase();
+  list.replaceChildren();
+  const filtered=availableMarkets.filter(symbol=>(marketTab!=='favorites'||favorites.includes(symbol))&&symbol.includes(needle));
+  const visible=filtered.slice(0,150);
+  for(const symbol of visible){
+    const item=document.createElement('button');item.type='button';item.className='market-list-entry';
+    item.setAttribute('role','option');item.setAttribute('aria-selected',String(symbol===state.symbol));
+    const name=document.createElement('span');name.textContent=symbol;
+    const sub=document.createElement('small');sub.textContent=(favorites.includes(symbol)?'★ ':'')+'USDT Perpetual';
+    item.append(name,sub);item.onclick=()=>setMarketSymbol(symbol);list.append(item);
+  }
+  status.textContent=!marketsFetched?'Отримання списку Bybit…':filtered.length?
+    ('Показано '+visible.length+' з '+filtered.length+' пар'):'Пари не знайдено';
+}
+async function loadMarketList(){
+  const token=++marketListRequest;
+  try{
+    const response=await fetch(marketApi('/api/market/instruments'),{cache:'no-store'});
+    const data=await response.json();
+    if(!response.ok||!Array.isArray(data.symbols))throw Error(data.error||'Список пар недоступний');
+    if(token!==marketListRequest)return;
+    availableMarkets=data.symbols.filter(x=>typeof x==='string');
+    marketsFetched=true;
+    if(!availableMarkets.includes(state.symbol)){
+      state.symbol=availableMarkets.includes('BTCUSDT')?'BTCUSDT':availableMarkets[0]||'BTCUSDT';
+      $('marketSymbolText').textContent=state.symbol;
+    }
+    updateFavoriteIcon();renderMarketList();loadCandles();
+  }catch(e){
+    if(token!==marketListRequest)return;
+    marketsFetched=false;availableMarkets=[];
+    $('marketListStatus').textContent=e.message||'Немає зв’язку з Bybit';
+    $('chartNote').textContent='Список торгових пар Bybit недоступний';
+  }
+}
+$('marketSelectButton').onclick=()=>{
+  const opened=!$('marketDropdown').classList.contains('hidden');
+  if(opened){closeMarketDropdown();return}
+  $('marketDropdown').classList.remove('hidden');
+  $('marketSelectButton').setAttribute('aria-expanded','true');
+  renderMarketList();$('marketSearch').focus();
+};
+$('marketFavorite').onclick=()=>{
+  const idx=favorites.indexOf(state.symbol);
+  if(idx===-1)favorites.unshift(state.symbol);else favorites.splice(idx,1);
+  try{localStorage.setItem('ata-market-favorites',JSON.stringify(favorites.slice(0,100)))}catch{}
+  updateFavoriteIcon();renderMarketList();
+};
+$('marketSearch').oninput=renderMarketList;
+$('marketAllTab').onclick=()=>{marketTab='all';$('marketAllTab').classList.add('active');$('marketFavTab').classList.remove('active');renderMarketList()};
+$('marketFavTab').onclick=()=>{marketTab='favorites';$('marketFavTab').classList.add('active');$('marketAllTab').classList.remove('active');renderMarketList()};
+document.addEventListener('pointerdown',event=>{if(!$('marketDropdown').classList.contains('hidden')&&!event.target.closest('.market-selector-container'))closeMarketDropdown()});
+document.addEventListener('keydown',event=>{if(event.key==='Escape')closeMarketDropdown()});
+updateFavoriteIcon();
 const money=n=>Number.isFinite(n)?n.toLocaleString('uk-UA',{minimumFractionDigits:2,maximumFractionDigits:2}):'—';
 const num=id=>Number($(id).value);
 const setText=(id,txt)=>$(id).textContent=txt;
@@ -753,7 +863,37 @@ function calculate(){['quantity','notional','loss','rr','orderEntry','orderQuant
 ['balance','riskPct','entry','stop','target','fee'].forEach(id=>$(id).addEventListener('input',()=>{if(['entry','stop','target'].includes(id))state.levels[id]=num(id)||null;calculate()}));
 let currentCandleRequest=0;
 const timeframeLabel=tf=>({'1':'1хв','5':'5хв','15':'15хв','30':'30хв','60':'1год','240':'4год',D:'1Д',W:'1Тиж'}[tf]||tf);
-async function loadCandles(){state.candles=[];state.analysis=null;state.marketOk=false;setText('quote','—');setText('quoteDelta','');setText('quoteMeta','');setText('chartNote','');setText('footerMarket','');analysisView();draw()}
+async function loadCandles(){
+ const requestId=++currentCandleRequest;
+ state.candles=[];state.analysis=null;state.marketOk=false;
+ setText('quote','—');setText('quoteDelta','');setText('quoteMeta','');setText('chartNote','');
+ setText('footerMarket','');analysisView();draw();
+ if(!availableMarkets.includes(state.symbol))return;
+ try{
+   const url=new URL(marketApi('/api/market/candles'),location.origin);
+   url.searchParams.set('symbol',state.symbol);url.searchParams.set('interval',state.tf);
+   const response=await fetch(url,{cache:'no-store'});
+   const data=await response.json();
+   if(requestId!==currentCandleRequest)return;
+   if(!response.ok||!Array.isArray(data.candles)||!data.candles.length)throw Error(data.error||'Свічки відсутні');
+   state.candles=data.candles.filter(v=>Number.isFinite(v.c)&&Number.isFinite(v.o)&&Number.isFinite(v.h)&&Number.isFinite(v.l)&&Number.isFinite(v.t));
+   state.marketOk=state.candles.length>0;
+   const latest=state.candles.at(-1),previous=state.candles.at(-2);
+   if(latest){
+     setText('quote',latest.c.toLocaleString('en-US',{maximumFractionDigits:8}));
+     const delta=previous&&previous.c?100*(latest.c-previous.c)/previous.c:null;
+     setText('quoteDelta',Number.isFinite(delta)?(delta>0?'+':'')+delta.toFixed(2)+'%':'');
+     $('quoteDelta').classList.toggle('negative',delta<0);
+   }
+   setText('quoteMeta','USDT Perpetual');
+   setText('footerMarket','');
+   draw();
+ }catch(e){
+   if(requestId!==currentCandleRequest)return;
+   setText('chartNote',String(e.message||'Немає зв’язку з Bybit'));
+   draw();
+ }
+}
 $('chartFullscreenButton').onclick=()=>$('maximizeChart').click();
 $('indicatorsButton').onclick=()=>{};
 $('chartInfoButton').onclick=()=>{};
@@ -782,11 +922,11 @@ function draw(){
  const grid=(top,bottom,rows)=>{c.strokeStyle='#21395f';for(let i=0;i<=8;i++){const x=10+(right-10)*i/8;c.beginPath();c.moveTo(x,top);c.lineTo(x,bottom);c.stroke()}for(let i=0;i<=rows;i++){const y=top+(bottom-top)*i/rows;c.beginPath();c.moveTo(10,y);c.lineTo(right,y);c.stroke()}};
  grid(priceTop,priceBottom,5);grid(rsiTop,rsiBottom,2);grid(macdTop,macdBottom,2);
  c.strokeStyle='#355580';c.beginPath();c.moveTo(10,rsiTop-8);c.lineTo(right,rsiTop-8);c.moveTo(10,macdTop-8);c.lineTo(right,macdTop-8);c.stroke();
- c.font='11px system-ui';c.fillStyle='#aebfdf';c.fillText('BTCUSDT · '+timeframeLabel(state.tf),21,26);
+ c.font='11px system-ui';c.fillStyle='#aebfdf';c.fillText(state.symbol+' · '+timeframeLabel(state.tf),21,26);
  c.fillStyle='#9eadd0';c.fillText('EMA 50',22,44);
  c.fillText('RSI (14)',22,rsiTop+14);c.fillText('MACD (12, 26, 9)',22,macdTop+14);
  state.range=null;
 }
-const canvas=$('chart');canvas.addEventListener('pointerdown',e=>{if(!state.range)return;const r=canvas.getBoundingClientRect(),yy=e.clientY-r.top;for(const f of ['entry','stop','target']){const v=num(f);const target=state.range.top+(state.range.max-v)/(state.range.max-state.range.min)*(state.range.bottom-state.range.top);if(v>0&&Math.abs(target-yy)<13){state.drag=f;canvas.setPointerCapture(e.pointerId);canvas.style.cursor='ns-resize';return}}});canvas.addEventListener('pointermove',e=>{if(!state.drag||!state.range)return;const r=canvas.getBoundingClientRect(),yy=e.clientY-r.top,rg=state.range;const bounded=Math.min(rg.bottom,Math.max(rg.top,yy)),price=rg.max-(bounded-rg.top)/(rg.bottom-rg.top)*(rg.max-rg.min);$(state.drag).value=price.toFixed(2);state.levels[state.drag]=price;calculate()});const stopDrag=()=>{state.drag=null;canvas.style.cursor='crosshair'};canvas.addEventListener('pointerup',stopDrag);canvas.addEventListener('pointercancel',stopDrag);window.addEventListener('resize',draw);applyMode();showBottom('positions');loadCandles();if(localDemo())loadDemoAccountData();
+const canvas=$('chart');canvas.addEventListener('pointerdown',e=>{if(!state.range)return;const r=canvas.getBoundingClientRect(),yy=e.clientY-r.top;for(const f of ['entry','stop','target']){const v=num(f);const target=state.range.top+(state.range.max-v)/(state.range.max-state.range.min)*(state.range.bottom-state.range.top);if(v>0&&Math.abs(target-yy)<13){state.drag=f;canvas.setPointerCapture(e.pointerId);canvas.style.cursor='ns-resize';return}}});canvas.addEventListener('pointermove',e=>{if(!state.drag||!state.range)return;const r=canvas.getBoundingClientRect(),yy=e.clientY-r.top,rg=state.range;const bounded=Math.min(rg.bottom,Math.max(rg.top,yy)),price=rg.max-(bounded-rg.top)/(rg.bottom-rg.top)*(rg.max-rg.min);$(state.drag).value=price.toFixed(2);state.levels[state.drag]=price;calculate()});const stopDrag=()=>{state.drag=null;canvas.style.cursor='crosshair'};canvas.addEventListener('pointerup',stopDrag);canvas.addEventListener('pointercancel',stopDrag);window.addEventListener('resize',draw);applyMode();showBottom('positions');loadMarketList();if(localDemo())loadDemoAccountData();
 })();
 </script></body></html>
