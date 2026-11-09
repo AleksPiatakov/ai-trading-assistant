@@ -32,9 +32,9 @@ const make=(count,ms,now)=>Array.from({length:count},(_,i)=>{
  return {t:now-(count-i)*ms,o:v,h:v+0.3,l:v-0.3,c:v,v:100};
 });
 const historical={
- '15':make(700,900000,t0),
- '60':make(160,3600000,t0),
- '240':make(240,14400000,t0),
+ '15':make(1200,900000,t0),
+ '60':make(260,3600000,t0),
+ '240':make(280,14400000,t0),
  D:make(255,86400000,t0)
 };
 const result=verifyStrategy({symbol:'BTCUSDT',series:historical,maxSignals:30});
