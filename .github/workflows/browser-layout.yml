@@ -9,6 +9,7 @@ on:
       - scripts/strategy-verification.mjs
       - scripts/paper-ledger.mjs
       - .github/scripts/check-strategy-verification.mjs
+      - .github/scripts/check-research-ui.mjs
       - .github/scripts/check-market-scanner.mjs
       - .github/scripts/check-layout.mjs
       - .github/scripts/check-live-market.mjs
@@ -62,6 +63,8 @@ jobs:
         run: node .github/scripts/check-auto-plan.mjs
       - name: Verify standalone AI workspace and main chart isolation
         run: node .github/scripts/check-workspace-popup.mjs
+      - name: Verify history and paper statistics window
+        run: node .github/scripts/check-research-ui.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
