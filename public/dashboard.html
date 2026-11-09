@@ -791,6 +791,9 @@ body.real-account .help-info{visibility:hidden;pointer-events:none}
 .scanner-result .btn{font-size:11px;padding:8px 11px;white-space:nowrap}
 .scanner-footer{border-top:1px solid #36537f;padding:11px 20px;font-size:10px;color:#a5b9d5;line-height:1.5}
 @media(max-width:780px){#aiCard .scanner-launch{font-size:0;padding:5px 8px}#aiCard .scanner-launch::before{content:'◉';font-size:16px}.scanner-result{grid-template-columns:1fr}.scanner-heading{padding:13px}.scanner-controls,.scanner-results,.scanner-summary{padding-left:13px;padding-right:13px}}
+
+.scanner-empty,.scanner-errors{padding:17px;border:1px dashed #43658d;border-radius:9px;font-size:12px;line-height:1.5;color:#a9bfdf}
+.scanner-errors{padding:9px;color:#e5ba83}
 </style></head>
 <body><div class="app" id="app">
 <nav class="nav nav-reference" aria-label="Навігація">
@@ -1028,6 +1031,126 @@ document.addEventListener('keydown',event=>{
  }
 });
 
+
+/* Dedicated scanner viewer. All calculations run on local Node, even when the tab closes.
+   Only explicit "На графік" interaction changes manual planning inputs. */
+let scannerSnapshot=null,scannerFocusedBefore=null,scannerRefreshBusy=false,scannerLastError='';
+const scannerFormat=v=>Number(v).toLocaleString('en-US',{maximumFractionDigits:Math.abs(v)<1?7:Math.abs(v)<100?4:2});
+function scannerIsOpen(){return !$('scannerOverlay').classList.contains('hidden')}
+function scannerOpen(){
+ if(scannerIsOpen())return;
+ scannerFocusedBefore=document.activeElement;
+ $('scannerOverlay').classList.remove('hidden');
+ $('scannerOverlay').setAttribute('aria-hidden','false');
+ document.body.style.overflow='hidden';
+ $('scannerClose').focus();
+ fetchScannerSnapshot();
+}
+function scannerClose(){
+ if(!scannerIsOpen())return;
+ $('scannerOverlay').classList.add('hidden');$('scannerOverlay').setAttribute('aria-hidden','true');
+ document.body.style.overflow='';
+ scannerFocusedBefore?.focus?.();scannerFocusedBefore=null;
+}
+function renderScannerSnapshot(){
+ const snap=scannerSnapshot,results=$('scannerResults'),status=$('scannerState'),summary=$('scannerSummary');
+ results.replaceChildren();
+ if(!snap){
+  status.textContent=scannerLastError?'Немає зв’язку з локальним сканером':'Отримання результатів…';
+  summary.textContent=scannerLastError||'Сканер доступний лише в локальній програмі, не на GitHub Pages.';
+  return;
+ }
+ const total=Number(snap.total)||0,done=Number(snap.completed)||0;
+ status.textContent=snap.status==='scanning'?'● Сканування '+done+'/'+total:
+   snap.status==='ready'?'● Моніторинг активний':
+   snap.status==='error'?'● Помилка джерела':'● Запуск сканера';
+ const timestamp=snap.updatedAt?new Date(snap.updatedAt).toLocaleTimeString('uk-UA',{hour:'2-digit',minute:'2-digit'}):'—';
+ const opportunities=Array.isArray(snap.opportunities)?snap.opportunities:[];
+ const filtered=opportunities.filter(item=>$('scannerFilter').value==='all'||item.side===$('scannerFilter').value);
+ summary.textContent='Пар у списку: '+total+' · Перевірено: '+done+' · Відібрано: '+opportunities.length+' · Остання перевірка: '+timestamp;
+ if(!filtered.length){
+  const empty=document.createElement('div');
+  empty.className='scanner-empty';
+  empty.textContent=snap.status==='scanning'
+   ?'Сканування триває. Знайдені результати з’являться після завершення циклу.'
+   :'Наразі немає кандидатів, які пройшли всі фільтри. Це нормально: сканер не створює угоди штучно.';
+  results.append(empty);
+ }
+ for(const item of filtered){
+  if(!item||typeof item.symbol!=='string'||!Number.isFinite(Number(item.entry)))continue;
+  const card=document.createElement('article');card.className='scanner-result';
+  const info=document.createElement('div'),head=document.createElement('header');
+  const name=document.createElement('strong');name.textContent=item.symbol;
+  const side=document.createElement('span');side.className='direction '+(item.side==='short'?'short':'long');
+  side.textContent=item.side==='short'?'SHORT':'LONG';
+  head.append(name,side);
+  const data=document.createElement('div');data.className='scanner-data';
+  data.textContent='Вхід ≈ '+scannerFormat(item.entry)+'  ·  SL '+scannerFormat(item.stop)+'  ·  TP '+
+    scannerFormat(item.target)+'  ·  R:R 1:'+Number(item.rr).toFixed(2)+' (без комісій)';
+  const detail=document.createElement('div');detail.className='scanner-reason';
+  detail.textContent='15хв / 1год / 4год / 1Д · Підтверджено '+Number(item.confirmations)+'/4 · '+
+    (Array.isArray(item.reasons)?item.reasons.join('; '):'');
+  info.append(head,data,detail);
+  const action=document.createElement('button');action.className='btn purple';action.type='button';
+  action.textContent='На графік';
+  action.onclick=()=>{
+   if(!availableMarkets.includes(item.symbol)){
+    $('scannerSummary').textContent='Пара недоступна в актуальному списку Bybit. Онови ринки.';return;
+   }
+   if(!item.scannedAt||Date.now()-Date.parse(item.scannedAt)>10*60*1000){
+    $('scannerSummary').textContent='Сценарій застарів. Дочекайся нового сканування.';return;
+   }
+   scannerClose();
+   setMarketSymbol(item.symbol);
+   selectTimeframe('60');
+   state.dir=item.side==='short'?'short':'long';
+   $('longButton').classList.toggle('green',state.dir==='long');
+   $('shortButton').classList.toggle('red',state.dir==='short');
+   for(const [id,v] of [['entry',item.entry],['stop',item.stop],['target',item.target]]){
+    $(id).value=String(Number(Number(v).toPrecision(9)));
+   }
+   calculate();draw();
+   $('chartCard').scrollIntoView({behavior:'smooth',block:'start'});
+   $('executionStatus').textContent='Сканер переніс лише попередній план. Це не ордер. Перевір поточну ціну, розмір позиції, комісії й ризик.';
+  };
+  card.append(info,action);results.append(card);
+ }
+ if(snap.errors?.length){
+  const err=document.createElement('div');err.className='scanner-errors';
+  err.textContent='Деякі дані недоступні ('+snap.errors.length+' пар). Результат може бути неповним.';
+  results.append(err);
+ }
+}
+async function fetchScannerSnapshot(){
+ if(scannerRefreshBusy)return;
+ scannerRefreshBusy=true;
+ try{
+  const response=await fetch('/api/scanner/opportunities',{cache:'no-store',signal:AbortSignal.timeout(10000)});
+  if(!response.ok)throw new Error('HTTP '+response.status);
+  scannerSnapshot=await response.json();scannerLastError='';
+ }catch(e){
+  scannerLastError='Сканер недоступний. Запусти локальний сервер node scripts/local-demo-server.mjs.';
+  scannerSnapshot=null;
+ }finally{scannerRefreshBusy=false}
+ if(scannerIsOpen())renderScannerSnapshot();
+}
+$('openScanner').onclick=scannerOpen;
+$('scannerClose').onclick=scannerClose;
+$('scannerOverlay').onclick=e=>{if(e.target===$('scannerOverlay'))scannerClose()};
+$('scannerFilter').onchange=renderScannerSnapshot;
+$('scannerRefresh').onclick=fetchScannerSnapshot;
+document.addEventListener('keydown',e=>{
+ if(!scannerIsOpen())return;
+ if(e.key==='Escape'){e.preventDefault();scannerClose()}
+ if(e.key==='Tab'){
+  const els=[...$('scannerOverlay').querySelectorAll('button:not(:disabled),select:not(:disabled)')]
+    .filter(el=>el.getClientRects().length);
+  if(!els.length)return;
+  if(e.shiftKey&&document.activeElement===els[0]){e.preventDefault();els.at(-1).focus()}
+  else if(!e.shiftKey&&document.activeElement===els.at(-1)){e.preventDefault();els[0].focus()}
+ }
+});
+setInterval(()=>{if(scannerIsOpen()&&!document.hidden)fetchScannerSnapshot()},20000);
 function applyMode(){const demo=state.mode==='demo';document.body.classList.toggle('real-account',!demo);if(!demo)closeHelp();$('demoMode').classList.toggle('active',demo);$('realMode').classList.toggle('active',!demo);setText('footerMode','');setText('executionStatus','');saveLayout()}
 $('demoMode').onclick=()=>{state.mode='demo';applyMode();setDemoConnectionStatus();loadDemoAccountData()};$('realMode').onclick=()=>{state.mode='real';applyMode();setDemoConnectionStatus();showBottom('positions')};
 $('navToggle').onclick=()=>{state.sidebar=!state.sidebar;$('app').classList.toggle('expanded',state.sidebar);saveLayout()};$('sidebarToggle').onclick=()=>$('navToggle').click();
@@ -1048,7 +1171,7 @@ function fold(btn,content){$(btn).onclick=()=>{$(content).classList.toggle('hidd
 fold('foldRisk','riskContent');fold('foldOrder','orderContent');$('foldAI').onclick=()=>{$('aiCard').querySelector('.foldable').classList.toggle('hidden');$('foldAI').textContent=$('aiCard').querySelector('.foldable').classList.contains('hidden')?'+':'−'};
 $('hideBottom').onclick=()=>{ $('bottomContent').classList.toggle('hidden');$('hideBottom').textContent=$('bottomContent').classList.contains('hidden')?'+':'−'};
 $('maximizeChart').onclick=()=>{$('chartCard').classList.toggle('maxed');draw()};
-$('marketsNav').onclick=()=>{ $('chartCard').scrollIntoView({behavior:'smooth'});};$('analysisNav').onclick=()=>{$('aiCard').scrollIntoView({behavior:'smooth'});};$('riskNav').onclick=()=>{$('riskCard').scrollIntoView({behavior:'smooth'});};$('journalNav').onclick=()=>{showBottom('journal');$('positions').scrollIntoView({behavior:'smooth'})};$('learnNav').onclick=()=>{state.mode='demo';applyMode();setText('explanation','Навчання: спершу виберіть напрямок, потім Stop Loss, визначте допустимий ризик і тільки після цього розрахуйте кількість. Лінії на графіку можна перетягувати.')};$('settingsNav').onclick=()=>showBottom('settings');
+$('marketsNav').onclick=scannerOpen;$('analysisNav').onclick=()=>{$('aiCard').scrollIntoView({behavior:'smooth'});};$('riskNav').onclick=()=>{$('riskCard').scrollIntoView({behavior:'smooth'});};$('journalNav').onclick=()=>{showBottom('journal');$('positions').scrollIntoView({behavior:'smooth'})};$('learnNav').onclick=()=>{state.mode='demo';applyMode();setText('explanation','Навчання: спершу виберіть напрямок, потім Stop Loss, визначте допустимий ризик і тільки після цього розрахуйте кількість. Лінії на графіку можна перетягувати.')};$('settingsNav').onclick=()=>showBottom('settings');
 $('longButton').onclick=()=>{state.dir='long';$('longButton').classList.add('green');$('shortButton').classList.remove('red');calculate();draw()};$('shortButton').onclick=()=>{state.dir='short';$('shortButton').classList.add('red');$('longButton').classList.remove('green');calculate();draw()};
 document.querySelectorAll('#orderTypes button').forEach(b=>b.onclick=()=>{state.type=b.dataset.type;document.querySelectorAll('#orderTypes button').forEach(x=>x.classList.toggle('active',x===b));});
 document.querySelectorAll('#analysisTabs button').forEach(b=>b.onclick=()=>{state.tab=b.dataset.tab;document.querySelectorAll('#analysisTabs button').forEach(x=>x.classList.toggle('active',x===b));analysisView()});
