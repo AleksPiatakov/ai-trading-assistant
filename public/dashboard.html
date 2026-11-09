@@ -553,6 +553,19 @@ body.real-account .help-info{visibility:hidden;pointer-events:none}
  .nav.nav-reference .nav-action .ico svg{width:19px;height:19px}
  .nav.nav-reference #sidebarToggle .ico svg{width:19px;height:19px}
 }
+
+/* Align help-dialog header and close control; override global button chrome. */
+#helpOverlay .help-modal{box-sizing:border-box;position:relative;padding:26px 28px 26px}
+#helpOverlay .help-modal-head{display:grid;grid-template-columns:minmax(0,1fr) 34px;align-items:center;column-gap:16px;min-height:36px;margin:0 0 16px}
+#helpOverlay .help-modal-tag{display:block;line-height:1.4;align-self:center}
+#helpOverlay .help-close{all:unset;box-sizing:border-box;display:grid;place-items:center;width:34px;height:34px;margin:0;padding:0;border:1px solid #667eac;border-radius:9px;background:#233b63;color:#e7efff;font:500 25px/1 system-ui,sans-serif;text-align:center;cursor:pointer;justify-self:end;align-self:center;box-shadow:none;text-shadow:none;transform:none}
+#helpOverlay .help-close:hover{background:#395783;border-color:#a58afb}
+#helpOverlay .help-close:focus-visible{outline:2px solid #a58afb;outline-offset:3px}
+#helpOverlay .help-modal h2{margin:0 0 15px;line-height:1.32}
+#helpOverlay .help-modal h3{margin:19px 0 7px}
+#helpOverlay .help-modal p{margin:0;line-height:1.65}
+#helpOverlay .help-understood{margin:24px 0 0;min-height:36px}
+@media(max-width:780px){#helpOverlay .help-modal{padding:20px}#helpOverlay .help-modal-head{margin-bottom:13px}}
 </style></head>
 <body><div class="app" id="app">
 <nav class="nav nav-reference" aria-label="Навігація">
