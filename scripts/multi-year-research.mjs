@@ -88,9 +88,17 @@ export function createMultiYearResearch({dir,getKlinesPage,getInstruments,now=()
        series[tf]=await loadHistory(symbol,tf,from,end);
       }
       state.stage='Тестування стратегії';
-      const result=verifyStrategy({symbol,series});
-      const filtered={...result,trades:result.trades.filter(t=>Date.parse(t.signalAt)>=cutoff)};
-      state.results.push(summarize(filtered,cutoff+years*YEAR*.7));
+      const variants={baseline:verifyStrategy({symbol,series,minConfirmations:0}),
+       strict:verifyStrategy({symbol,series,minConfirmations:4})};
+      const cut=cutoff+years*YEAR*.7;
+      const reports=Object.fromEntries(Object.entries(variants).map(([name,result])=>{
+       const filtered={...result,trades:result.trades.filter(t=>Date.parse(t.signalAt)>=cutoff)};
+       return [name,summarize(filtered,cut)];
+      }));
+      state.results.push({symbol,variants:reports,period:reports.baseline.period,
+       bars:reports.baseline.bars,losses:reports.baseline.losses,
+       train:reports.baseline.train,test:reports.baseline.test,all:reports.baseline.all,
+       trades:reports.baseline.trades,note:reports.baseline.note});
      }catch(e){state.errors.push(symbol+': '+String(e.message||e).slice(0,160))}
      state.completed++;
      state.progress=state.total?Math.round(100*state.completed/state.total):100;
@@ -111,8 +119,15 @@ export function createMultiYearResearch({dir,getKlinesPage,getInstruments,now=()
    // Portfolio aggregate is intentionally limited to count / win-rate / mean R.
    return {closed,wins,winRate:closed?100*wins/closed:null,expectancyR:closed?totalNetR/closed:null,totalNetR};
   };
-  return {...status(),train:metrics(trainResults),test:metrics(testResults),
-   warning:'Вибір варіантів стратегії на test/OOS заборонений. Зараз перевіряється одна зафіксована стратегія без оптимізації параметрів.',
+  const variants=Object.fromEntries(['baseline','strict'].map(name=>[name,{
+   train:metrics(state.results.map(r=>r.variants?.[name]?.train)),
+   test:metrics(state.results.map(r=>r.variants?.[name]?.test))
+  }]));
+  const scored=Object.entries(variants).filter(([,v])=>v.train.closed>=30);
+  const selected=scored.length?scored.sort((a,b)=>b[1].train.expectancyR-a[1].train.expectancyR)[0][0]:null;
+  return {...status(),train:metrics(trainResults),test:metrics(testResults),variants,selectedOnTrain:selected,
+   warning:selected?'Обраний варіант визначено ВИКЛЮЧНО за train-періодом, а його OOS показано окремо. Не прогноз.':
+    'На train-періоді замало угод для обґрунтованого вибору варіанта. OOS наведено лише для спостереження.',
    sampleTrades:combined.slice(-80)};
  }
  return {start,status:aggregated};
