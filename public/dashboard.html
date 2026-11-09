@@ -914,6 +914,14 @@ body.real-account .help-info{visibility:hidden;pointer-events:none}
 .indicator-options input{accent-color:#8564ef}
 @media(max-width:1350px){#chartCard .chart-toolbar-actions button.chart-window-action{font-size:10px;padding:5px 6px!important}}
 @media(max-width:1100px){#chartCard .chart-toolbar{overflow-x:auto;overflow-y:visible}#chartCard .chart-toolbar-actions,#chartCard .chart-toolbar #timeframes{flex-shrink:0}}
+
+body.scanner-standalone{background:#081731;min-height:100dvh}
+body.scanner-standalone .app,body.scanner-standalone .scanner-toast{display:none!important}
+body.scanner-standalone .scanner-overlay{display:flex!important;position:fixed;inset:0;padding:0;background:#081731;z-index:100}
+body.scanner-standalone .scanner-dialog{width:100%;height:100dvh;max-height:none;max-width:none;border:0;border-radius:0;box-shadow:none}
+body.scanner-standalone .scanner-results{flex:1}
+body.scanner-standalone .scanner-heading{padding:20px 26px}
+body.scanner-standalone .scanner-summary,body.scanner-standalone .scanner-results{padding-left:26px;padding-right:26px}
 </style></head>
 <body><div class="app" id="app">
 <nav class="nav nav-reference" aria-label="Навігація">
@@ -1158,24 +1166,77 @@ document.addEventListener('keydown',event=>{
    Only explicit "На графік" interaction changes manual planning inputs. */
 let scannerSnapshot=null,scannerHistory=[],scannerView='current',scannerFocusedBefore=null,scannerRefreshBusy=false,scannerLastError='';
 const scannerFormat=v=>Number(v).toLocaleString('en-US',{maximumFractionDigits:Math.abs(v)<1?7:Math.abs(v)<100?4:2});
+const scannerStandalone=new URLSearchParams(location.search).get('scanner')==='1';
+let scannerPopup=null;
+if(scannerStandalone)document.body.classList.add('scanner-standalone');
 function scannerIsOpen(){return !$('scannerOverlay').classList.contains('hidden')}
-function scannerOpen(){
+function scannerOpenInline(){
  if(scannerIsOpen())return;
- scannerFocusedBefore=document.activeElement;
- scannerView='current';
- $('scannerCurrentTab').classList.add('active');$('scannerAttentionTab').classList.remove('active');$('scannerHistoryTab').classList.remove('active');$('scannerFilter').disabled=false;
- $('scannerOverlay').classList.remove('hidden');
- $('scannerOverlay').setAttribute('aria-hidden','false');
- document.body.style.overflow='hidden';
- $('scannerClose').focus();
- fetchScannerSnapshot();
+ scannerFocusedBefore=document.activeElement;scannerView='current';
+ $('scannerCurrentTab').classList.add('active');$('scannerAttentionTab').classList.remove('active');
+ $('scannerHistoryTab').classList.remove('active');$('scannerFilter').disabled=false;
+ $('scannerOverlay').classList.remove('hidden');$('scannerOverlay').setAttribute('aria-hidden','false');
+ if(!scannerStandalone)document.body.style.overflow='hidden';
+ $('scannerClose').focus();fetchScannerSnapshot();
+}
+function scannerOpen(){
+ if(scannerStandalone){scannerOpenInline();return}
+ if(scannerPopup&&!scannerPopup.closed){scannerPopup.focus();return}
+ const url=new URL(location.href);url.searchParams.set('scanner','1');
+ scannerPopup=window.open(url.href,'ata-trading-opportunities','popup=yes,width=1190,height=920,resizable=yes,scrollbars=yes');
+ if(!scannerPopup)scannerOpenInline();
 }
 function scannerClose(){
+ if(scannerStandalone){window.close();return}
  if(!scannerIsOpen())return;
  $('scannerOverlay').classList.add('hidden');$('scannerOverlay').setAttribute('aria-hidden','true');
- document.body.style.overflow='';
- scannerFocusedBefore?.focus?.();scannerFocusedBefore=null;
+ document.body.style.overflow='';scannerFocusedBefore?.focus?.();scannerFocusedBefore=null;
 }
+function scannerOpenMarket(item,withPlan=false){
+ if(!item||typeof item.symbol!=='string')return;
+ if(withPlan&&(!item.scannedAt||Date.now()-Date.parse(item.scannedAt)>600000)){
+  $('scannerSummary').textContent='Сценарій застарів. Дочекайся нового сканування.';return;
+ }
+ if(scannerStandalone){
+  if(window.opener&&!window.opener.closed){
+   window.opener.postMessage({type:'ata-scanner-open-market',symbol:item.symbol,withPlan,
+    ...(withPlan?{side:item.side,entry:item.entry,stop:item.stop,target:item.target,scannedAt:item.scannedAt}:{})},location.origin);
+   window.opener.focus();
+  }else{
+   const url=new URL(location.href);url.searchParams.delete('scanner');url.searchParams.set('symbol',item.symbol);
+   window.open(url.href,'ata-trading-chart');
+   $('scannerSummary').textContent='Основне вікно закрите. Графік відкрито без перенесення рівнів.';
+  }
+  return;
+ }
+ applyScannerMarket(item,withPlan);scannerClose();
+}
+function applyScannerMarket(item,withPlan=false){
+ if(!(/^[A-Z0-9]{3,30}USDT$/).test(item.symbol))return;
+ if(!availableMarkets.includes(item.symbol)){
+  $('scannerSummary').textContent='Пара ще не завантажена в списку Bybit.';return;
+ }
+ setMarketSymbol(item.symbol);selectTimeframe('60');
+ if(withPlan){
+  const fields=[['entry',item.entry],['stop',item.stop],['target',item.target]];
+  if(fields.some(([,v])=>!Number.isFinite(Number(v))||Number(v)<=0))return;
+  state.dir=item.side==='short'?'short':'long';
+  $('longButton').classList.toggle('green',state.dir==='long');
+  $('shortButton').classList.toggle('red',state.dir==='short');
+  for(const [id,v] of fields)$(id).value=String(Number(Number(v).toPrecision(9)));
+  calculate();draw();
+  $('executionStatus').textContent='Попередній план, не ордер. Перед рішенням перевір актуальність, комісії та ризик.';
+ }
+ $('chartCard').scrollIntoView({behavior:'smooth',block:'start'});
+}
+window.addEventListener('message',e=>{
+ if(scannerStandalone||e.origin!==location.origin||e.data?.type!=='ata-scanner-open-market')return;
+ if(e.source!==scannerPopup&&e.source?.name!=='ata-trading-opportunities')return;
+ const item=e.data;
+ if(typeof item.symbol!=='string'||!(/^[A-Z0-9]{3,30}USDT$/).test(item.symbol))return;
+ if(item.withPlan&&(!item.scannedAt||Date.now()-Date.parse(item.scannedAt)>600000))return;
+ applyScannerMarket(item,Boolean(item.withPlan));
+});
 function renderScannerSnapshot(){
  const snap=scannerSnapshot,results=$('scannerResults'),status=$('scannerState'),summary=$('scannerSummary');
  results.replaceChildren();
@@ -1218,8 +1279,7 @@ function renderScannerSnapshot(){
       if(!availableMarkets.includes(item.symbol)){
         summary.textContent='Пара відсутня в актуальному списку інструментів Bybit.';return;
       }
-      scannerClose();setMarketSymbol(item.symbol);selectTimeframe('60');
-      $('chartCard').scrollIntoView({behavior:'smooth',block:'start'});
+      scannerOpenMarket(item,false);
     };
     row.append(details,action);results.append(row);
   }
@@ -1290,18 +1350,7 @@ function renderScannerSnapshot(){
    if(!item.scannedAt||Date.now()-Date.parse(item.scannedAt)>10*60*1000){
     $('scannerSummary').textContent='Сценарій застарів. Дочекайся нового сканування.';return;
    }
-   scannerClose();
-   setMarketSymbol(item.symbol);
-   selectTimeframe('60');
-   state.dir=item.side==='short'?'short':'long';
-   $('longButton').classList.toggle('green',state.dir==='long');
-   $('shortButton').classList.toggle('red',state.dir==='short');
-   for(const [id,v] of [['entry',item.entry],['stop',item.stop],['target',item.target]]){
-    $(id).value=String(Number(Number(v).toPrecision(9)));
-   }
-   calculate();draw();
-   $('chartCard').scrollIntoView({behavior:'smooth',block:'start'});
-   $('executionStatus').textContent='Сканер переніс лише попередній план. Це не ордер. Перевір поточну ціну, розмір позиції, комісії й ризик.';
+   scannerOpenMarket(item,true);
   };
   card.append(info,action);results.append(card);
  }
@@ -2759,6 +2808,13 @@ try{
  }
 }catch{}
 refreshDetachedWindow();
+if(scannerStandalone)scannerOpenInline();
+else {
+ const requestedSymbol=new URLSearchParams(location.search).get('symbol');
+ if(requestedSymbol&&(/^[A-Z0-9]{3,30}USDT$/).test(requestedSymbol)){
+  setTimeout(()=>{if(availableMarkets.includes(requestedSymbol))setMarketSymbol(requestedSymbol)},1200);
+ }
+}
 window.addEventListener('resize',draw);$('marketSymbolText').textContent=state.symbol;syncTimeframeButtons();applyMode();showBottom('positions');loadMarketList();if(localDemo())loadDemoAccountData();
 })();
 </script></body></html>
