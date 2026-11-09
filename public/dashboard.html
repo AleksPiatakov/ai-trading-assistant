@@ -1031,6 +1031,61 @@ body.research-standalone .strategy-research-panel{width:100vw;height:100dvh;max-
 .strategy-all-markets .research-metric strong{font-size:17px}
 .strategy-all-markets .research-table-container{max-height:320px}
 @media(max-width:850px){.strategy-all-markets .research-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* Compact and readable research interface, retaining all original research controls. */
+body.research-standalone .strategy-research-panel{height:100dvh;max-height:none}
+.strategy-research-head{padding:10px 20px;min-height:62px;gap:12px}
+.strategy-research-head h2{font-size:18px;line-height:1.25;margin:0;font-weight:750}
+.strategy-research-head p{font-size:11px;line-height:1.35;margin:3px 0 0;color:#afc6e6}
+.research-heading-main{display:flex;align-items:center;gap:11px;min-width:0}
+.research-heading-symbol{font-size:24px;color:#b9a6ff;line-height:1}
+.strategy-research-head #researchClose{width:34px;height:34px;min-width:34px;padding:0;display:grid;place-items:center;font-size:17px;border:1px solid #49668e;border-radius:9px}
+.research-tab-bar{padding:6px 20px;gap:6px;min-height:46px}
+.research-tab-bar .btn{padding:7px 13px;font-size:12px;min-height:32px}
+.strategy-all-markets{padding:12px 20px 18px;gap:10px}
+.research-all-actions{gap:8px 10px;min-height:36px}
+.research-all-actions select{padding:5px 10px;height:32px}
+.research-all-actions .btn{min-height:32px;padding:6px 13px}
+.research-all-note{font-size:10px;line-height:1.3;color:#90abc9}
+.strategy-all-markets>header{gap:10px;padding-top:4px}
+.strategy-all-markets>header>div{min-width:0}
+.strategy-all-markets h3{font-size:15px;line-height:1.25;margin:0 0 3px}
+.strategy-all-markets p{font-size:11px;line-height:1.4;margin:0}
+#researchAllStatus{display:inline-block;font-size:11px;color:#cadcf3;text-align:right;max-width:45%;line-height:1.4}
+.research-all-progress{height:6px;border-radius:6px}
+.research-all-step{font-size:11px;line-height:1.4;color:#b3c9e7}
+.research-section-label{font-size:12px;line-height:1.3;color:#d8e6fa;font-weight:750;margin:3px 0 0}
+#researchResultsLabel{order:3}
+#researchAllMetrics{order:4}
+#researchPairsLabel{order:5}
+#researchPairsProgress{order:6}
+#researchVariantComparison{order:7}
+.strategy-all-markets>.research-section-label:not([id]){order:8}
+.strategy-all-markets>.research-table-container{order:9}
+.research-notes{order:10;border:1px solid #39577d;border-radius:8px;background:#102540;padding:8px 11px}
+.research-notes summary{font-size:11px;color:#b9cfe9;cursor:pointer}
+.research-notes p{padding-top:9px}
+.strategy-all-markets .research-metrics{gap:9px;grid-template-columns:repeat(4,minmax(0,1fr))}
+.strategy-all-markets .research-metric{padding:10px 13px;min-height:72px;border-radius:10px}
+.strategy-all-markets .research-metric span{font-size:11px;line-height:1.3}
+.strategy-all-markets .research-metric strong{font-size:21px;line-height:1.25;margin-top:5px}
+.research-pair-progress{grid-template-columns:repeat(auto-fit,minmax(265px,1fr));gap:10px}
+.research-pair-item{padding:12px 13px;gap:8px;min-height:104px;border-radius:10px;min-width:0}
+.research-pair-item header{gap:8px}
+.research-pair-item strong{font-size:13px;letter-spacing:.1px}
+.research-pair-item small{font-size:11px;line-height:1.4}
+.research-pair-item .research-pair-track{height:4px}
+.research-pair-item .research-pair-tfs{font-size:10px;line-height:1.5;color:#a1bddd;overflow-wrap:anywhere}
+.research-pair-item .research-pair-status{font-size:11px;line-height:1.45;color:#b4c9e4;overflow-wrap:anywhere}
+.research-pair-item[data-status=error]{border-color:#755270}
+.research-pair-item[data-status=error] .research-pair-status{color:#f0b4c0}
+.research-pair-item[data-status=complete]{border-color:#3f7b77}
+.strategy-all-markets .research-table-container{max-height:320px;border-color:#426388}
+.strategy-all-markets .research-table-container table{font-size:11px}
+.strategy-all-markets .research-table-container th,.strategy-all-markets .research-table-container td{padding:10px 12px}
+.strategy-all-markets .research-table-container tbody tr:nth-child(even){background:#173251}
+.strategy-research-foot{padding:8px 20px;font-size:10px;line-height:1.4}
+@media(max-width:760px){.strategy-research-head{padding:9px 12px}.strategy-research-head h2{font-size:16px}.research-tab-bar{padding:6px 12px;flex-wrap:wrap}.strategy-all-markets{padding:12px}.strategy-all-markets .research-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.research-pair-progress{grid-template-columns:1fr}#researchAllStatus{max-width:none;text-align:left}.strategy-all-markets>header{align-items:flex-start;flex-direction:column}}
 </style></head>
 <body><div class="app" id="app">
 <nav class="nav nav-reference" aria-label="Навігація">
@@ -1092,7 +1147,7 @@ body.research-standalone .strategy-research-panel{width:100vw;height:100dvh;max-
 <div id="strategyResearchOverlay" class="strategy-research-overlay hidden" aria-hidden="true">
  <section class="strategy-research-panel" role="dialog" aria-label="Перевірка торгової стратегії" aria-modal="false">
   <header class="strategy-research-head">
-   <div><small>AI TRADING ASSISTANT · READ ONLY</small><h2>▤ Перевірка торгової стратегії</h2><p>Історичні тести й спостереження на нових сигналах. Це дослідження, а не прогноз.</p></div>
+   <div class="research-heading-main"><span class="research-heading-symbol" aria-hidden="true">▤</span><div><h2>Перевірка стратегії</h2><p>Backtest та Paper Trading · лише аналіз, без ордерів</p></div></div>
    <button id="researchClose" class="btn ghost" type="button" aria-label="Закрити статистику">✕</button>
   </header>
   <nav class="research-tab-bar" role="tablist" aria-label="Розділи перевірки стратегії">
@@ -1120,17 +1175,20 @@ body.research-standalone .strategy-research-panel{width:100vw;height:100dvh;max-
    <div class="research-all-actions">
     <label>Історія <select id="researchYears"><option value="1">1 рік</option><option value="2">2 роки</option><option value="3">3 роки</option></select></label>
     <button id="researchAllMarkets" class="btn purple" type="button">Аналіз усіх 10 пар</button>
-    <span class="research-all-note">Виконання на Mac продовжується після закриття цього вікна, доки локальний сервер працює.</span>
+    <span class="research-all-note">Аналіз працює на Mac, доки запущено локальний сервер.</span>
    </div>
-   <header><div><h3>Порівняння 10 пар · історична перевірка</h3>
-    <p>Фіксовані правила та суворіший варіант 4/4. Перші 70% — навчальний відрізок, останні 30% — поза вибіркою (OOS).</p></div>
+   <header><div><h3>Результати 10 торгових пар</h3>
+    <p>Поточна стратегія проти 4/4 підтверджень · Train 70% / OOS 30%</p></div>
     <small id="researchAllStatus">Не запущено</small></header>
    <div class="research-all-progress" role="progressbar" aria-label="Загальний прогрес" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="researchAllProgress"><div id="researchAllProgressBar"></div></div>
     <div id="researchAllStep" class="research-all-step" aria-live="polite">Оберіть період та запустіть аналіз</div>
+    <div class="research-section-label" id="researchResultsLabel">Загальні показники</div>
     <div class="research-pair-progress" id="researchPairsProgress" aria-label="Стан перевірки кожної пари"></div>
    <div id="researchAllMetrics" class="research-metrics"></div>
-   <p id="researchVariantText" class="research-disclaimer">Вибір варіанта можливий лише за достатньої кількості угод у train. OOS не використовується для вибору.</p>
-   <div class="research-table-container"><table><thead><tr><th>Пара</th><th>Train угод</th><th>Train Win %</th><th>Train середнє R</th><th>OOS угод</th><th>OOS Win %</th><th>OOS середнє R</th><th>Причини збитків</th></tr></thead><tbody id="researchAllRows"></tbody></table></div>
+    <div class="research-section-label" id="researchPairsLabel">Стан перевірки пар</div>
+   <details class="research-notes"><summary>Пояснення результатів та помилки джерела</summary><p id="researchVariantText" class="research-disclaimer">Вибір варіанта можливий лише за достатньої кількості угод у train. OOS не використовується для вибору.</p></details>
+   <div class="research-section-label">Результати за інструментами</div>
+    <div class="research-table-container"><table><thead><tr><th>Пара</th><th>Train угод</th><th>Train Win %</th><th>Train середнє R</th><th>OOS угод</th><th>OOS Win %</th><th>OOS середнє R</th><th>Причини збитків</th></tr></thead><tbody id="researchAllRows"></tbody></table></div>
    <div id="researchVariantComparison" class="research-disclaimer"></div>
   </section>
   <footer class="strategy-research-foot">Комісія та прослизання моделюються. При одночасному досягненні SL і TP обирається SL. Історичні результати не гарантують майбутніх. Ордери не надсилаються.</footer>
