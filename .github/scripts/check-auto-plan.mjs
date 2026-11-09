@@ -25,9 +25,14 @@ const draft=await page.evaluate(()=>({
 }));
 if(draft.symbol!=='ETHUSDT'||draft.stop!=='95'||draft.target!=='112')errors.push('Auto draft not applied: '+JSON.stringify(draft));
 if(!draft.executionDisabled)errors.push('Auto plan enabled live order submission');
+const popupEvent=page.waitForEvent('popup');
 await page.locator('#openRiskWindow').click();
-await page.locator('#entry').fill('101');
-await page.locator('#entry').dispatchEvent('input');
+const popup=await popupEvent;
+popup.on('pageerror',e=>errors.push('popup: '+e.message));
+await popup.waitForLoadState('load');
+await popup.waitForFunction(()=>document.querySelector('#entry')?.value==='100',null,{timeout:10000});
+await popup.locator('#entry').fill('101');
+await page.waitForFunction(()=>document.querySelector('#entry')?.value==='101',null,{timeout:10000});
 await page.evaluate(()=>document.querySelector('#autoPlanReset').click());
 if(await page.locator('#entry').inputValue()!=='101')errors.push('Manual level overwritten by auto-clear');
 if(!await page.locator('#autoPlanStatus').innerText().then(v=>v.includes('Ручні')))errors.push('Manual lock not surfaced');
