@@ -55,3 +55,9 @@ This verifies against read-only `https://api-demo.bybit.com/v5/account/wallet-ba
 The local service binds only to `127.0.0.1:4177`, validates the HTTP Host and Origin, requires a custom header for mutations, does not enable CORS, and does not echo credentials in responses or logs. Keep macOS Keychain protected. Never paste credentials into GitHub Pages, a chat, or a public repository.
 
 Stage one covers key entry, verification and secure storage. Showing Demo wallet balances, positions and candles in the terminal requires separate later integration.
+
+## Bybit Demo read-only account dashboard
+
+The local Mac server at `http://127.0.0.1:4177/` now provides `GET /api/demo/account`, signing three read-only Bybit Demo requests with credentials retrieved from macOS Keychain: `/v5/account/wallet-balance?accountType=UNIFIED`, `/v5/position/list?category=linear&settleCoin=USDT`, and `/v5/order/realtime?category=linear&settleCoin=USDT&openOnly=0`. It returns only selected balance, position, and order fields, never the key or secret. Select Demo mode and the bottom Positions or Orders tabs, then use the **Оновити** button to refresh. Real mode remains disconnected and no trading is enabled. Bybit Demo can retain orders for only seven days; this interface currently shows active orders rather than a historical archive.
+
+To update a previously cloned Mac installation, stop the running server with Ctrl+C, run `cd ~/Desktop/ai-trading-assistant && git pull origin redesign-approved-trading-ui`, and restart `node scripts/local-demo-server.mjs`. The first load requests Demo account data automatically. API connectivity is not proven until the user's own local server successfully completes this read-only request.
