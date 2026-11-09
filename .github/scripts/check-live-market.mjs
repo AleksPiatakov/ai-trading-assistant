@@ -5,6 +5,7 @@ const page=await browser.newPage({viewport:{width:1440,height:900}});
 const errors=[];
 page.on('pageerror',e=>errors.push(e.message));
 await page.addInitScript(()=>{
+  window.open=()=>null; // Keep existing modal smoke tests on the popup-blocked fallback.
   window.__marketSockets=[];
   window.__marketSubscriptions=[];
   class MockWebSocket{
