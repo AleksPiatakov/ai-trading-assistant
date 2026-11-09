@@ -52,6 +52,11 @@ await page.evaluate(()=>{
   }});
 });
 await page.waitForFunction(()=>document.querySelector('#quote')?.textContent==='102.25',{timeout:4000});
+await page.waitForFunction(()=>document.querySelectorAll('#skillMatrix .skill-tf').length===12,null,{timeout:20000});
+const intervals=await page.locator('#skillMatrix .skill-tf').count();
+if(intervals!==12)errors.push('Multi-timeframe analysis did not cover all 12 intervals');
+const firstSummary=await page.locator('#multiSummary').innerText();
+if(!firstSummary.includes('12/12'))errors.push('Multi-timeframe coverage summary missing');
 const status=await page.locator('#quoteMeta').innerText();
 if(!status.includes('Потік Bybit'))errors.push('Live WebSocket status missing: '+status);
 await page.evaluate(()=>{
