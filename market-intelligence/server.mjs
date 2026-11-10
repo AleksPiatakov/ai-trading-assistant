@@ -9,7 +9,7 @@ import {fileURLToPath} from 'node:url';
 import {resolve,dirname} from 'node:path';
 import {spawn} from 'node:child_process';
 import {createHmac} from 'node:crypto';
-import {evaluateTradeSetup} from '../scripts/market-scanner.mjs';
+import {evaluateTradeSetup,evaluateWatchCandidate} from '../scripts/market-scanner.mjs';
 
 const host='127.0.0.1';
 const port=Number(process.env.MI_PORT||4188);
@@ -175,21 +175,32 @@ async function scan(){
    try{
     const frames={};
     for(const tf of timeframes){frames[tf]=await candles(ticker.symbol,tf);await wait(110)}
-    const plan=evaluateTradeSetup(ticker.symbol,frames);
+    const evaluatedAt=Date.now();
+    const plan=evaluateTradeSetup(ticker.symbol,frames,evaluatedAt);
     if(plan){
      plans.push({...plan,market:'crypto',source:'Bybit public',turnover24h:ticker.turnover24h,
       updatedPrice:ticker.last,change24h:ticker.change24h,
       state:'plan',quality:'rules-qualified',confidence:null,ordersEnabled:false});
     }else{
-     watch.push({symbol:ticker.symbol,market:'crypto',source:'Bybit public',state:'watch',
-      lastPrice:ticker.last,change24h:ticker.change24h,turnover24h:ticker.turnover24h,
-      reason:'Умови входу не підтверджені всіма правилами. Позицію не пропонуємо.',ordersEnabled:false});
+     const candidate=evaluateWatchCandidate(ticker.symbol,frames,evaluatedAt);
+     const waiting=Array.isArray(candidate?.waitFor)?candidate.waitFor:[];
+     watch.push({symbol:ticker.symbol,market:'crypto',instrumentType:'Bybit USDT perpetual derivative',
+      source:'Bybit public',state:'watch',lastPrice:ticker.last,change24h:ticker.change24h,
+      turnover24h:ticker.turnover24h,side:candidate?.side||null,
+      passed:Number.isFinite(candidate?.passed)?candidate.passed:null,
+      total:candidate?.total||5,timeframes:candidate?.timeframes||[],
+      checkedAt:new Date(evaluatedAt).toISOString(),waitFor:waiting,
+      reason:waiting[0]?'Очікуємо: '+waiting[0]:
+       candidate?'Критерії уваги виконані, але план Entry/SL/TP не підтверджено.':
+       'Недостатньо узгоджених даних для оцінки. Готового плану немає.',
+      ordersEnabled:false});
     }
    }catch(e){errors.push(ticker.symbol+': '+String(e.message||e).slice(0,100))}
    lastSnapshot={...lastSnapshot,completed:lastSnapshot.completed+1};
   }
   plans.sort((a,b)=>b.confirmations-a.confirmations||b.rr-a.rr||b.turnover24h-a.turnover24h);
-  watch.sort((a,b)=>b.turnover24h-a.turnover24h);
+  // Watch ranking is qualitative only, never a probability or a ready-to-trade signal.
+  watch.sort((a,b)=>(b.passed??-1)-(a.passed??-1)||b.turnover24h-a.turnover24h);
   lastSnapshot={status:errors.length===universe.length?'error':errors.length?'partial':'ready',
    updatedAt:new Date().toISOString(),startedAt,universe,opportunities:plans,watch,errors,
    completed:universe.length,total:universe.length,ordersEnabled:false,nextScanAt:new Date(nextScanAt).toISOString()};
@@ -225,6 +236,16 @@ const server=http.createServer(async(req,res)=>{
    markets:[{id:'crypto',status:'connected',source:'Bybit public data'},
     {id:'stocks',status:'not-connected'},{id:'forex',status:'not-connected'},
     {id:'commodities',status:'not-connected'}],scanner:lastSnapshot.status});
+  if(req.method==='GET'&&u.pathname==='/api/market/candles'){
+   const symbol=u.searchParams.get('symbol')||'';
+   const allowed=lastSnapshot.universe.some(x=>x.symbol===symbol);
+   if(!/^[A-Z0-9]{3,30}USDT$/.test(symbol)||!allowed)return json(res,400,{error:'Інструмент відсутній в поточному сканері'});
+   try{
+    const result=await candles(symbol,'60');
+    return json(res,200,{symbol,market:'crypto',source:'Bybit public',
+     interval:'60',ordersEnabled:false,candles:result.slice(-110)});
+   }catch(e){return json(res,503,{error:'Графік тимчасово недоступний: '+String(e.message||e).slice(0,120)})}
+  }
   if(req.method==='GET'&&u.pathname==='/api/opportunities'){
    const snapshot={...lastSnapshot,
     opportunities:lastSnapshot.opportunities.filter(p=>Date.now()-Date.parse(p.scannedAt)<2*scanEveryMs)};
