@@ -34,7 +34,37 @@ function availabilityMessage(){
  const messages={stocks:'Акції та ETF поки не підключені. Сигнали без перевірених даних не показуються.',forex:'Forex поки не підключений. Для сигналів потрібен ліцензований потік котирувань.',commodities:'Сировинні інструменти ще не підключені. Потрібне надійне джерело даних.'};
  return messages[selectedMarket]||'';
 }
-function setStatus(text,error=false){$('statusline').textContent=text;$('statusline').classList.toggle('error',error)}
+function setStatus(text,error=false){
+ $('statusline').textContent=text;
+ $('statusline').classList.toggle('error',error);
+ $('statusline').parentElement.classList.toggle('error',error);
+}
+function drawScannerMetrics(){
+ const state=snapshot?.status;
+ if(!snapshot||state==='starting'){
+  for(const id of ['metricChecked','metricReady','metricWatch'])$(id).textContent='—';
+  $('diagnosticsBody').textContent='Очікуємо першого сканування.';return;
+ }
+ const checked=Number(snapshot.completed)||0;
+ const plans=verified();
+ const countWatch=Array.isArray(snapshot.watch)?snapshot.watch.length:0;
+ $('metricChecked').textContent=String(checked);
+ $('metricReady').textContent=String(plans.length);
+ $('metricWatch').textContent=String(countWatch);
+ const errors=Array.isArray(snapshot.errors)?snapshot.errors:[];
+ const notes=[
+  'Стан: '+({ready:'перевірку завершено',partial:'частково завершено',scanning:'триває перевірка',error:'помилка джерела'}[state]||'очікування'),
+  'Перевірено '+checked+' із '+(Number(snapshot.total)||0)+' інструментів.',
+  'Кандидати під наглядом — не готові сигнали.',
+  'Ринки без підключеного провайдера не скануються.'
+ ];
+ if(errors.length){
+  notes.push('Помилок джерела: '+errors.length+'.');
+  notes.push(...errors.slice(0,5).map(x=>String(x).slice(0,160)));
+  if(errors.length>5)notes.push('Решта помилок: '+(errors.length-5));
+ }
+ $('diagnosticsBody').textContent=notes.join('\n');
+}
 function setConnection(ok,label){
  const pill=$('connectionPill');pill.classList.toggle('offline',!ok);
  pill.lastChild.textContent=' '+label;
@@ -88,9 +118,11 @@ function drawOpportunities(){
  const plans=isCryptoView()?verified():[];
  if(plans.length)showBest(root,plans[0]);
  else{
-  const empty=el('div','empty-state');append(empty,el('span','empty-symbol','◇'),
-   el('h3','',marketNotice?'Ринок поки не підключений':snapshot?.status==='scanning'?'Перевіряємо торгові сценарії':'Немає готового підтвердженого входу'),
-   el('p','',marketNotice||'Це нормально. Ми не пропонуємо позицію, якщо недостатньо підтверджень або дані застаріли.'));
+  const empty=el('div','empty-state');
+  const symbol=el('span','empty-symbol');symbol.textContent='◷';
+  append(empty,symbol,
+   el('h3','',marketNotice?'Дані ринку не підключені':snapshot?.status==='scanning'?'Перевіряємо торгові сценарії':'Готових входів зараз немає'),
+   el('p','',marketNotice||'Система продовжує перевірку. Нижче — інструменти під наглядом; вони ще не є сигналами для входу.'));
   root.append(empty);
  }
  const watch=(isCryptoView()&&Array.isArray(snapshot?.watch)?snapshot.watch:[]).filter(t=>safeSymbol(t.symbol)).slice(0,18);
@@ -99,6 +131,7 @@ function drawOpportunities(){
  else if(!watch.length)list.append(el('div','quiet-message','Пари під спостереженням з’являться після завершення сканування.'));
  else for(const t of watch)list.append(watchCard(t));
  $('lastScan').textContent=snapshot?.updatedAt?'Оновлено о '+timestamp(snapshot.updatedAt):'Очікуємо сканування';
+ drawScannerMetrics();
 }
 function openPlan(p){
  if(!isFresh(p)){setStatus('Цей план застарів. Оновіть аналіз перед розглядом.',true);return}
