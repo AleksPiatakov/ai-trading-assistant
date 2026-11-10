@@ -157,6 +157,15 @@ export function assessTradeReadiness(symbol,candleSeries,asOf=Date.now(),options
  const turnover=Number(options.turnover24h);
  const liquidityKnown=Number.isFinite(turnover)&&turnover>0;
  const liquidityOk=liquidityKnown&&turnover>=10000000;
+ const livePrice=Number(options.lastPrice);
+ const livePriceKnown=Number.isFinite(livePrice)&&livePrice>0;
+ const referencePrice=frames['60']?.price;
+ const distanceToEntryPct=livePriceKnown&&Number.isFinite(referencePrice)&&referencePrice>0?
+  Math.abs(livePrice-referencePrice)/referencePrice*100:null;
+ const maxEntryDeviationPct=Number.isFinite(frames['60']?.atr)&&referencePrice>0?
+  100*Math.max(.002,Math.min(.01,.5*frames['60'].atr/referencePrice)):null;
+ const priceAligned=distanceToEntryPct!==null&&maxEntryDeviationPct!==null&&
+  distanceToEntryPct<=maxEntryDeviationPct;
  const complete=REQUIRED.every(tf=>frames[tf]&&Number.isFinite(frames[tf].price));
  if(!complete){
   return {status:'insufficient',side:null,blocking:['Недостатньо закритих свічок для чотирьох таймфреймів'],
@@ -206,7 +215,10 @@ export function assessTradeReadiness(symbol,candleSeries,asOf=Date.now(),options
  if(!liquidityOk)missing.push(liquidityKnown?
   'Низька ліквідність: обіг за 24 год менше 10 млн USDT':
   'Не отримано перевіреного обігу за 24 год');
- const executionReady=Boolean(rawPlan&&liquidityOk&&
+ if(!priceAligned)missing.push(livePriceKnown?
+  'Ціна відійшла від умовного входу; потрібен повторний розрахунок':
+  'Немає актуальної ціни для перевірки входу');
+ const executionReady=Boolean(rawPlan&&liquidityOk&&priceAligned&&
   candidates.some(c=>c.side===rawPlan.side&&c.feasible));
  const plan=executionReady?rawPlan:null;
  const readySide=plan?.side||best.side;
@@ -216,12 +228,12 @@ export function assessTradeReadiness(symbol,candleSeries,asOf=Date.now(),options
   trendChecks:chosen.trendScore,trendTotal:4,side:readySide};
  const tradeFeasibility={status:plan?'validated':chosen.feasible?'conditional':'blocked',
   grossRR:chosen.grossRR,netRR:chosen.netRR,
-  validLevels:chosen.validGeometry,riskPct:chosen.validGeometry?100*Math.abs(chosen.entry-chosen.stop)/chosen.entry:null,
+  validLevels:chosen.validGeometry,distanceToEntryPct,maxEntryDeviationPct,priceAligned,riskPct:chosen.validGeometry?100*Math.abs(chosen.entry-chosen.stop)/chosen.entry:null,
   turnover24h:liquidityKnown?turnover:null,liquidityOk,blocking:missingConditions,
   assumptions:{feePerSide,slippagePerSide,fundingIncluded:false,spreadMeasured:false}};
  // "near" requires acceptable trade geometry, liquidity, and at most one missing
  // MARKET confirmation. An uneconomic setup is NEVER promoted by a high check count.
- const near=!plan&&chosen.feasible&&chosen.failed.length===1&&
+ const near=!plan&&chosen.feasible&&priceAligned&&chosen.failed.length===1&&
   chosen.check.find(x=>x.key==='trend').ok;
  const scenario=chosen.validRisk?{
   status:'hypothetical',side:chosen.side,entry:chosen.entry,stop:chosen.stop,
