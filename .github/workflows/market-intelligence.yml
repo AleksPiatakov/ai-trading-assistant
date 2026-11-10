@@ -6,6 +6,7 @@ on:
     paths:
       - 'market-intelligence/**'
       - '.github/scripts/check-market-intelligence.mjs'
+      - '.github/scripts/check-market-readiness.mjs'
       - '.github/workflows/market-intelligence.yml'
       - 'scripts/market-scanner.mjs'
   workflow_dispatch:
@@ -23,5 +24,8 @@ jobs:
           node --check market-intelligence/server.mjs
           node --check market-intelligence/app.js
           node --check .github/scripts/check-market-intelligence.mjs
+          node --check .github/scripts/check-market-readiness.mjs
+      - name: Candidate readiness logic
+        run: node .github/scripts/check-market-readiness.mjs
       - name: Offline startup and security checks
         run: node .github/scripts/check-market-intelligence.mjs
