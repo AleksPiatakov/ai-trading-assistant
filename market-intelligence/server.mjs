@@ -204,11 +204,14 @@ async function scan(){
   plans.sort((a,b)=>b.confirmations-a.confirmations||b.rr-a.rr||b.turnover24h-a.turnover24h);
   // "near" = only one missing required condition WITH valid risk geometry.
   // This is neither a probability nor a recommendation to enter early.
+  // Rank market evidence before hypothetical trade geometry. A large modelled
+  // R:R cannot compensate for inconsistent 1h/4h direction or momentum.
   watch.sort((a,b)=>(a.state==='near'?0:1)-(b.state==='near'?0:1)||
-   Number(b.tradeFeasibility?.status==='conditional')-Number(a.tradeFeasibility?.status==='conditional')||
    (b.marketQuality?.trendChecks??-1)-(a.marketQuality?.trendChecks??-1)||
-   Number(b.tradeFeasibility?.validLevels)-Number(a.tradeFeasibility?.validLevels)||
    (b.readinessPassed??-1)-(a.readinessPassed??-1)||
+   (b.marketQuality?.passed??-1)-(a.marketQuality?.passed??-1)||
+   Number(b.tradeFeasibility?.status==='conditional')-Number(a.tradeFeasibility?.status==='conditional')||
+   Number(b.tradeFeasibility?.validLevels)-Number(a.tradeFeasibility?.validLevels)||
    b.turnover24h-a.turnover24h);
   lastSnapshot={status:errors.length===universe.length?'error':errors.length?'partial':'ready',
    updatedAt:new Date().toISOString(),startedAt,universe,opportunities:plans,watch,errors,
