@@ -246,6 +246,16 @@ export function assessTradeReadiness(symbol,candleSeries,asOf=Date.now(),options
   marketQuality,tradeFeasibility,scenario,attention,plan,
   watchScore:attention?.passed??null};
 }
+/** Compare watch candidates, never conflating a hypothetical payoff with confirmed trend quality. */
+export function compareWatchCandidates(a,b){
+ return (a.state==='near'?0:1)-(b.state==='near'?0:1)||
+  (b.marketQuality?.trendChecks??-1)-(a.marketQuality?.trendChecks??-1)||
+  (b.readinessPassed??-1)-(a.readinessPassed??-1)||
+  (b.marketQuality?.passed??-1)-(a.marketQuality?.passed??-1)||
+  Number(b.tradeFeasibility?.status==='conditional')-Number(a.tradeFeasibility?.status==='conditional')||
+  Number(b.tradeFeasibility?.validLevels)-Number(a.tradeFeasibility?.validLevels)||
+  (Number(b.turnover24h)||0)-(Number(a.turnover24h)||0);
+}
 export function createMarketScanner({getKlines,getInstruments,historyPath=null,onPromotion=()=>{},onCycle=async()=>{}}){
   let snapshot={status:'starting',updatedAt:null,startedAt:null,completed:0,total:0,watchlist:WATCHLIST.slice(),
     opportunities:[],attention:[],alerts:[],errors:[],mode:'local-background',ordersEnabled:false};
