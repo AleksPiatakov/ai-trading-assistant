@@ -14,7 +14,7 @@ import {evaluateTradeSetup} from '../scripts/market-scanner.mjs';
 const host='127.0.0.1';
 const port=Number(process.env.MI_PORT||4188);
 const root=resolve(dirname(fileURLToPath(import.meta.url)));
-const services=Object.freeze({key:'com.ai-trading-assistant.demo.api-key',secret:'com.ai-trading-assistant.demo.api-secret'});
+const services=Object.freeze({key:'com.market-intelligence.demo.api-key',secret:'com.market-intelligence.demo.api-secret'});
 const account='local';
 const json=(res,status,data)=>{res.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store',
  'X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer','Content-Security-Policy':"default-src 'none'"});res.end(JSON.stringify(data))};
@@ -128,19 +128,21 @@ async function loadDemoAccount(){
 
 const barMs={'15':900000,'60':3600000,'240':14400000,D:86400000};
 const timeframes=['15','60','240','D'];
-const maxUniverse=24;
+const maxUniverse=16;
 const scanEveryMs=10*60000;
 let lastSnapshot={status:'starting',updatedAt:null,universe:[],opportunities:[],watch:[],errors:[],completed:0,total:0,ordersEnabled:false};
 let refreshing=false;
 let nextScanAt=0;
 let tickersCache={at:0,data:[]};
 let scannerInterval=null;
+let scanFailures=0;
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
 async function publicCall(endpoint,params={}){
  const url=new URL('https://api.bybit.com'+endpoint);
  for(const [key,value] of Object.entries(params))url.searchParams.set(key,String(value));
  const response=await fetch(url,{signal:AbortSignal.timeout(14000),cache:'no-store'});
- if(!response.ok)throw Error('Bybit HTTP '+response.status);
+ if(response.status===429)throw Error('Bybit rate limit (HTTP 429)');
+  if(!response.ok)throw Error('Bybit HTTP '+response.status);
  const payload=await response.json();
  if(payload.retCode!==0)throw Error('Bybit: '+String(payload.retMsg||payload.retCode).slice(0,110));
  return payload.result||{};
