@@ -9,7 +9,7 @@ import {fileURLToPath} from 'node:url';
 import {resolve,dirname} from 'node:path';
 import {spawn} from 'node:child_process';
 import {createHmac} from 'node:crypto';
-import {evaluateTradeSetup,evaluateWatchCandidate} from '../scripts/market-scanner.mjs';
+import {assessTradeReadiness} from '../scripts/market-scanner.mjs';
 
 const host='127.0.0.1';
 const port=Number(process.env.MI_PORT||4188);
@@ -176,31 +176,35 @@ async function scan(){
     const frames={};
     for(const tf of timeframes){frames[tf]=await candles(ticker.symbol,tf);await wait(110)}
     const evaluatedAt=Date.now();
-    const plan=evaluateTradeSetup(ticker.symbol,frames,evaluatedAt);
+    const assessment=assessTradeReadiness(ticker.symbol,frames,evaluatedAt);
+    const plan=assessment.plan;
     if(plan){
      plans.push({...plan,market:'crypto',source:'Bybit public',turnover24h:ticker.turnover24h,
       updatedPrice:ticker.last,change24h:ticker.change24h,
       state:'plan',quality:'rules-qualified',confidence:null,ordersEnabled:false});
     }else{
-     const candidate=evaluateWatchCandidate(ticker.symbol,frames,evaluatedAt);
-     const waiting=Array.isArray(candidate?.waitFor)?candidate.waitFor:[];
+     const candidate=assessment.attention;
+     const waiting=assessment.blocking;
      watch.push({symbol:ticker.symbol,market:'crypto',instrumentType:'Bybit USDT perpetual derivative',
-      source:'Bybit public',state:'watch',lastPrice:ticker.last,change24h:ticker.change24h,
-      turnover24h:ticker.turnover24h,side:candidate?.side||null,
+      source:'Bybit public',state:assessment.status,lastPrice:ticker.last,change24h:ticker.change24h,
+      turnover24h:ticker.turnover24h,side:assessment.side,
       passed:Number.isFinite(candidate?.passed)?candidate.passed:null,
       total:candidate?.total||5,timeframes:candidate?.timeframes||[],
-      checkedAt:new Date(evaluatedAt).toISOString(),waitFor:waiting,
-      reason:waiting[0]?'Очікуємо: '+waiting[0]:
-       candidate?'Критерії уваги виконані, але план Entry/SL/TP не підтверджено.':
-       'Недостатньо узгоджених даних для оцінки. Готового плану немає.',
+      readinessPassed:assessment.checksPassed,readinessTotal:assessment.checksTotal,
+      estimatedRR:assessment.estimatedRR,checkedAt:new Date(evaluatedAt).toISOString(),
+      waitFor:waiting,reason:waiting[0]?'Очікуємо: '+waiting[0]:
+       'Готовий план ще не сформовано; перевірте ринкові умови.',
       ordersEnabled:false});
     }
    }catch(e){errors.push(ticker.symbol+': '+String(e.message||e).slice(0,100))}
    lastSnapshot={...lastSnapshot,completed:lastSnapshot.completed+1};
   }
   plans.sort((a,b)=>b.confirmations-a.confirmations||b.rr-a.rr||b.turnover24h-a.turnover24h);
-  // Watch ranking is qualitative only, never a probability or a ready-to-trade signal.
-  watch.sort((a,b)=>(b.passed??-1)-(a.passed??-1)||b.turnover24h-a.turnover24h);
+  // "near" = only one missing required condition WITH valid risk geometry.
+  // This is neither a probability nor a recommendation to enter early.
+  watch.sort((a,b)=>(a.state==='near'?-1:1)-(b.state==='near'?-1:1)||
+   (b.readinessPassed??-1)-(a.readinessPassed??-1)||
+   (b.passed??-1)-(a.passed??-1)||b.turnover24h-a.turnover24h);
   lastSnapshot={status:errors.length===universe.length?'error':errors.length?'partial':'ready',
    updatedAt:new Date().toISOString(),startedAt,universe,opportunities:plans,watch,errors,
    completed:universe.length,total:universe.length,ordersEnabled:false,nextScanAt:new Date(nextScanAt).toISOString()};
