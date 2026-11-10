@@ -130,3 +130,19 @@
 .watch-reason{line-height:1.6}
 .watch-score{font-variant-numeric:tabular-nums}
 .watch-detail-label{max-width:100%;white-space:normal}
+
+
+/* Trade feasibility is distinct from qualitative market indicators. */
+.watch-rr{font-size:10px;color:#a0b6d0;display:block;margin-top:3px;font-variant-numeric:tabular-nums}
+.watch-feasibility,.watch-preview{margin-top:15px;padding:15px;background:#0f233a;border:1px solid #375573;border-radius:11px}
+.watch-feasibility h3,.watch-preview h3{font-size:13px;margin:0 0 9px}
+.watch-feasibility>p,.watch-preview>p{margin:6px 0 11px!important;color:#abc0d9;font-size:11px;line-height:1.5}
+.watch-feasibility-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.watch-feasibility-item,.watch-preview-level{background:#172e4a;border:1px solid #34516c;border-radius:8px;padding:9px;min-width:0}
+.watch-feasibility-item span,.watch-preview-level span{display:block;color:#9eafc8;font-size:10px;line-height:1.5}
+.watch-feasibility-item strong,.watch-preview-level strong{display:block;color:#eff5ff;font-size:14px;line-height:1.4;margin-top:4px;overflow-wrap:anywhere}
+.watch-preview{border-color:#96774e;background:#30291f}
+.watch-preview h3{color:#f0c68e}
+.watch-preview>p{color:#edd1aa}
+.watch-preview-levels{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}
+@media(max-width:650px){.watch-feasibility-metrics{grid-template-columns:1fr}.watch-preview-levels{grid-template-columns:repeat(2,minmax(0,1fr))}}
