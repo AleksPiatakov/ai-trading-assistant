@@ -103,15 +103,99 @@ function showBest(root,plan){
  append(actions,more,save);right.append(actions);
  append(card,left,right);root.append(card);
 }
-function watchCard(t){
- const card=el('article','watch-card'),head=el('div','watch-head');
- append(head,el('h3','',t.symbol),el('span','watch-tag','◷ Спостерігати'));
- card.append(head,el('div','watch-price',fprice(t.lastPrice)));
- card.append(el('p','',t.reason||'Підтверджених умов входу наразі немає.'));
- const foot=el('div','watch-foot');append(foot,el('span','', '24г зміна '+pct(t.change24h)),el('span','','Не торговий сигнал'));
- card.append(foot);
- return card;
+function watchRow(t){
+ const row=el('tr','watch-row');
+ const isScored=Number.isFinite(t.passed)&&Number.isFinite(t.total);
+ const score=isScored?t.passed+'/'+t.total:'—';
+ const columns=[
+  [t.symbol,'watch-symbol'],
+  [fprice(t.lastPrice),'watch-number'],
+  [t.side==='long'?'↗ Висхідний':t.side==='short'?'↘ Низхідний':'—','watch-direction'],
+  [score,'watch-score'],
+  [t.reason||'Немає підтвердженого плану','watch-reason']
+ ];
+ for(const [value,cls] of columns)row.append(el('td',cls,value));
+ const action=el('td','watch-action-cell');
+ const btn=el('button','watch-more','Детальніше');
+ btn.type='button';btn.setAttribute('aria-label','Детальний аналіз '+t.symbol);
+ btn.onclick=()=>openWatch(t);action.append(btn);row.append(action);
+ row.onclick=event=>{if(!event.target.closest('button'))openWatch(t)};
+ return row;
 }
+function showWatchChart(root,candles){
+ const good=(Array.isArray(candles)?candles:[]).filter(x=>[x.t,x.c].every(Number.isFinite)&&x.c>0).sort((a,b)=>a.t-b.t).slice(-90);
+ if(good.length<3){root.append(el('p','muted','Недостатньо завершених свічок для графіка.'));return}
+ const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+ svg.setAttribute('viewBox','0 0 600 185');svg.setAttribute('role','img');
+ svg.setAttribute('aria-label','Графік закриття останніх '+good.length+' годинних свічок Bybit');
+ svg.classList.add('watch-svg');
+ const prices=good.map(x=>x.c),lo=Math.min(...prices),hi=Math.max(...prices),span=Math.max(hi-lo,hi*.002);
+ const points=prices.map((n,i)=>(15+570*i/(prices.length-1)).toFixed(1)+','+(165-145*(n-lo)/span).toFixed(1)).join(' ');
+ for(const y of [25,65,105,145]){
+  const line=document.createElementNS('http://www.w3.org/2000/svg','line');
+  for(const [k,v] of Object.entries({x1:15,x2:585,y1:y,y2:y,stroke:'#334e70','stroke-width':1}))line.setAttribute(k,String(v));
+  svg.append(line);
+ }
+ const poly=document.createElementNS('http://www.w3.org/2000/svg','polyline');
+ for(const [k,v] of Object.entries({points,fill:'none',stroke:'#80b9ff','stroke-width':'2.5','stroke-linecap':'round','stroke-linejoin':'round'}))poly.setAttribute(k,String(v));
+ svg.append(poly);root.append(svg);
+ root.append(el('p','watch-chart-caption','Bybit Public · закриті 1-годинні свічки · остання ціна '+fprice(prices.at(-1))+'. Графік не визначає готову точку входу.'));
+}
+let watchRequestSeq=0;
+async function openWatch(t){
+ if(!safeSymbol(t.symbol))return;
+ const root=$('watchDetails');root.replaceChildren();
+ const heading=el('div','watch-detail-heading');
+ append(heading,el('h2','',t.symbol),el('span','watch-detail-label','Під спостереженням'));
+ root.append(heading);
+ root.append(el('p','watch-detail-subtitle','Bybit USDT perpetual · дериватив, не акція чи ETF · 1 година'));
+ const grid=el('div','watch-detail-grid');
+ for(const [name,val] of [
+  ['Поточна ціна',fprice(t.lastPrice)],
+  ['Зміна за 24 год',pct(t.change24h)],
+  ['Критерії уваги',Number.isFinite(t.passed)?t.passed+'/'+t.total:'Немає оцінки'],
+  ['Ознаки напрямку',t.side==='long'?'Висхідні':t.side==='short'?'Низхідні':'Не визначено']
+ ]){
+  const item=el('div','watch-detail-stat');append(item,el('span','',name),el('strong','',val));grid.append(item);
+ }
+ root.append(grid);
+ const explain=el('div','watch-detail-explain');
+ explain.append(el('h3','','Що потрібно для входу'));
+ const pending=Array.isArray(t.waitFor)&&t.waitFor.length?t.waitFor:[t.reason||'Підтвердити всі умови готового торгового плану'];
+ const ul=el('ul');
+ for(const item of pending)ul.append(el('li','',item));
+ explain.append(ul,el('p','', 'Оцінка критеріїв уваги — не ймовірність успіху. Entry, SL і TP відсутні, доки сканер не сформував підтверджений торговий план.'));
+ root.append(explain);
+ if(Array.isArray(t.timeframes)&&t.timeframes.length){
+  const table=el('div','watch-timeframes');
+  table.append(el('h3','','Тренди за таймфреймами'));
+  const list=el('div','watch-tf-list');
+  const names={'15':'15 хв','60':'1 год','240':'4 год','D':'1 день'};
+  for(const tf of t.timeframes){
+   const row=el('div','watch-tf-item');
+   append(row,el('b','',names[tf.tf]||tf.tf),
+    el('span','',tf.direction==='up'?'↗ Висхідний':tf.direction==='down'?'↘ Низхідний':'↔ Змішаний'),
+    el('span','',Number.isFinite(tf.rsi)?'RSI '+tf.rsi.toFixed(1):'RSI —'));
+   list.append(row);
+  }
+  table.append(list);root.append(table);
+ }
+ const chart=el('div','watch-chart');chart.append(el('h3','','Ціновий графік'),el('p','muted','Завантажуємо закриті свічки…'));root.append(chart);
+ $('watchDialog').showModal();
+ const seq=++watchRequestSeq;
+ try{
+  const data=await request('/api/market/candles?symbol='+encodeURIComponent(t.symbol));
+  if(seq!==watchRequestSeq||!$('watchDialog').open)return;
+  chart.replaceChildren(el('h3','','Ціновий графік'));
+  showWatchChart(chart,data.candles);
+ }catch(error){
+  if(seq===watchRequestSeq&&$('watchDialog').open){
+   chart.replaceChildren(el('h3','','Ціновий графік'),el('p','error-text','Немає актуальних даних: '+String(error.message||error)));
+  }
+ }
+}
+$('closeWatch').onclick=()=>{$('watchDialog').close();watchRequestSeq++};
+$('watchDialog').onclick=e=>{if(e.target===$('watchDialog')){$('watchDialog').close();watchRequestSeq++}};
 function drawOpportunities(){
  const root=$('featured'),list=$('watchList');root.replaceChildren();list.replaceChildren();
  const marketNotice=availabilityMessage();
@@ -127,9 +211,14 @@ function drawOpportunities(){
  }
  const watch=(isCryptoView()&&Array.isArray(snapshot?.watch)?snapshot.watch:[]).filter(t=>safeSymbol(t.symbol)).slice(0,18);
  $('watchCount').textContent=String(watch.length);
- if(!isCryptoView())list.append(el('div','quiet-message',marketNotice));
- else if(!watch.length)list.append(el('div','quiet-message','Пари під спостереженням з’являться після завершення сканування.'));
- else for(const t of watch)list.append(watchCard(t));
+ if(!isCryptoView()){
+  const tr=el('tr'),td=el('td','quiet-message',marketNotice);td.colSpan=6;tr.append(td);list.append(tr);
+}
+ else if(!watch.length){
+  const tr=el('tr'),td=el('td','quiet-message','Пари під спостереженням з’являться після завершення сканування.');
+  td.colSpan=6;tr.append(td);list.append(tr);
+}
+ else for(const t of watch)list.append(watchRow(t));
  $('lastScan').textContent=snapshot?.updatedAt?'Оновлено о '+timestamp(snapshot.updatedAt):'Очікуємо сканування';
  drawScannerMetrics();
 }
