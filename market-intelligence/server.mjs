@@ -263,4 +263,6 @@ const server=http.createServer(async(req,res)=>{
  }catch(e){return json(res,500,{error:String(e.message||e).slice(0,180)})}
 });
 server.listen(port,host,()=>console.log('Market Intelligence: http://'+host+':'+port));
-void scan();scannerInterval=setInterval(()=>void scan(),scanEveryMs);scannerInterval.unref?.();
+if(process.env.MI_DISABLE_AUTOSCAN!=='1'){
+ void scan();scannerInterval=setInterval(()=>void scan(),scanEveryMs);scannerInterval.unref?.();
+}
