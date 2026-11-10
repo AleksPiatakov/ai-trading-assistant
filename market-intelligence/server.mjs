@@ -176,7 +176,7 @@ async function scan(){
     const frames={};
     for(const tf of timeframes){frames[tf]=await candles(ticker.symbol,tf);await wait(110)}
     const evaluatedAt=Date.now();
-    const assessment=assessTradeReadiness(ticker.symbol,frames,evaluatedAt);
+    const assessment=assessTradeReadiness(ticker.symbol,frames,evaluatedAt,{turnover24h:ticker.turnover24h});
     const plan=assessment.plan;
     if(plan){
      plans.push({...plan,market:'crypto',source:'Bybit public',turnover24h:ticker.turnover24h,
@@ -191,7 +191,9 @@ async function scan(){
       passed:Number.isFinite(candidate?.passed)?candidate.passed:null,
       total:candidate?.total||5,timeframes:candidate?.timeframes||[],
       readinessPassed:assessment.checksPassed,readinessTotal:assessment.checksTotal,
-      estimatedRR:assessment.estimatedRR,checkedAt:new Date(evaluatedAt).toISOString(),
+      estimatedRR:assessment.estimatedRR,netRR:assessment.netRR,
+      marketQuality:assessment.marketQuality,tradeFeasibility:assessment.tradeFeasibility,
+      scenario:assessment.scenario,checkedAt:new Date(evaluatedAt).toISOString(),
       waitFor:waiting,reason:waiting[0]?'Очікуємо: '+waiting[0]:
        'Готовий план ще не сформовано; перевірте ринкові умови.',
       ordersEnabled:false});
@@ -202,9 +204,12 @@ async function scan(){
   plans.sort((a,b)=>b.confirmations-a.confirmations||b.rr-a.rr||b.turnover24h-a.turnover24h);
   // "near" = only one missing required condition WITH valid risk geometry.
   // This is neither a probability nor a recommendation to enter early.
-  watch.sort((a,b)=>(a.state==='near'?-1:1)-(b.state==='near'?-1:1)||
+  watch.sort((a,b)=>(a.state==='near'?0:1)-(b.state==='near'?0:1)||
+   Number(b.tradeFeasibility?.status==='conditional')-Number(a.tradeFeasibility?.status==='conditional')||
+   (b.marketQuality?.trendChecks??-1)-(a.marketQuality?.trendChecks??-1)||
+   Number(b.tradeFeasibility?.validLevels)-Number(a.tradeFeasibility?.validLevels)||
    (b.readinessPassed??-1)-(a.readinessPassed??-1)||
-   (b.passed??-1)-(a.passed??-1)||b.turnover24h-a.turnover24h);
+   b.turnover24h-a.turnover24h);
   lastSnapshot={status:errors.length===universe.length?'error':errors.length?'partial':'ready',
    updatedAt:new Date().toISOString(),startedAt,universe,opportunities:plans,watch,errors,
    completed:universe.length,total:universe.length,ordersEnabled:false,nextScanAt:new Date(nextScanAt).toISOString()};
