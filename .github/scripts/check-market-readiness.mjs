@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {assessTradeReadiness,evaluateTradeSetup} from '../../scripts/market-scanner.mjs';
+import {assessTradeReadiness,evaluateTradeSetup,compareWatchCandidates} from '../../scripts/market-scanner.mjs';
 const now=Date.UTC(2026,10,10,12);
 const length={'15':900000,'60':3600000,'240':14400000,D:86400000};
 const flat=Object.fromEntries(Object.entries(length).map(([tf,ms])=>[
@@ -41,4 +41,19 @@ assert.ok(moved.blocking.some(x=>x.includes('відійшла')));
 const absent=assessTradeReadiness('BTCUSDT',flat,now,{turnover24h:20000000});
 assert.equal(absent.tradeFeasibility.priceAligned,false);
 assert.equal(absent.plan,null);
+const ranking=[
+ {symbol:'SOXLUSDT',state:'watch',marketQuality:{trendChecks:2,passed:3},readinessPassed:3,
+  tradeFeasibility:{status:'conditional',validLevels:true,netRR:5.41},turnover24h:50000000},
+ {symbol:'BTCUSDT',state:'watch',marketQuality:{trendChecks:4,passed:4},readinessPassed:5,
+  tradeFeasibility:{status:'blocked',validLevels:true,netRR:0.02},turnover24h:1000000000},
+ {symbol:'KORUUSDT',state:'watch',marketQuality:{trendChecks:2,passed:2},readinessPassed:3,
+  tradeFeasibility:{status:'conditional',validLevels:true,netRR:3.98},turnover24h:35000000}
+];
+ranking.sort(compareWatchCandidates);
+assert.deepEqual(ranking.map(x=>x.symbol),['BTCUSDT','SOXLUSDT','KORUUSDT'],
+ 'Hypothetical reward ratio must never outrank confirmed 1h/4h market direction');
+const close={symbol:'ETHUSDT',state:'near',marketQuality:{trendChecks:4,passed:5},readinessPassed:5,
+ tradeFeasibility:{status:'conditional',validLevels:true},turnover24h:45000000};
+assert.equal([ranking[0],close].sort(compareWatchCandidates)[0].symbol,'ETHUSDT',
+ 'Verified near-candidate must be visible before watch-only items');
 console.log('Candidate readiness: two-stage validation, liquidity gate, cost disclosure and no fictitious entries pass');
