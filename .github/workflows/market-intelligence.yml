@@ -1,0 +1,27 @@
+name: Market Intelligence — local MVP checks
+on:
+  push:
+    branches:
+      - market-intelligence-v1
+    paths:
+      - 'market-intelligence/**'
+      - '.github/scripts/check-market-intelligence.mjs'
+      - '.github/workflows/market-intelligence.yml'
+      - 'scripts/market-scanner.mjs'
+  workflow_dispatch:
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax checks
+        run: |
+          node --check market-intelligence/server.mjs
+          node --check market-intelligence/app.js
+          node --check .github/scripts/check-market-intelligence.mjs
+      - name: Offline startup and security checks
+        run: node .github/scripts/check-market-intelligence.mjs
