@@ -139,58 +139,100 @@ export function evaluateWatchCandidate(symbol,candleSeries,asOf=Date.now()){
  * A "near" candidate has exactly one failed required setup condition, valid SL/TP
  * geometry, and sufficient completed candles. This is NOT a probability forecast.
  */
-export function assessTradeReadiness(symbol,candleSeries,asOf=Date.now()){
+/**
+ * Market-quality signals and entry feasibility are DISTINCT.
+ * No price/SL/TP level from this evaluator is an executable signal.
+ * Costs are scenario assumptions, not measured spreads or actual account fees.
+ */
+export function assessTradeReadiness(symbol,candleSeries,asOf=Date.now(),options={}){
  const frames={};
  for(const tf of REQUIRED){
   const candles=(candleSeries[tf]||[]).filter(c=>c.t+BAR_MS[tf]<=asOf);
   frames[tf]=analyze(candles,tf);
  }
  const attention=attentionCandidate(symbol,frames,new Date(asOf).toISOString());
- const plan=proposal(symbol,frames,new Date(asOf).toISOString());
+ const rawPlan=proposal(symbol,frames,new Date(asOf).toISOString());
  const h1=frames['60'],h4=frames['240'],day=frames.D,m15=frames['15'];
- const complete=REQUIRED.every(tf=>frames[tf]);
+ const feePerSide=.00055,slippagePerSide=.0005,perSide=feePerSide+slippagePerSide;
+ const turnover=Number(options.turnover24h);
+ const liquidityKnown=Number.isFinite(turnover)&&turnover>0;
+ const liquidityOk=liquidityKnown&&turnover>=10000000;
+ const complete=REQUIRED.every(tf=>frames[tf]&&Number.isFinite(frames[tf].price));
  if(!complete){
-  return {status:'insufficient',side:null,blocking:['Недостатньо закритих свічок для аналізу всіх таймфреймів'],
-   checksPassed:null,checksTotal:6,estimatedRR:null,watchScore:attention?.passed??null,
-   attention,plan:null};
+  return {status:'insufficient',side:null,blocking:['Недостатньо закритих свічок для чотирьох таймфреймів'],
+   checksPassed:null,checksTotal:6,estimatedRR:null,netRR:null,
+   marketQuality:{passed:attention?.passed??null,total:5},tradeFeasibility:{status:'insufficient',blocking:['Немає повних даних']},
+   scenario:null,attention,plan:null};
  }
- const directions=['long','short'];
- const candidates=directions.map(side=>{
+ const candidates=['long','short'].map(side=>{
   const d=side==='long'?'up':'down',price=h1.price;
   const stop=side==='long'?Math.min(h1.support,price-h1.atr):Math.max(h1.resistance,price+h1.atr);
   const target=side==='long'?h1.resistance:h1.support;
   const risk=Math.abs(price-stop),reward=Math.abs(target-price);
-  const rr=risk>0?reward/risk:null;
-  const checks=[
-   {key:'trend',ok:h1.direction===d&&h4.direction===d,label:'Тренд 1 год і 4 год не узгоджений у напрямку '+(side==='long'?'LONG':'SHORT')},
-   {key:'daily',ok:day.direction===d||day.direction==='mixed',label:'Денний тренд суперечить напрямку '+(side==='long'?'LONG':'SHORT')},
+  const correctSide=side==='long'?stop<price&&target>price:stop>price&&target<price;
+  const validGeometry=Number.isFinite(risk)&&Number.isFinite(reward)&&price>0&&risk>0&&reward>0&&correctSide;
+  const grossRR=validGeometry?reward/risk:null;
+  const estimatedCosts=validGeometry?perSide*(price+target):null;
+  const netReward=validGeometry?reward-estimatedCosts:null;
+  const adjustedRisk=validGeometry?risk+perSide*(price+stop):null;
+  const netRR=validGeometry&&adjustedRisk>0?netReward/adjustedRisk:null;
+  const check=[
+   {key:'trend',ok:h1.direction===d&&h4.direction===d,label:'Тренди 1 год і 4 год не узгоджені для '+side.toUpperCase()},
+   {key:'daily',ok:day.direction===d||day.direction==='mixed',label:'Денний тренд суперечить '+side.toUpperCase()},
    {key:'short',ok:m15.direction===d||m15.direction==='mixed',label:'Тренд 15 хв суперечить напрямку'},
    {key:'momentum',ok:side==='long'?(h1.rsi>=42&&h1.rsi<=67&&h1.macd>0):(h1.rsi>=33&&h1.rsi<=58&&h1.macd<0),label:'RSI або MACD не підтверджують імпульс'},
-   {key:'reward',ok:Number.isFinite(rr)&&rr>=1.5&&
-    (side==='long'?(stop<price&&target>price):(stop>price&&target<price)),
-    label:'Немає придатної цілі: R:R нижче 1:1,5 або TP не на правильному боці входу'},
-   {key:'risk',ok:Number.isFinite(risk)&&price>0&&risk>0&&risk/price<=.05,label:'Відстань до Stop Loss перевищує 5% або рівні некоректні'}
+   {key:'reward',ok:validGeometry&&grossRR>=1.5&&netRR>=1.5,
+    label:!validGeometry?'Відсутня ціль TP на правильному боці входу':
+     grossRR<1.5?'Потенційна ціль дає R:R нижче 1:1,5':
+     'Після модельних витрат R:R нижче 1:1,5'},
+   {key:'risk',ok:validGeometry&&risk/price<=.05,
+    label:'Stop Loss надто далеко (>5%) або рівні некоректні'}
   ];
-  const failed=checks.filter(c=>!c.ok);
-  return {side,checks,failed,passed:checks.length-failed.length,rr:Number.isFinite(rr)?rr:null,
-   geometryValid:checks.find(c=>c.key==='reward').ok&&checks.find(c=>c.key==='risk').ok,
-   entry:price,stop,target};
+  const failed=check.filter(x=>!x.ok);
+  const trendScore=check.filter(x=>['trend','daily','short','momentum'].includes(x.key)&&x.ok).length;
+  const validRisk=validGeometry&&risk/price<=.05;
+  const feasible=validRisk&&netRR>=1.5&&liquidityOk;
+  return {side,check,failed,passed:6-failed.length,trendScore,
+   grossRR:Number.isFinite(grossRR)?grossRR:null,netRR:Number.isFinite(netRR)?netRR:null,
+   validGeometry,validRisk,feasible,entry:price,stop,target};
  });
- candidates.sort((a,b)=>a.failed.length-b.failed.length||
-  Number(b.geometryValid)-Number(a.geometryValid)||
+ // Choose a coherent market direction first, THEN judge whether it produces a trade.
+ // Do not let a technically favorable but opposite-direction hypothetical dominate.
+ candidates.sort((a,b)=>b.trendScore-a.trendScore||
+  Number(b.validRisk)-Number(a.validRisk)||b.passed-a.passed||
   (attention?.side===a.side?-1:attention?.side===b.side?1:0));
  const best=candidates[0];
- const near=!plan&&best.failed.length===1&&best.geometryValid&&
-  best.checks.find(c=>c.key==='trend').ok;
- return {
-  status:plan?'ready':near?'near':'watch',
-  side:plan?.side||best.side,blocking:plan?[]:best.failed.map(x=>x.label),
-  checksPassed:plan?6:best.passed,checksTotal:6,
-  estimatedRR:best.rr,watchScore:attention?.passed??null,
-  entryCandidate:best.entry,stopCandidate:best.geometryValid?best.stop:null,
-  targetCandidate:best.geometryValid?best.target:null,
-  attention,plan
- };
+ const missing=best.failed.map(x=>x.label);
+ if(!liquidityOk)missing.push(liquidityKnown?
+  'Низька ліквідність: обіг за 24 год менше 10 млн USDT':
+  'Не отримано перевіреного обігу за 24 год');
+ const executionReady=Boolean(rawPlan&&liquidityOk&&
+  candidates.some(c=>c.side===rawPlan.side&&c.feasible));
+ const plan=executionReady?rawPlan:null;
+ const readySide=plan?.side||best.side;
+ const chosen=plan?candidates.find(c=>c.side===plan.side):best;
+ const missingConditions=plan?[]:missing;
+ const marketQuality={passed:attention?.passed??null,total:5,
+  trendChecks:chosen.trendScore,trendTotal:4,side:readySide};
+ const tradeFeasibility={status:plan?'validated':chosen.feasible?'conditional':'blocked',
+  grossRR:chosen.grossRR,netRR:chosen.netRR,
+  validLevels:chosen.validGeometry,riskPct:chosen.validGeometry?100*Math.abs(chosen.entry-chosen.stop)/chosen.entry:null,
+  turnover24h:liquidityKnown?turnover:null,liquidityOk,blocking:missingConditions,
+  assumptions:{feePerSide,slippagePerSide,fundingIncluded:false,spreadMeasured:false}};
+ // "near" requires acceptable trade geometry, liquidity, and at most one missing
+ // MARKET confirmation. An uneconomic setup is NEVER promoted by a high check count.
+ const near=!plan&&chosen.feasible&&chosen.failed.length===1&&
+  chosen.check.find(x=>x.key==='trend').ok;
+ const scenario=chosen.validRisk?{
+  status:'hypothetical',side:chosen.side,entry:chosen.entry,stop:chosen.stop,
+  target:chosen.target,grossRR:chosen.grossRR,netRR:chosen.netRR,
+  warning:'Попередній розрахунок за історичною свічкою. НЕ сигнал і НЕ заявка. Поточна ціна, спред, funding та виконання не перевірені.'
+ }:null;
+ return {status:plan?'ready':near?'near':'watch',side:readySide,
+  blocking:missingConditions,checksPassed:chosen.passed,checksTotal:6,
+  estimatedRR:chosen.grossRR,netRR:chosen.netRR,
+  marketQuality,tradeFeasibility,scenario,attention,plan,
+  watchScore:attention?.passed??null};
 }
 export function createMarketScanner({getKlines,getInstruments,historyPath=null,onPromotion=()=>{},onCycle=async()=>{}}){
   let snapshot={status:'starting',updatedAt:null,startedAt:null,completed:0,total:0,watchlist:WATCHLIST.slice(),
