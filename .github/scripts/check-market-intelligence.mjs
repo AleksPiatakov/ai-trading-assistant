@@ -24,9 +24,15 @@ try{
  assert.equal(response.status,200);
  assert.match(response.headers.get('content-security-policy')||'',/script-src 'self'/);
  const html=await response.text();
- for(const id of ['featured','watchList','demoForm','demoKey','demoSecret','planDialog','metricChecked','metricReady','metricWatch','diagnosticsBody'])
+ for(const id of ['featured','watchList','demoForm','demoKey','demoSecret','planDialog','metricChecked','metricReady','metricWatch','diagnosticsBody','watchDialog','watchDetails'])
   assert.ok(html.includes('id="'+id+'"'),'Missing '+id);
  assert.ok(html.includes('aria-label="Основні розділи"'),'Missing navigation');
+ assert.ok(html.includes('<table class="watch-table"'),'Ranked watchlist table missing');
+ assert.ok(html.includes('Критерії уваги'),'No scoring disclosure');
+ const badChart=await fetch(base+'/api/market/candles?symbol=NOTLISTEDUSDT');
+ assert.equal(badChart.status,400,'Unlisted pair should never fetch Bybit candles');
+ const badChart2=await fetch(base+'/api/market/candles?symbol=../private');
+ assert.equal(badChart2.status,400,'Invalid chart symbol should be rejected');
  assert.ok(html.includes('<svg class="ui-icon"'),'Missing standard navigation icons');
  assert.ok(!html.includes('<div class="rail-caption">'),'Legacy oversized sidebar caption remains');
  for(const path of ['/app.css','/app.js']){
