@@ -134,6 +134,64 @@ export function evaluateWatchCandidate(symbol,candleSeries,asOf=Date.now()){
  }
  return attentionCandidate(symbol,frames,new Date(asOf).toISOString());
 }
+/**
+ * Assess trade readiness separately from the five qualitative attention checks.
+ * A "near" candidate has exactly one failed required setup condition, valid SL/TP
+ * geometry, and sufficient completed candles. This is NOT a probability forecast.
+ */
+export function assessTradeReadiness(symbol,candleSeries,asOf=Date.now()){
+ const frames={};
+ for(const tf of REQUIRED){
+  const candles=(candleSeries[tf]||[]).filter(c=>c.t+BAR_MS[tf]<=asOf);
+  frames[tf]=analyze(candles,tf);
+ }
+ const attention=attentionCandidate(symbol,frames,new Date(asOf).toISOString());
+ const plan=proposal(symbol,frames,new Date(asOf).toISOString());
+ const h1=frames['60'],h4=frames['240'],day=frames.D,m15=frames['15'];
+ const complete=REQUIRED.every(tf=>frames[tf]);
+ if(!complete){
+  return {status:'insufficient',side:null,blocking:['Недостатньо закритих свічок для аналізу всіх таймфреймів'],
+   checksPassed:null,checksTotal:6,estimatedRR:null,watchScore:attention?.passed??null,
+   attention,plan:null};
+ }
+ const directions=['long','short'];
+ const candidates=directions.map(side=>{
+  const d=side==='long'?'up':'down',price=h1.price;
+  const stop=side==='long'?Math.min(h1.support,price-h1.atr):Math.max(h1.resistance,price+h1.atr);
+  const target=side==='long'?h1.resistance:h1.support;
+  const risk=Math.abs(price-stop),reward=Math.abs(target-price);
+  const rr=risk>0?reward/risk:null;
+  const checks=[
+   {key:'trend',ok:h1.direction===d&&h4.direction===d,label:'Тренд 1 год і 4 год не узгоджений у напрямку '+(side==='long'?'LONG':'SHORT')},
+   {key:'daily',ok:day.direction===d||day.direction==='mixed',label:'Денний тренд суперечить напрямку '+(side==='long'?'LONG':'SHORT')},
+   {key:'short',ok:m15.direction===d||m15.direction==='mixed',label:'Тренд 15 хв суперечить напрямку'},
+   {key:'momentum',ok:side==='long'?(h1.rsi>=42&&h1.rsi<=67&&h1.macd>0):(h1.rsi>=33&&h1.rsi<=58&&h1.macd<0),label:'RSI або MACD не підтверджують імпульс'},
+   {key:'reward',ok:Number.isFinite(rr)&&rr>=1.5&&
+    (side==='long'?(stop<price&&target>price):(stop>price&&target<price)),
+    label:'Немає придатної цілі: R:R нижче 1:1,5 або TP не на правильному боці входу'},
+   {key:'risk',ok:Number.isFinite(risk)&&price>0&&risk>0&&risk/price<=.05,label:'Відстань до Stop Loss перевищує 5% або рівні некоректні'}
+  ];
+  const failed=checks.filter(c=>!c.ok);
+  return {side,checks,failed,passed:checks.length-failed.length,rr:Number.isFinite(rr)?rr:null,
+   geometryValid:checks.find(c=>c.key==='reward').ok&&checks.find(c=>c.key==='risk').ok,
+   entry:price,stop,target};
+ });
+ candidates.sort((a,b)=>a.failed.length-b.failed.length||
+  Number(b.geometryValid)-Number(a.geometryValid)||
+  (attention?.side===a.side?-1:attention?.side===b.side?1:0));
+ const best=candidates[0];
+ const near=!plan&&best.failed.length===1&&best.geometryValid&&
+  best.checks.find(c=>c.key==='trend').ok;
+ return {
+  status:plan?'ready':near?'near':'watch',
+  side:plan?.side||best.side,blocking:plan?[]:best.failed.map(x=>x.label),
+  checksPassed:plan?6:best.passed,checksTotal:6,
+  estimatedRR:best.rr,watchScore:attention?.passed??null,
+  entryCandidate:best.entry,stopCandidate:best.geometryValid?best.stop:null,
+  targetCandidate:best.geometryValid?best.target:null,
+  attention,plan
+ };
+}
 export function createMarketScanner({getKlines,getInstruments,historyPath=null,onPromotion=()=>{},onCycle=async()=>{}}){
   let snapshot={status:'starting',updatedAt:null,startedAt:null,completed:0,total:0,watchlist:WATCHLIST.slice(),
     opportunities:[],attention:[],alerts:[],errors:[],mode:'local-background',ordersEnabled:false};
