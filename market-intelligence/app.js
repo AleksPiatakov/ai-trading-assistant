@@ -116,7 +116,14 @@ function watchRow(t){
  ];
  for(const [value,cls] of columns){
   const cell=el('td',cls,value);
-  if(cls==='watch-reason')cell.prepend(el('span','readiness-tag '+(t.state==='near'?'near':'watch'),t.state==='near'?'Близько до підтвердження':'Спостерігати'));
+  if(cls==='watch-reason'){
+   const tag=t.state==='near'?'Близько до входу':t.tradeFeasibility?.validLevels?'План не готовий':'Немає рівнів';
+   cell.prepend(el('span','readiness-tag '+(t.state==='near'?'near':'watch'),tag));
+   const summary=t.tradeFeasibility;
+   if(summary?.netRR!==null&&Number.isFinite(summary?.netRR)){
+    cell.append(el('span','watch-rr',' · R:R після модельних витрат '+summary.netRR.toFixed(2)));
+   }
+  }
   row.append(cell);
  }
  const action=el('td','watch-action-cell');
@@ -158,17 +165,45 @@ async function openWatch(t){
   ['Поточна ціна',fprice(t.lastPrice)],
   ['Зміна за 24 год',pct(t.change24h)],
   ['Умови торгового плану',Number.isFinite(t.readinessPassed)?t.readinessPassed+'/'+t.readinessTotal:'Немає оцінки'],
-  ['Ознаки напрямку',t.side==='long'?'Висхідні':t.side==='short'?'Низхідні':'Не визначено']
+  ['Ринкова ситуація',Number.isFinite(t.marketQuality?.passed)?t.marketQuality.passed+'/5 критеріїв':'Не визначено']
  ]){
   const item=el('div','watch-detail-stat');append(item,el('span','',name),el('strong','',val));grid.append(item);
  }
  root.append(grid);
+ const feasibility=t.tradeFeasibility||{};
+ const feasibilityBox=el('section','watch-feasibility');
+ feasibilityBox.append(el('h3','','Придатність угоди'));
+ const result=feasibility.status==='conditional'?'Рівні та витрати прийнятні, бракує підтвердження ринку':
+  feasibility.status==='blocked'?'Умови входу не виконані':
+  'Недостатньо даних для торгового плану';
+ feasibilityBox.append(el('p','',result));
+ const checks=el('div','watch-feasibility-metrics');
+ for(const [name,value] of [
+  ['Оціночне R:R після витрат',Number.isFinite(feasibility.netRR)?feasibility.netRR.toFixed(2):'—'],
+  ['Ризик до SL',Number.isFinite(feasibility.riskPct)?feasibility.riskPct.toFixed(2)+'%':'—'],
+  ['Обіг 24 год',Number.isFinite(feasibility.turnover24h)?Math.round(feasibility.turnover24h).toLocaleString('en-US')+' USDT':'—']]){
+  const item=el('div','watch-feasibility-item');item.append(el('span','',name),el('strong','',value));checks.append(item);
+ }
+ feasibilityBox.append(checks);root.append(feasibilityBox);
+ const preview=t.scenario;
+ if(preview?.status==='hypothetical'){
+  const previewBox=el('section','watch-preview');
+  previewBox.append(el('h3','','Попередній сценарій · НЕ СИГНАЛ'));
+  const levels=el('div','watch-preview-levels');
+  for(const [name,value] of [['Напрямок',preview.side==='long'?'LONG':'SHORT'],
+   ['Умовний вхід',fprice(preview.entry)],['Попередній SL',fprice(preview.stop)],
+   ['Попередній TP',fprice(preview.target)]]){
+   const cell=el('div','watch-preview-level');cell.append(el('span','',name),el('strong','',value));levels.append(cell);
+  }
+  previewBox.append(levels,el('p','',preview.warning||'Попередні рівні не є торговою рекомендацією.'));
+  root.append(previewBox);
+ }
  const explain=el('div','watch-detail-explain');
  explain.append(el('h3','','Що заважає готовому входу'));
  const pending=Array.isArray(t.waitFor)&&t.waitFor.length?t.waitFor:[t.reason||'Підтвердити всі умови готового торгового плану'];
  const ul=el('ul');
  for(const item of pending)ul.append(el('li','',item));
- explain.append(ul,el('p','', 'Виконані умови — не ймовірність успіху. Навіть 5/6 не є сигналом: потрібен окремий підтверджений план Entry, SL і TP з актуальними ринковими даними.'));
+ explain.append(ul,el('p','', 'Кількість виконаних умов — не ймовірність успіху. Рівні у попередньому сценарії не можна використовувати як підтверджений сигнал. Справжній спред, funding та ліквідність у стакані ще не перевірені.'));
  root.append(explain);
  if(Array.isArray(t.timeframes)&&t.timeframes.length){
   const table=el('div','watch-timeframes');
