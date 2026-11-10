@@ -28,7 +28,7 @@ try{
   assert.ok(html.includes('id="'+id+'"'),'Missing '+id);
  assert.ok(html.includes('aria-label="Основні розділи"'),'Missing navigation');
  assert.ok(html.includes('<table class="watch-table"'),'Ranked watchlist table missing');
- assert.ok(html.includes('Критерії уваги'),'No scoring disclosure');
+ assert.ok(html.includes('Умови плану'),'No trade-readiness disclosure');
  const badChart=await fetch(base+'/api/market/candles?symbol=NOTLISTEDUSDT');
  assert.equal(badChart.status,400,'Unlisted pair should never fetch Bybit candles');
  const badChart2=await fetch(base+'/api/market/candles?symbol=../private');
