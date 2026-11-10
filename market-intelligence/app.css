@@ -123,3 +123,10 @@
 .watch-chart-caption{font-size:11px;color:#a1b6d0;margin:9px 0 0!important}
 @media(max-width:1050px){.watch-table{table-layout:auto;min-width:760px}}
 @media(max-width:700px){.watch-detail-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.watch-tf-list{grid-template-columns:1fr}.watch-detail-heading h2{font-size:22px}}
+
+/* Actionability statuses: technical progress, not a calibrated win probability. */
+.readiness-tag{display:inline-block;font-size:10px;line-height:1.25;letter-spacing:0;padding:4px 7px;margin:0 9px 4px 0;border:1px solid #50637a;background:#273b54;color:#c4d4e8;border-radius:7px;white-space:nowrap}
+.readiness-tag.near{border-color:#947d4c;background:#3b3526;color:#f0d399}
+.watch-reason{line-height:1.6}
+.watch-score{font-variant-numeric:tabular-nums}
+.watch-detail-label{max-width:100%;white-space:normal}
