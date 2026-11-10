@@ -24,8 +24,11 @@ try{
  assert.equal(response.status,200);
  assert.match(response.headers.get('content-security-policy')||'',/script-src 'self'/);
  const html=await response.text();
- for(const id of ['featured','watchList','demoForm','demoKey','demoSecret','planDialog'])
+ for(const id of ['featured','watchList','demoForm','demoKey','demoSecret','planDialog','metricChecked','metricReady','metricWatch','diagnosticsBody'])
   assert.ok(html.includes('id="'+id+'"'),'Missing '+id);
+ assert.ok(html.includes('aria-label="Основні розділи"'),'Missing navigation');
+ assert.ok(html.includes('<svg class="ui-icon"'),'Missing standard navigation icons');
+ assert.ok(!html.includes('<div class="rail-caption">'),'Legacy oversized sidebar caption remains');
  for(const path of ['/app.css','/app.js']){
   const r=await fetch(base+path);
   assert.equal(r.status,200,'missing '+path);
