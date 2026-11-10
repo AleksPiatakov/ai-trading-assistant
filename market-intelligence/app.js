@@ -105,8 +105,8 @@ function showBest(root,plan){
 }
 function watchRow(t){
  const row=el('tr','watch-row');
- const isScored=Number.isFinite(t.passed)&&Number.isFinite(t.total);
- const score=isScored?t.passed+'/'+t.total:'—';
+ const isScored=Number.isFinite(t.readinessPassed)&&Number.isFinite(t.readinessTotal);
+ const score=isScored?t.readinessPassed+'/'+t.readinessTotal:'—';
  const columns=[
   [t.symbol,'watch-symbol'],
   [fprice(t.lastPrice),'watch-number'],
@@ -114,7 +114,11 @@ function watchRow(t){
   [score,'watch-score'],
   [t.reason||'Немає підтвердженого плану','watch-reason']
  ];
- for(const [value,cls] of columns)row.append(el('td',cls,value));
+ for(const [value,cls] of columns){
+  const cell=el('td',cls,value);
+  if(cls==='watch-reason')cell.prepend(el('span','readiness-tag '+(t.state==='near'?'near':'watch'),t.state==='near'?'Близько до підтвердження':'Спостерігати'));
+  row.append(cell);
+ }
  const action=el('td','watch-action-cell');
  const btn=el('button','watch-more','Детальніше');
  btn.type='button';btn.setAttribute('aria-label','Детальний аналіз '+t.symbol);
@@ -146,25 +150,25 @@ async function openWatch(t){
  if(!safeSymbol(t.symbol))return;
  const root=$('watchDetails');root.replaceChildren();
  const heading=el('div','watch-detail-heading');
- append(heading,el('h2','',t.symbol),el('span','watch-detail-label','Під спостереженням'));
+ append(heading,el('h2','',t.symbol),el('span','watch-detail-label',t.state==='near'?'Близько до підтвердження':'Під спостереженням'));
  root.append(heading);
  root.append(el('p','watch-detail-subtitle','Bybit USDT perpetual · дериватив, не акція чи ETF · 1 година'));
  const grid=el('div','watch-detail-grid');
  for(const [name,val] of [
   ['Поточна ціна',fprice(t.lastPrice)],
   ['Зміна за 24 год',pct(t.change24h)],
-  ['Критерії уваги',Number.isFinite(t.passed)?t.passed+'/'+t.total:'Немає оцінки'],
+  ['Умови торгового плану',Number.isFinite(t.readinessPassed)?t.readinessPassed+'/'+t.readinessTotal:'Немає оцінки'],
   ['Ознаки напрямку',t.side==='long'?'Висхідні':t.side==='short'?'Низхідні':'Не визначено']
  ]){
   const item=el('div','watch-detail-stat');append(item,el('span','',name),el('strong','',val));grid.append(item);
  }
  root.append(grid);
  const explain=el('div','watch-detail-explain');
- explain.append(el('h3','','Що потрібно для входу'));
+ explain.append(el('h3','','Що заважає готовому входу'));
  const pending=Array.isArray(t.waitFor)&&t.waitFor.length?t.waitFor:[t.reason||'Підтвердити всі умови готового торгового плану'];
  const ul=el('ul');
  for(const item of pending)ul.append(el('li','',item));
- explain.append(ul,el('p','', 'Оцінка критеріїв уваги — не ймовірність успіху. Entry, SL і TP відсутні, доки сканер не сформував підтверджений торговий план.'));
+ explain.append(ul,el('p','', 'Виконані умови — не ймовірність успіху. Навіть 5/6 не є сигналом: потрібен окремий підтверджений план Entry, SL і TP з актуальними ринковими даними.'));
  root.append(explain);
  if(Array.isArray(t.timeframes)&&t.timeframes.length){
   const table=el('div','watch-timeframes');
@@ -211,6 +215,11 @@ function drawOpportunities(){
  }
  const watch=(isCryptoView()&&Array.isArray(snapshot?.watch)?snapshot.watch:[]).filter(t=>safeSymbol(t.symbol)).slice(0,18);
  $('watchCount').textContent=String(watch.length);
+ const nearCount=watch.filter(x=>x.state==='near').length;
+ const section=document.querySelector('.secondary-section .section-aside');
+ if(section)section.textContent=nearCount?
+  'Близько до підтвердження: '+nearCount+' · не сигнали до входу':
+  'Критерії торгового плану · не прогноз прибутку';
  if(!isCryptoView()){
   const tr=el('tr'),td=el('td','quiet-message',marketNotice);td.colSpan=6;tr.append(td);list.append(tr);
 }
