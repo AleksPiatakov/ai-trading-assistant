@@ -122,6 +122,18 @@ function attentionCandidate(symbol,frames,asOf){
   waitFor:pending.length?pending.slice(0,2):['Підтвердити актуальний вхід, SL/TP, R:R і ліквідність'],
   disclosure:'Рейтинг уваги за 5 перевірками, не ймовірність прибутку. Це не сигнал до входу.'};
 }
+/**
+ * Qualitative watch criteria only. Passing 5/5 is NOT an executable trade signal;
+ * price/risk validation is performed separately by evaluateTradeSetup.
+ */
+export function evaluateWatchCandidate(symbol,candleSeries,asOf=Date.now()){
+ const frames={};
+ for(const tf of REQUIRED){
+  const candles=(candleSeries[tf]||[]).filter(c=>c.t+BAR_MS[tf]<=asOf);
+  frames[tf]=analyze(candles,tf);
+ }
+ return attentionCandidate(symbol,frames,new Date(asOf).toISOString());
+}
 export function createMarketScanner({getKlines,getInstruments,historyPath=null,onPromotion=()=>{},onCycle=async()=>{}}){
   let snapshot={status:'starting',updatedAt:null,startedAt:null,completed:0,total:0,watchlist:WATCHLIST.slice(),
     opportunities:[],attention:[],alerts:[],errors:[],mode:'local-background',ordersEnabled:false};
