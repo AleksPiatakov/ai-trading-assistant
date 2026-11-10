@@ -176,7 +176,7 @@ async function scan(){
     const frames={};
     for(const tf of timeframes){frames[tf]=await candles(ticker.symbol,tf);await wait(110)}
     const evaluatedAt=Date.now();
-    const assessment=assessTradeReadiness(ticker.symbol,frames,evaluatedAt,{turnover24h:ticker.turnover24h});
+    const assessment=assessTradeReadiness(ticker.symbol,frames,evaluatedAt,{turnover24h:ticker.turnover24h,lastPrice:ticker.last});
     const plan=assessment.plan;
     if(plan){
      plans.push({...plan,market:'crypto',source:'Bybit public',turnover24h:ticker.turnover24h,
