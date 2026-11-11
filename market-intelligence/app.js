@@ -21,6 +21,7 @@ function navigate(next){
  const label={opportunities:'Можливості',plans:'Мої плани',insights:'Аналітика',settings:'Підключення'}[next];
  $('crumb').textContent=label;
  if(next==='plans')drawPlans();
+ if(next==='insights')loadPaperResults();
  if(next==='settings')loadDemoStatus();
 }
 document.querySelectorAll('[data-page]').forEach(b=>b.addEventListener('click',()=>navigate(b.dataset.page)));
@@ -340,6 +341,48 @@ async function startScan(){
  finally{$('scan').disabled=false;busyScan=false;await updateSnapshot()}
 }
 $('scan').onclick=startScan;$('refresh').onclick=updateSnapshot;
+
+// Read-only forward simulation: NEVER imply demo or real orders were opened.
+async function loadPaperResults(){
+ const root=$('paperStats'),rows=$('paperRows');
+ try{
+  const report=await request('/api/paper/report'),m=report.metrics||{},t=report.totals||{};
+  $('paperStatus').textContent='Очікують входу: '+(t.waiting||0)+' · умовно відкрито: '+(t.open||0)+
+   ' · завершено: '+(t.closed||0)+' · неможливо перевірити: '+(t.unverifiable||0);
+  root.replaceChildren();
+  const format=(v,suffix='')=>Number.isFinite(v)?v.toFixed(2)+suffix:'—';
+  for(const [label,value] of [
+   ['Завершені угоди',String(m.closed??0)],
+   ['Успішні (%)',m.closed?format(m.winRate,'%'):'—'],
+   ['Середній результат (R)',m.closed?format(m.expectancyR):'—'],
+   ['Profit Factor',m.closed?format(m.profitFactor):'—'],
+   ['Макс. просадка (R)',m.closed?format(m.maxDrawdownR):'—']
+  ]){
+   const card=el('div','paper-stat');
+   append(card,el('span','',label),el('strong','',value));root.append(card);
+  }
+  rows.replaceChildren();
+  if(!report.trades?.length){
+   const tr=el('tr'),td=el('td','quiet-message','Поки немає зареєстрованих підтверджених сигналів');td.colSpan=6;tr.append(td);rows.append(tr);
+  }else for(const trade of report.trades){
+   const tr=el('tr');
+   for(const val of [trade.symbol,trade.side==='long'?'LONG':'SHORT',
+    ({waiting:'Очікуємо наступну свічку',open:'Умовно відкрита',closed:'Завершена',unverifiable:'Недостатньо даних'})[trade.status]||'—',
+    Number.isFinite(trade.fillPrice)?fprice(trade.fillPrice):'—',
+    Number.isFinite(trade.netR)?format(trade.netR):'—',
+    trade.signalAt?new Date(trade.signalAt).toLocaleString('uk-UA'):'—']){
+    tr.append(el('td','',String(val)));
+   }
+   rows.append(tr);
+  }
+  $('paperDisclosure').textContent=report.warning||'Результати умовні, без реальних ордерів.';
+ }catch(error){
+  $('paperStatus').textContent='Журнал недоступний: '+String(error.message||error);
+  root.replaceChildren();rows.replaceChildren();
+ }
+}
+$('refreshPaper').onclick=loadPaperResults;
+
 async function loadDemoStatus(){
  try{
   const data=await request('/api/demo/status');
