@@ -267,6 +267,29 @@ function drawOpportunities(){
  $('lastScan').textContent=snapshot?.updatedAt?'Оновлено о '+timestamp(snapshot.updatedAt):'Очікуємо сканування';
  drawScannerMetrics();
 }
+async function renderPlanRisk(plan,root){
+ root.replaceChildren(el('p','muted','Розраховуємо ризик за актуальним Demo-рахунком…'));
+ try{
+  const result=await request('/api/risk/plan?symbol='+encodeURIComponent(plan.symbol));
+  root.replaceChildren();
+  const head=el('h4','','Ризик: не більше 1% на угоду · 3% сукупно');root.append(head);
+  if(result.status!=='calculated'){
+   root.append(el('p','error-text','Розрахунок заблоковано: '+(result.reason||'Немає перевірених даних')));
+   return;
+  }
+  const details=el('div','risk-summary-grid');
+  const show=(name,value)=>{
+   const item=el('div','risk-summary-item');append(item,el('span','',name),el('strong','',value));details.append(item);
+  };
+  show('Капітал Demo',fprice(result.equity)+' USDT');
+  show('Ліміт 1%',fprice(result.perTradeBudget)+' USDT');
+  show('Вже зайнятий ризик',fprice(result.currentRisk)+' USDT');
+  show('Доступний ризик',fprice(result.allowedLoss)+' USDT');
+  show('Макс. теоретична кількість',String(result.maxQuantityUnrounded));
+  show('Оціночний номінал',fprice(result.notionalUnrounded)+' USDT');
+  root.append(details,el('p','risk-warning',result.warning));
+ }catch(error){root.replaceChildren(el('p','error-text','Немає актуального підтвердженого розрахунку ризику: '+error.message))}
+}
 function openPlan(p){
  if(!isFresh(p)){setStatus('Цей план застарів. Оновіть аналіз перед розглядом.',true);return}
  selectedPlan=p;
@@ -280,6 +303,8 @@ function openPlan(p){
   const stat=el('div','plan-stat');append(stat,el('span','',name),el('strong','',typeof value==='number'?fprice(value):String(value)));grid.append(stat);
  }
  body.append(grid);
+ const riskBox=el('section','plan-risk-box');body.append(riskBox);
+ void renderPlanRisk(p,riskBox);
  const map=el('div','price-map');
  const levels=p.side==='long'?[['Take Profit',p.target,'tp'],['Entry',p.entry,'entry'],['Stop Loss',p.stop,'sl']]:[['Stop Loss',p.stop,'sl'],['Entry',p.entry,'entry'],['Take Profit',p.target,'tp']];
  for(const [name,n,type] of levels){const line=el('div','price-line '+type);append(line,el('b','',name),el('strong','',fprice(n)));map.append(line)}body.append(map);
