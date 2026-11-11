@@ -61,7 +61,9 @@ export function createForwardPaperJournal({path,now=()=>Date.now(),maxRows=2000}
     const plan=normalizedPlan(p,at);if(!plan)continue;
     const ongoing=cache.some(x=>x.symbol===plan.symbol&&x.side===plan.side&&
       ['waiting','open'].includes(x.status));
-    const duplicate=cache.some(x=>x.symbol===plan.symbol&&x.side===plan.side&&x.signalAt===plan.signalAt);
+    // Avoid re-entering the same continuously reported setup after it just closed.
+    const duplicate=cache.some(x=>x.symbol===plan.symbol&&x.side===plan.side&&
+      (x.signalAt===plan.signalAt||Date.parse(plan.signalAt)-Date.parse(x.signalAt)<4*HOUR));
     if(!ongoing&&!duplicate)cache.push({...plan,id:plan.symbol+'|'+plan.side+'|'+plan.signalAt});
    }
    for(const row of cache){
@@ -71,7 +73,7 @@ export function createForwardPaperJournal({path,now=()=>Date.now(),maxRows=2000}
     const last=Date.parse(row.lastCheckedAt||row.seenAt);
     const unread=series.filter(b=>b.t+HOUR>last);
     if(!unread.length)continue;
-    if(unread[0].t>last+HOUR){
+    if(unread[0].t>(row.status==='open'?last:last+HOUR)){
       row.status='unverifiable';row.reason='Пропуск свічок після сигналу';continue;
     }
     for(const bar of unread){
