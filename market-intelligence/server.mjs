@@ -12,6 +12,7 @@ import {spawn} from 'node:child_process';
 import {createHmac} from 'node:crypto';
 import {assessTradeReadiness,compareWatchCandidates} from '../scripts/market-scanner.mjs';
 import {createForwardPaperJournal} from './forward-paper.mjs';
+import {sizeTrade,RISK_POLICY} from './risk-policy.mjs';
 
 const host='127.0.0.1';
 const port=Number(process.env.MI_PORT||4188);
@@ -283,6 +284,22 @@ const server=http.createServer(async(req,res)=>{
    await keychainSave(services.key,key);
    await keychainSave(services.secret,secret);
    return json(res,200,{connected:true,mode:'demo',ordersEnabled:false});
+  }
+  if(req.method==='GET'&&u.pathname==='/api/risk/plan'){
+   const symbol=u.searchParams.get('symbol')||'';
+   // Use only server-approved plans, never client-supplied entry/stop/quantity.
+   const plan=lastSnapshot.opportunities.find(p=>p.symbol===symbol &&
+    p.state==='plan'&&Date.now()-Date.parse(p.scannedAt)>=0&&
+    Date.now()-Date.parse(p.scannedAt)<=20*60000);
+   if(!plan)return json(res,200,{status:'blocked',reason:'Немає актуального підтвердженого плану',ordersEnabled:false,limits:{perTradePct:1,portfolioPct:3}});
+   try{
+    const account=await loadDemoAccount();
+    const report=sizeTrade({equity:account.wallet.totalEquity,positions:account.positions,orders:account.orders,plan});
+    return json(res,200,{...report,accountUpdatedAt:account.updatedAt,source:'Bybit Demo read-only'});
+   }catch(e){return json(res,200,{status:'blocked',reason:'Немає доступу до актуального Demo-балансу або позицій',ordersEnabled:false,limits:{perTradePct:1,portfolioPct:3}})}
+  }
+  if(req.method==='GET'&&u.pathname==='/api/risk/policy'){
+   return json(res,200,{...RISK_POLICY,ordersEnabled:false});
   }
   if(req.method==='GET'&&u.pathname==='/api/demo/account'){
    try{return json(res,200,await loadDemoAccount())}
