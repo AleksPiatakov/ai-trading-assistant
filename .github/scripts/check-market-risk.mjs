@@ -16,7 +16,7 @@ assert.equal(used.status,'calculated');
 assert.ok(used.currentRisk>200&&used.currentRisk<300);
 const profitable=run({positions:[{side:'Buy',size:'20',avgPrice:'100',markPrice:'110',stopLoss:'90'}]});
 assert.ok(profitable.currentRisk>used.currentRisk,'Mark-to-stop exposure must increase after unrealised gains');
-assert.ok(profitable.allowedLoss<used.allowedLoss);
+assert.equal(profitable.status,'blocked','Mark-to-stop risk correctly exhausts the 3% portfolio budget');
 assert.ok(used.allowedLoss<100&&used.allowedLoss>0,'3% portfolio cap must limit position');
 const full=run({positions:[{symbol:'ETHUSDT',side:'Buy',size:'30',avgPrice:'100',markPrice:'100',stopLoss:'90'}]});
 assert.equal(full.status,'blocked');
