@@ -17,10 +17,14 @@ function riskForUnit(side,entry,stop,policy){
 function countPositions(positions,policy){
  let risk=0;
  for(const p of positions){
-  const size=num(p.size),entry=num(p.avgPrice),stop=num(p.stopLoss);
-  if(!(size>0&&entry>0&&stop>0))continue;
+  const size=num(p.size),entry=num(p.avgPrice),mark=num(p.markPrice),stop=num(p.stopLoss);
+  if(!(size>0))continue;
+  if(!(entry>0&&mark>0&&stop>0))return null;
   const side=p.side==='Buy'?'long':p.side==='Sell'?'short':null;
-  const perUnit=side&&riskForUnit(side,entry,stop,policy);
+  // totalEquity already includes unrealised PnL: use the more conservative
+  // current-mark-to-stop vs original-entry-to-stop risk reference.
+  const reference=side==='long'?Math.max(entry,mark):Math.min(entry,mark);
+  const perUnit=side&&riskForUnit(side,reference,stop,policy);
   if(perUnit===null)return null;
   risk+=size*perUnit;
  }
@@ -33,13 +37,14 @@ export function sizeTrade({equity,positions,orders,plan,policy=RISK_POLICY}){
  if(!(capital>0))return blocked('Немає підтвердженого актуального totalEquity Bybit Demo');
  if(!Array.isArray(positions)||!Array.isArray(orders))return blocked('Позиції або заявки недоступні: сукупний ризик не можна перевірити');
  // Any outstanding order can add position risk; do not assume its future fill is zero.
- if(orders.some(o=>['New','PartiallyFilled','Untriggered','Active','Created'].includes(o.orderStatus)&&
-   (num(o.leavesQty)??num(o.qty)??0)>0))return blocked('Є активні заявки: необхідно врахувати їхній ризик перед новою угодою');
+ if(orders.some(o=>!['Filled','Cancelled','Rejected','Deactivated','PartiallyFilledCanceled'].includes(o.orderStatus)))
+  return blocked('Є незавершені або неперевірені заявки: їхній ризик необхідно врахувати');
  for(const p of positions){
   if(!(num(p.size)>0))continue;
   const side=p.side==='Buy'?'long':p.side==='Sell'?'short':null;
-  const stop=num(p.stopLoss),entry=num(p.avgPrice);
-  if(!side||!(entry>0&&stop>0)||riskForUnit(side,entry,stop,policy)===null)
+  const stop=num(p.stopLoss),entry=num(p.avgPrice),mark=num(p.markPrice);
+  const reference=side==='long'?Math.max(entry,mark):Math.min(entry,mark);
+  if(!side||!(entry>0&&mark>0&&stop>0)||riskForUnit(side,reference,stop,policy)===null)
    return blocked('Є відкрита позиція без коректного Stop Loss: резерв ризику неможливо встановити');
  }
  const currentRisk=countPositions(positions,policy);
