@@ -7,6 +7,7 @@ on:
       - 'market-intelligence/**'
       - '.github/scripts/check-market-intelligence.mjs'
       - '.github/scripts/check-market-readiness.mjs'
+      - '.github/scripts/check-market-forward-paper.mjs'
       - '.github/workflows/market-intelligence.yml'
       - 'scripts/market-scanner.mjs'
   workflow_dispatch:
@@ -25,7 +26,11 @@ jobs:
           node --check market-intelligence/app.js
           node --check .github/scripts/check-market-intelligence.mjs
           node --check .github/scripts/check-market-readiness.mjs
+          node --check market-intelligence/forward-paper.mjs
+          node --check .github/scripts/check-market-forward-paper.mjs
       - name: Candidate readiness logic
         run: node .github/scripts/check-market-readiness.mjs
+      - name: Forward-only paper-trading regression checks
+        run: node .github/scripts/check-market-forward-paper.mjs
       - name: Offline startup and security checks
         run: node .github/scripts/check-market-intelligence.mjs
