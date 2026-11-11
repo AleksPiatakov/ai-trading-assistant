@@ -10,7 +10,8 @@ import {resolve,dirname,join} from 'node:path';
 import {homedir} from 'node:os';
 import {spawn} from 'node:child_process';
 import {createHmac} from 'node:crypto';
-import {assessTradeReadiness,compareWatchCandidates} from '../scripts/market-scanner.mjs';
+import {assessTradeReadiness,compareWatchCandidates} from './market-scanner.mjs';
+import {createBybitPublicClient} from './bybit-public.mjs';
 import {createForwardPaperJournal} from './forward-paper.mjs';
 import {sizeTrade,RISK_POLICY} from './risk-policy.mjs';
 
@@ -133,6 +134,7 @@ const barMs={'15':900000,'60':3600000,'240':14400000,D:86400000};
 const timeframes=['15','60','240','D'];
 const maxUniverse=16;
 const scanEveryMs=10*60000;
+const bybitPublic=createBybitPublicClient({baseDelayMs:350,maxAttempts:4});
 let lastSnapshot={status:'starting',updatedAt:null,universe:[],opportunities:[],watch:[],errors:[],completed:0,total:0,ordersEnabled:false};
 let refreshing=false;
 let nextScanAt=0;
@@ -142,14 +144,7 @@ let scanFailures=0;
 const paperJournal=createForwardPaperJournal({path:join(homedir(),'Library','Application Support','Market Intelligence','forward-paper.json')});
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
 async function publicCall(endpoint,params={}){
- const url=new URL('https://api.bybit.com'+endpoint);
- for(const [key,value] of Object.entries(params))url.searchParams.set(key,String(value));
- const response=await fetch(url,{signal:AbortSignal.timeout(14000),cache:'no-store'});
- if(response.status===429)throw Error('Bybit rate limit (HTTP 429)');
-  if(!response.ok)throw Error('Bybit HTTP '+response.status);
- const payload=await response.json();
- if(payload.retCode!==0)throw Error('Bybit: '+String(payload.retMsg||payload.retCode).slice(0,110));
- return payload.result||{};
+ return bybitPublic.call(endpoint,params);
 }
 async function liquidUniverse(){
  if(Date.now()-tickersCache.at<5*60000&&tickersCache.data.length)return tickersCache.data;
