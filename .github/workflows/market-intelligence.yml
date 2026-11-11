@@ -8,6 +8,7 @@ on:
       - '.github/scripts/check-market-intelligence.mjs'
       - '.github/scripts/check-market-readiness.mjs'
       - '.github/scripts/check-market-forward-paper.mjs'
+      - '.github/scripts/check-market-risk.mjs'
       - '.github/workflows/market-intelligence.yml'
       - 'scripts/market-scanner.mjs'
   workflow_dispatch:
@@ -27,7 +28,11 @@ jobs:
           node --check .github/scripts/check-market-intelligence.mjs
           node --check .github/scripts/check-market-readiness.mjs
           node --check market-intelligence/forward-paper.mjs
+          node --check market-intelligence/risk-policy.mjs
+          node --check .github/scripts/check-market-risk.mjs
           node --check .github/scripts/check-market-forward-paper.mjs
+      - name: Portfolio 1%/3% risk policy
+        run: node .github/scripts/check-market-risk.mjs
       - name: Candidate readiness logic
         run: node .github/scripts/check-market-readiness.mjs
       - name: Forward-only paper-trading regression checks
