@@ -54,22 +54,29 @@ export function assessTradeReadiness(symbol, series, asOf = Date.now(), options 
     const up = side === 'long'; const direction = up ? 'up' : 'down'; const stop = up ? Math.min(h1.support, h1.price - h1.atr) : Math.max(h1.resistance, h1.price + h1.atr); const target = up ? h1.resistance : h1.support;
     const risk = Math.abs(h1.price - stop); const reward = Math.abs(target - h1.price); const geometry = risk > 0 && reward > 0 && (up ? stop < h1.price && target > h1.price : stop > h1.price && target < h1.price);
     const grossRR = geometry ? reward / risk : null; const cost = .00105 * (h1.price + target); const adjustedRisk = geometry ? risk + .00105 * (h1.price + stop) : null; const netRR = geometry ? (reward - cost) / adjustedRisk : null;
+    // Each of these is a mandatory gate for a plan.  A mixed daily or 15m
+    // frame may be useful for the watch list, but it is not confirmation for
+    // a ready trade plan.
     const checks = [
       ['trend', h1.direction === direction && h4.direction === direction, 'Тренди 1 год і 4 год не узгоджені'],
-      ['daily', day.direction === direction || day.direction === 'mixed', 'Денний тренд суперечить напрямку'],
-      ['short', m15.direction === direction || m15.direction === 'mixed', 'Тренд 15 хв суперечить напрямку'],
+      ['daily', day.direction === direction, 'Денний тренд не підтверджує напрямок'],
+      ['short', m15.direction === direction, 'Тренд 15 хв не підтверджує напрямок'],
       ['momentum', up ? h1.rsi >= 42 && h1.rsi <= 67 && h1.macd > 0 : h1.rsi >= 33 && h1.rsi <= 58 && h1.macd < 0, 'RSI або MACD не підтверджують імпульс'],
       ['reward', geometry && grossRR >= 1.5 && netRR >= 1.5, !geometry ? 'TP не на правильному боці входу' : grossRR < 1.5 ? 'R:R нижче 1:1,5' : 'R:R після модельних витрат нижче 1:1,5'],
       ['risk', geometry && risk / h1.price <= .05, 'Stop Loss надто далеко (>5%) або рівні некоректні']
     ].map(([key, ok, label]) => ({ key, ok, label }));
     const failed = checks.filter(check => !check.ok); const trendScore = checks.filter(check => ['trend', 'daily', 'short', 'momentum'].includes(check.key) && check.ok).length;
-    return { side, stop, target, grossRR, netRR, checks, failed, trendScore, geometry, risk, feasible: geometry && risk / h1.price <= .05 && netRR >= 1.5 && liquidityOk };
-  }).sort((a, b) => b.trendScore - a.trendScore || b.checks.filter(check => check.ok).length - a.checks.filter(check => check.ok).length);
+    const allMandatoryChecksPass = failed.length === 0;
+    return { side, stop, target, grossRR, netRR, checks, failed, trendScore, geometry, risk,
+      feasible: allMandatoryChecksPass && liquidityOk, allMandatoryChecksPass };
+  }).sort((a, b) => b.trendScore - a.trendScore || b.checks.filter(check => check.ok).length - a.checks.filter(check => check.ok).length || (attentionSide === a.side ? -1 : attentionSide === b.side ? 1 : 0));
   const best = candidates[0]; const exact = candidates.find(candidate => candidate.feasible && candidate.checks.find(check => check.key === 'trend').ok);
   const blocking = [...best.failed.map(check => check.label)];
   if (!liquidityOk) blocking.push(finite(turnover) ? 'Низька ліквідність: обіг за 24 год менше 10 млн USDT' : 'Не отримано перевіреного обігу за 24 год');
   if (!priceAligned) blocking.push(livePriceKnown ? 'Ціна відійшла від умовного входу; потрібен повторний розрахунок' : 'Немає актуальної ціни для перевірки входу');
-  const plan = exact && priceAligned ? { symbol, side: exact.side, entry: h1.price, stop: exact.stop, target: exact.target, rr: exact.grossRR, confirmations: exact.trendScore, checks: 4, timeframe: '60', scannedAt: new Date(asOf).toISOString(), ordersEnabled: false } : null;
+  // Keep the price check outside the candle-based checks: it must be sampled
+  // at scan time and fail closed when unavailable or stale.
+  const plan = exact && priceAligned ? { symbol, side: exact.side, entry: h1.price, stop: exact.stop, target: exact.target, rr: exact.grossRR, netRR: exact.netRR, confirmations: exact.trendScore, checks: 6, timeframe: '60', scannedAt: new Date(asOf).toISOString(), ordersEnabled: false } : null;
   attention.hasTradePlan = Boolean(plan);
   const marketQuality = { passed: attention.passed, total: 5, trendChecks: best.trendScore, trendTotal: 4, side: plan?.side || best.side };
   const tradeFeasibility = { status: plan ? 'validated' : best.feasible ? 'conditional' : 'blocked', grossRR: best.grossRR, netRR: best.netRR, validLevels: best.geometry, priceAligned, liquidityOk, turnover24h: finite(turnover) ? turnover : null, blocking: plan ? [] : blocking };
@@ -77,4 +84,18 @@ export function assessTradeReadiness(symbol, series, asOf = Date.now(), options 
   return { status: plan ? 'ready' : 'watch', side: plan?.side || best.side, plan, attention, blocking: plan ? [] : blocking, checksPassed: best.checks.filter(check => check.ok).length, checksTotal: 6, estimatedRR: best.grossRR, netRR: best.netRR, marketQuality, tradeFeasibility, scenario,
     diagnostics: { failed: best.failed.map(check => check.key), priceAligned, liquidityOk, turnover24h: finite(turnover) ? turnover : null } };
 }
-export function compareWatchCandidates(a, b) { return (b.readinessPassed ?? -1) - (a.readinessPassed ?? -1) || (b.turnover24h ?? 0) - (a.turnover24h ?? 0); }
+/**
+ * Rank observation candidates by market evidence before hypothetical payoff
+ * or raw turnover.  A watch-list position is not an order recommendation.
+ */
+export function compareWatchCandidates(a, b) {
+  return (a.state === 'near' ? 0 : 1) - (b.state === 'near' ? 0 : 1) ||
+    (b.marketQuality?.trendChecks ?? -1) - (a.marketQuality?.trendChecks ?? -1) ||
+    (b.marketQuality?.passed ?? -1) - (a.marketQuality?.passed ?? -1) ||
+    (b.readinessPassed ?? -1) - (a.readinessPassed ?? -1) ||
+    Number(b.tradeFeasibility?.priceAligned) - Number(a.tradeFeasibility?.priceAligned) ||
+    Number(b.tradeFeasibility?.liquidityOk) - Number(a.tradeFeasibility?.liquidityOk) ||
+    Number(b.tradeFeasibility?.validLevels) - Number(a.tradeFeasibility?.validLevels) ||
+    (b.turnover24h ?? 0) - (a.turnover24h ?? 0) ||
+    String(a.symbol ?? '').localeCompare(String(b.symbol ?? ''));
+}

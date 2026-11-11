@@ -5,7 +5,11 @@
 const RETRYABLE_STATUS = new Set([408, 425, 429, 500, 502, 503, 504]);
 
 const retryAfterMs = response => {
-  const seconds = Number(response?.headers?.get?.('retry-after'));
+  const raw = response?.headers?.get?.('retry-after');
+  // Number(null) is 0, which would accidentally turn a missing header into a
+  // zero-delay retry and make rate limiting worse.
+  if (raw === null || raw === undefined || String(raw).trim() === '') return null;
+  const seconds = Number(raw);
   return Number.isFinite(seconds) && seconds >= 0 ? seconds * 1000 : null;
 };
 
@@ -46,7 +50,11 @@ export function createBybitPublicClient({
       }
     }
     const detail = String(lastError?.message || 'невідома помилка').slice(0, 140);
-    throw new Error(`${detail}; attempts=${maxAttempts}; at=${new Date(now()).toISOString()}`);
+    const diagnostic = new Error(`${detail}; attempts=${maxAttempts}; at=${new Date(now()).toISOString()}`);
+    diagnostic.cause = lastError;
+    diagnostic.attempts = maxAttempts;
+    diagnostic.endpoint = endpoint;
+    throw diagnostic;
   }
   return { call };
 }

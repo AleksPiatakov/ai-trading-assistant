@@ -24,6 +24,8 @@ jobs:
       - name: Syntax checks
         run: |
           node --check market-intelligence/server.mjs
+          node --check market-intelligence/market-scanner.mjs
+          node --check market-intelligence/bybit-public.mjs
           node --check market-intelligence/app.js
           node --check .github/scripts/check-market-intelligence.mjs
           node --check .github/scripts/check-market-readiness.mjs
@@ -35,6 +37,8 @@ jobs:
         run: node .github/scripts/check-market-risk.mjs
       - name: Candidate readiness logic
         run: node .github/scripts/check-market-readiness.mjs
+      - name: Market scanner unit and regression tests
+        run: npm test --prefix market-intelligence
       - name: Forward-only paper-trading regression checks
         run: node .github/scripts/check-market-forward-paper.mjs
       - name: Offline startup and security checks
