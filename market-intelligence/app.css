@@ -160,3 +160,17 @@
 .paper-dashboard .watch-table{min-width:710px}
 @media(max-width:1000px){.paper-stats{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:600px){.paper-dashboard{padding:13px}.paper-head{align-items:flex-start}.paper-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+
+/* Account risk guard is always displayed as a read-only estimate. */
+.risk-policy-notice{border:1px solid #6b5d91;background:#1d2440;border-radius:11px;padding:14px 17px;margin:0 0 18px}
+.risk-policy-notice strong{color:#dcd0ff;font-size:13px}
+.risk-policy-notice p{margin:7px 0 0;color:#b4c4df;font-size:11px;line-height:1.5}
+.plan-risk-box{border:1px solid #4a5f88;background:#142741;border-radius:11px;padding:15px;margin:16px 0}
+.plan-risk-box h4{margin:0 0 12px;font-size:13px}
+.risk-summary-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.risk-summary-item{padding:9px;border:1px solid #334c6d;background:#0d1e33;border-radius:8px;min-width:0}
+.risk-summary-item span{display:block;color:#9eb3cf;font-size:10px}
+.risk-summary-item strong{display:block;font-size:14px;margin-top:5px;overflow-wrap:anywhere}
+.risk-warning{font-size:10px;color:#b5c5da;line-height:1.5;margin:12px 0 0}
+@media(max-width:650px){.risk-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
