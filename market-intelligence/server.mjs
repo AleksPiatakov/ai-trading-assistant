@@ -6,10 +6,12 @@
 import http from 'node:http';
 import {readFile} from 'node:fs/promises';
 import {fileURLToPath} from 'node:url';
-import {resolve,dirname} from 'node:path';
+import {resolve,dirname,join} from 'node:path';
+import {homedir} from 'node:os';
 import {spawn} from 'node:child_process';
 import {createHmac} from 'node:crypto';
 import {assessTradeReadiness,compareWatchCandidates} from '../scripts/market-scanner.mjs';
+import {createForwardPaperJournal} from './forward-paper.mjs';
 
 const host='127.0.0.1';
 const port=Number(process.env.MI_PORT||4188);
@@ -136,6 +138,7 @@ let nextScanAt=0;
 let tickersCache={at:0,data:[]};
 let scannerInterval=null;
 let scanFailures=0;
+const paperJournal=createForwardPaperJournal({path:join(homedir(),'Library','Application Support','Market Intelligence','forward-paper.json')});
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
 async function publicCall(endpoint,params={}){
  const url=new URL('https://api.bybit.com'+endpoint);
@@ -167,7 +170,7 @@ async function candles(symbol,interval){
 }
 async function scan(){
  if(refreshing)return;refreshing=true;nextScanAt=Date.now()+scanEveryMs;
- const startedAt=new Date().toISOString(),plans=[],watch=[],errors=[];
+ const startedAt=new Date().toISOString(),plans=[],watch=[],errors=[],candlesBySymbol={};
  try{
   const universe=await liquidUniverse();
   lastSnapshot={...lastSnapshot,status:'scanning',startedAt,universe,completed:0,total:universe.length,errors:[]};
@@ -175,6 +178,7 @@ async function scan(){
    try{
     const frames={};
     for(const tf of timeframes){frames[tf]=await candles(ticker.symbol,tf);await wait(110)}
+    candlesBySymbol[ticker.symbol]=frames['60'];
     const evaluatedAt=Date.now();
     const assessment=assessTradeReadiness(ticker.symbol,frames,evaluatedAt,{turnover24h:ticker.turnover24h,lastPrice:ticker.last});
     const plan=assessment.plan;
@@ -205,6 +209,8 @@ async function scan(){
   // "near" = only one missing required condition WITH valid risk geometry.
   // This is neither a probability nor a recommendation to enter early.
   watch.sort(compareWatchCandidates);
+  try{await paperJournal.observe({plans,candlesBySymbol})}
+  catch(e){errors.push('Paper journal: '+String(e.message||e).slice(0,100))}
   lastSnapshot={status:errors.length===universe.length?'error':errors.length?'partial':'ready',
    updatedAt:new Date().toISOString(),startedAt,universe,opportunities:plans,watch,errors,
    completed:universe.length,total:universe.length,ordersEnabled:false,nextScanAt:new Date(nextScanAt).toISOString()};
@@ -249,6 +255,9 @@ const server=http.createServer(async(req,res)=>{
     return json(res,200,{symbol,market:'crypto',source:'Bybit public',
      interval:'60',ordersEnabled:false,candles:result.slice(-110)});
    }catch(e){return json(res,503,{error:'Графік тимчасово недоступний: '+String(e.message||e).slice(0,120)})}
+  }
+  if(req.method==='GET'&&u.pathname==='/api/paper/report'){
+   return json(res,200,await paperJournal.report());
   }
   if(req.method==='GET'&&u.pathname==='/api/opportunities'){
    const snapshot={...lastSnapshot,
